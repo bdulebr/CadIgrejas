@@ -22,3 +22,8 @@ A Intranet PV Enseada é um sistema moderno construído sob uma pilha ágil e pe
 - **SQLite3**: Banco de dados relacional embarcado e ultraleve, otimizado para o projeto atual sem necessidade de instanciar servidores externos.
 - **PWA (Progressive Web App)**: Service Worker nativo `sw.js` e `manifest.json`, permitindo instalação como aplicativo nativo no celular e cache inteligente (Network-First).
 - **SMTP**: Servidor de disparo de e-mails transacionais assíncronos configurado para o domínio da igreja.
+
+## Servidor de Produção (Hardening)
+- **Waitress**: Servidor WSGI puro Python otimizado para Windows. Utilizado em produção para alta performance e estabilidade (substituindo o servidor de desenvolvimento do Django).
+- **WhiteNoise**: Middleware integrado para servir arquivos estáticos de forma autônoma e otimizada (compressão Brotli/Gzip) quando `DEBUG=False`.
+- **Django-Axes**: Sistema de segurança que bloqueia ataques de força bruta no painel administrativo.
