@@ -52,11 +52,15 @@
             <!-- Listagem de Competências -->
             <div class="lg:col-span-2 space-y-6">
                 <div class="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
-                    <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                    <div class="p-6 border-b border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
                             <i data-lucide="layers" class="w-5 h-5 text-blue-400"></i>
                             Escalas Criadas (Competências)
                         </h3>
+                        <div class="relative w-full md:w-64">
+                            <i data-lucide="search" class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Buscar mês ou departamento..." class="w-full bg-gray-950/60 border border-gray-700/80 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors">
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
@@ -68,11 +72,11 @@
                                     <th class="px-6 py-4 font-bold text-right">Ação</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-800 text-sm text-gray-200">
+                            <tbody id="escalasTable" class="divide-y divide-gray-800 text-sm text-gray-200">
                                 {% for comp in competencias %}
-                                <tr class="hover:bg-gray-800/50 transition-colors">
-                                    <td class="px-6 py-4 font-bold text-white text-lg">{{ comp.mes_ano }}</td>
-                                    <td class="px-6 py-4">
+                                <tr class="hover:bg-gray-800/50 transition-colors escala-row">
+                                    <td class="px-6 py-4 font-bold text-white text-lg comp-mes">{{ comp.mes_ano }}</td>
+                                    <td class="px-6 py-4 comp-dept">
                                         <span class="px-2.5 py-1 bg-gray-800 border border-gray-700 rounded-md text-xs font-bold uppercase block w-fit mb-1">{{ comp.departamento.nome }}</span>
                                     </td>
                                     <td class="px-6 py-4">
@@ -86,15 +90,21 @@
                                             </span>
                                         {% endif %}
                                     </td>
-                                    <td class="px-6 py-4 text-right">
+                                    <td class="px-6 py-4 text-right flex justify-end gap-2 items-center h-full">
                                         <a href="{% url 'editor_escala_manual' comp.id %}" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600/20 hover:bg-blue-600 border border-blue-500/50 hover:border-blue-500 text-blue-300 hover:text-white font-bold rounded-lg transition-all text-xs">
                                             {% if comp.status == 'rascunho' %}EDITAR ESCALAS{% else %}VER E EDITAR{% endif %}
                                         </a>
                                         {% if comp.pdf_gerado %}
-                                        <a href="{{ comp.pdf_gerado.url }}" target="_blank" class="inline-flex items-center justify-center px-3 py-2 bg-gray-800 border border-gray-600 hover:bg-red-600 hover:border-red-500 text-gray-300 hover:text-white font-bold rounded-lg transition-all text-xs ml-2">
+                                        <a href="{{ comp.pdf_gerado.url }}" target="_blank" class="inline-flex items-center justify-center px-3 py-2 bg-gray-800 border border-gray-600 hover:bg-green-600 hover:border-green-500 text-gray-300 hover:text-white font-bold rounded-lg transition-all text-xs">
                                             PDF
                                         </a>
                                         {% endif %}
+                                        <form method="POST" action="{% url 'excluir_competencia' comp.id %}" onsubmit="return confirm('ATENÇÃO: Deseja apagar ESTE MÊS INTEIRO de escalas? Todos os voluntários perderão seus plantões escalados aqui. Isso não pode ser desfeito!')" class="inline-block m-0 p-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="inline-flex items-center justify-center px-3 py-2 bg-red-600/10 hover:bg-red-600 border border-red-500/30 hover:border-red-500 text-red-400 hover:text-white font-bold rounded-lg transition-all text-xs" title="Excluir Mês">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -111,4 +121,19 @@
         </div>
     </div>
 </div>
+<script>
+function filterTable() {
+    let input = document.getElementById("searchInput").value.toUpperCase();
+    let rows = document.querySelectorAll(".escala-row");
+    rows.forEach(row => {
+        let textMes = row.querySelector(".comp-mes").innerText.toUpperCase();
+        let textDept = row.querySelector(".comp-dept").innerText.toUpperCase();
+        if (textMes.indexOf(input) > -1 || textDept.indexOf(input) > -1) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+</script>
 {% endblock content %}

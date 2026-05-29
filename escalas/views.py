@@ -137,6 +137,21 @@ def nova_competencia(request):
 
 @login_required
 @user_passes_test(is_lider)
+def excluir_competencia(request, comp_id):
+    comp = get_object_or_404(CompetenciaEscala, id=comp_id)
+    
+    deps_permitidos = get_departamentos_permitidos(request.user)
+    if comp.departamento not in deps_permitidos:
+        return HttpResponseForbidden("Sem permissão para excluir escalas deste departamento.")
+        
+    if request.method == 'POST':
+        comp.delete()
+        messages.success(request, 'Escala (Competência) excluída com sucesso!')
+        
+    return redirect('painel_escalas')
+
+@login_required
+@user_passes_test(is_lider)
 def editor_escala_manual(request, comp_id):
     comp = get_object_or_404(CompetenciaEscala, id=comp_id)
     deps_permitidos = get_departamentos_permitidos(request.user)

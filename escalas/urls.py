@@ -16,6 +16,7 @@ urlpatterns = [
     path('escalas/', views.painel_escalas, name='painel_escalas'),
     path('escalas/competencia/nova/', views.nova_competencia, name='nova_competencia'),
     path('escalas/competencia/<int:comp_id>/editar/', views.editor_escala_manual, name='editor_escala_manual'),
+    path('escalas/competencia/<int:comp_id>/excluir/', views.excluir_competencia, name='excluir_competencia'),
     path('escalas/competencia/<int:comp_id>/salvar-slot/', views.salvar_slot_escala, name='salvar_slot_escala'),
     path('escalas/competencia/<int:comp_id>/publicar/', views.publicar_competencia, name='publicar_competencia'),
     path('escalas/competencia/deletar-slot/<int:escala_id>/', views.deletar_slot_escala, name='deletar_slot_escala'),
