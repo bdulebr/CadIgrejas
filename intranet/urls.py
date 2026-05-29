@@ -30,6 +30,7 @@ urlpatterns = [
     path('', include('escalas.urls')),
     path('', include('almoxarifado.urls')),
     path('', include('midia_lgpd.urls')),
+    path('api/', include('api.urls')),
     path('sw.js', pwa_service_worker, name='sw.js'),
     path('manifest.json', pwa_manifest, name='manifest.json'),
 ]

@@ -56,8 +56,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    'django_htmx',
+        'django_htmx',
     'axes',
+    
+    # API & Mobile App Ready
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    'api',
     
     # Local apps
     'core',
@@ -70,6 +76,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -193,3 +200,28 @@ GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 
 GDRIVE_FOLDER_ID = env('GDRIVE_FOLDER_ID', default='')
 GCALENDAR_ID = env('GCALENDAR_ID', default='primary')
+
+
+# ==============================================================================
+# CONFIGURAÇÕES DA API REST PARA MOBILE APP E FUTUROS MÓDULOS
+# ==============================================================================
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# Habilitar CORS para permitir comunicação do App Mobile
+CORS_ALLOW_ALL_ORIGINS = True # Mudar para False em produção e especificar os domínios
