@@ -1,0 +1,37 @@
+{% if resultados %}
+<ul class="py-2 text-sm text-gray-300">
+    {% for r in resultados %}
+    <li class="px-4 py-2 hover:bg-white/10 flex items-center justify-between transition-colors border-b border-white/5 last:border-0 group">
+        <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-400">
+                <i data-lucide="{{ r.icone }}" class="w-4 h-4"></i>
+            </span>
+            <div>
+                <p class="font-medium text-white">{{ r.nome }}</p>
+                <p class="text-xs text-brand-400">{{ r.tipo }}</p>
+            </div>
+        </div>
+        
+        <!-- Botões de Ação (Aparecem no hover) -->
+        <div class="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-opacity">
+            {% if r.url_ver %}
+            <a href="{{ r.url_ver }}" class="p-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors" title="Ver Detalhes">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+            </a>
+            {% endif %}
+            
+            {% if r.url_editar %}
+            <a href="{{ r.url_editar }}" class="p-1.5 bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600 hover:text-white rounded transition-colors" title="Editar">
+                <i data-lucide="edit-2" class="w-4 h-4"></i>
+            </a>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="p-4 text-center text-sm text-gray-400">
+    <i data-lucide="search-x" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+    <p>Nenhum resultado encontrado para esta busca.</p>
+</div>
+{% endif %}

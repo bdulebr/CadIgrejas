@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura Digital - PV Enseada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }</style>
+</head>
+<body class="antialiased min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-3xl w-full bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-[#14532d] p-6 text-center text-white">
+            <h1 class="text-2xl font-bold tracking-widest">PV ENSEADA</h1>
+            <p class="text-sm opacity-80 uppercase mt-1">Portal de Assinatura de Documentos Seguros</p>
+        </div>
+        
+        <div class="p-8">
+            <div class="mb-8 border-l-4 border-[#22c55e] pl-4">
+                <h2 class="text-xl font-bold text-white">{{ doc.template.titulo }}</h2>
+                <p class="text-gray-300 mt-1">{{ doc.template.descricao|default:"Por favor, preencha as informações obrigatórias para gerar o documento oficial e efetuar a sua assinatura eletrônica." }}</p>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="space-y-6" onsubmit="document.getElementById('loading').style.display='block';">
+                {% csrf_token %}
+                
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-lg">
+                    <h3 class="font-bold text-white border-b pb-2 mb-4">Informações do Contrato</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for campo in doc.template.campos_json %}
+                        <div>
+                            <label class="block text-sm font-bold text-gray-300 mb-1">{{ campo.label }}</label>
+                            <input type="text" name="{{ campo.nome }}" required class="bg-gray-950/60 border-gray-700/80 text-white w-full p-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-[#22c55e] outline-none">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-lg">
+                    <h3 class="font-bold text-white border-b pb-2 mb-4">Assinatura Digital (Obrigatória)</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-300 mb-1">Eu, digitando meu nome abaixo, declaro que as informações são verdadeiras e assino digitalmente este documento.</label>
+                            <input type="text" name="assinatura_nome_completo" required placeholder="Digite seu nome completo como assinatura" value="{{ doc.nome_destino|default:'' }}" class="w-full p-3 border border-white/10 rounded-lg font-bold text-lg bg-gray-900/40 backdrop-blur-md">
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t">
+                            <label class="block text-sm font-bold text-gray-300 mb-1">Imprimiu, assinou a caneta e escaneou? (Opcional)</label>
+                            <p class="text-xs text-gray-400 mb-2">Se você preferiu imprimir o documento e assinar com caneta, anexe a foto ou PDF escaneado aqui.</p>
+                            <input type="file" name="anexo_scan" accept=".pdf,image/*" class="bg-gray-950/60 border-gray-700/80 text-white w-full text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Termos -->
+                <div class="bg-blue-50 p-4 rounded text-sm text-blue-900 border border-blue-200">
+                    <p>Ao clicar no botão abaixo, você concorda que o IP <b>(Registro de Rede)</b> e data/hora serão gravados no documento PDF congelado final, gerando prova de aceite jurídico nos termos da Legislação vigente.</p>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-[#16a34a] hover:bg-[#15803d] text-white font-bold rounded-xl text-lg shadow-lg transition-colors flex justify-center items-center gap-2">
+                    Concluir e Assinar Documento
+                </button>
+                
+                <p id="loading" class="text-center text-sm font-bold text-[#16a34a] mt-4" style="display: none;">Gerando Documento Final em PDF... Aguarde.</p>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

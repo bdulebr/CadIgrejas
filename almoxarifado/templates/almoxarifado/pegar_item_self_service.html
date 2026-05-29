@@ -1,0 +1,94 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Self-Service Almoxarifado{% endblock %}
+{% block content %}
+<div class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="max-w-xl w-full bg-gray-900/80 backdrop-blur-md border border-gray-800 rounded-3xl shadow-2xl overflow-hidden relative z-10">
+        <div class="p-6 border-b border-gray-800 bg-gray-950/50 text-center">
+            <h1 class="text-2xl font-bold text-white flex justify-center items-center gap-2">
+                <i data-lucide="box" class="text-blue-500 w-8 h-8"></i>
+                Retirada de Equipamento
+            </h1>
+            <p class="text-gray-400 mt-2 text-sm">Preencha os dados para registrar a retirada do item.</p>
+        </div>
+        
+        <form method="POST" class="p-8 space-y-6">
+            {% csrf_token %}
+            
+            <!-- Código do Item (Manual ou QR Scanner) -->
+            <div x-data="{ scannerOpen: false }">
+                <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Código do Patrimônio</label>
+                <div class="flex gap-2">
+                    <input type="text" name="codigo_patrimonio" id="codigo_patrimonio" required placeholder="Digite ou escaneie o código" class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none shadow-inner">
+                    {% if modo == 'qr' %}
+                    <button type="button" @click="scannerOpen = !scannerOpen" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-xl transition-colors shadow-lg">
+                        <i data-lucide="qr-code"></i>
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div x-show="scannerOpen" class="mt-4 p-4 bg-black rounded-xl border border-gray-800 text-center text-gray-400 h-48 flex items-center justify-center">
+                    (Câmera / Scanner API Aqui)
+                </div>
+            </div>
+            
+            <!-- Membro -->
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Seu Nome (Responsável)</label>
+                <select name="membro_id" required class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none shadow-inner appearance-none">
+                    <option value="" disabled selected>-- Selecione quem está retirando --</option>
+                    {% for membro in membros %}
+                    <option value="{{ membro.id }}">{{ membro.first_name }} {{ membro.last_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Tipo de Retirada -->
+            <div x-data="{ tipo: 'temporario' }">
+                <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Tipo de Retirada</label>
+                <div class="flex gap-4">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="tipo_retirada" value="temporario" x-model="tipo" class="peer hidden">
+                        <div class="text-center p-4 rounded-xl border border-gray-700 bg-gray-950/60 text-gray-400 peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-400 transition-all font-bold">
+                            Emprestado (Temporário)
+                        </div>
+                    </label>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="tipo_retirada" value="permanente" x-model="tipo" class="peer hidden">
+                        <div class="text-center p-4 rounded-xl border border-gray-700 bg-gray-950/60 text-gray-400 peer-checked:border-purple-500 peer-checked:bg-purple-500/10 peer-checked:text-purple-400 transition-all font-bold">
+                            Uso Fixo (Permanente)
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Campos condicionais -->
+                <div class="mt-6">
+                    <div x-show="tipo === 'temporario'" x-transition>
+                        <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Devolver quando?</label>
+                        <input type="date" name="data_devolucao" class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none shadow-inner">
+                    </div>
+                    
+                    <div x-show="tipo === 'permanente'" x-transition style="display: none;">
+                        <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Para onde vai o item?</label>
+                        <input type="text" name="localizacao" placeholder="Ex: Sala Multimídia, Palco..." class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none shadow-inner">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Observações -->
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Observações (Opcional)</label>
+                <textarea name="observacao" rows="2" placeholder="Ex: Tem algum cabo faltando?" class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none resize-none shadow-inner"></textarea>
+            </div>
+            
+            <!-- Submit -->
+            <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all uppercase tracking-wider">
+                Confirmar Retirada
+            </button>
+            <div class="mt-6 text-center">
+                <a href="{% url 'login' %}" class="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"><i data-lucide="arrow-left" class="w-4 h-4 inline mr-1"></i> Voltar ao Login</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

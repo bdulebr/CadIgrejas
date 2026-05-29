@@ -1,0 +1,154 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Detalhes do Estoque - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-8" x-data="{ openTransacao: false, tipoTransacao: 'saida' }">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'painel_alimentos' %}" class="text-gray-400 hover:text-brand-600 bg-gray-900/40 backdrop-blur-md border border-white/10 p-2 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+                <div>
+                    <h1 class="text-3xl font-bold text-white">Lote: {{ lote.nome }}</h1>
+                    <p class="text-gray-400 font-mono">Depto Responsável: {{ lote.departamento.nome }} | Loc: {{ lote.localizacao|default:"Não informada" }}</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button @click="openTransacao = true; tipoTransacao = 'entrada'" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition-colors">
+                    + Entrada (+ qtd)
+                </button>
+                <button @click="openTransacao = true; tipoTransacao = 'saida'" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-sm transition-colors">
+                    - Dar Saída (- qtd)
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Resumo -->
+            <div class="col-span-1 space-y-6">
+                <!-- Saldo Card -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm {% if lote.is_vencido %}border-red-300 bg-red-50{% else %}border-brand-200 bg-blue-900/40 backdrop-blur-md border border-blue-500/20 text-white{% endif %} p-8 text-center relative">
+                    <p class="text-sm font-bold uppercase tracking-wider mb-2 text-gray-400">Saldo Atual em Estoque</p>
+                    <h2 class="text-6xl font-black {% if lote.is_vencido %}text-red-700{% else %}text-blue-400{% endif %}">{{ lote.quantidade_atual }}<span class="text-2xl ml-1 text-gray-400">un</span></h2>
+                    
+                    <div class="mt-6 flex justify-center items-center gap-2 text-sm font-bold {% if lote.is_vencido %}text-red-600{% else %}text-white{% endif %}">
+                        <i data-lucide="calendar"></i> Vence em: {{ lote.data_vencimento|date:"d/m/Y" }}
+                    </div>
+                </div>
+
+                <!-- Detalhes Card -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm border-white/10 p-6">
+                    <h3 class="text-sm font-bold uppercase text-gray-400 mb-4 border-b border-white/10 pb-2">Origem e Compras</h3>
+                    <div class="space-y-3 text-sm text-white">
+                        <p><span class="font-bold">Forma de Obtenção:</span> {{ lote.get_origem_display }}</p>
+                        <p><span class="font-bold">Doador/Fornecedor:</span> {{ lote.fornecedor_doador|default:"Não informado" }}</p>
+                        <p><span class="font-bold">Qtd. Inicial do Lote:</span> {{ lote.quantidade_inicial }} un</p>
+                        <p><span class="font-bold">Data do Cadastro:</span> {{ lote.data_cadastro|date:"d/m/Y H:i" }}</p>
+                        {% if lote.anexo_nota_fiscal %}
+                        <p class="mt-2">
+                            <a href="{{ lote.anexo_nota_fiscal.url }}" target="_blank" class="text-brand-600 hover:text-blue-300 flex items-center gap-1 font-bold">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> Ver Nota Fiscal / Comprovante
+                            </a>
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% if lote.foto_lote %}
+                    <div class="mt-4 pt-4 border-t border-white/10">
+                        <img src="{{ lote.foto_lote.url }}" alt="Foto" class="w-full rounded-lg h-32 object-cover">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Historico de Transacoes -->
+            <div class="col-span-1 lg:col-span-2">
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm border-white/10 p-6 h-full">
+                    <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2"><i data-lucide="book-open" class="text-gray-400 w-5 h-5"></i> Diário de Transações (Livro Razão)</h3>
+                    
+                    <div class="space-y-0">
+                        {% for t in transacoes %}
+                        <div class="relative pl-6 pb-6 border-l-2 {% if t.tipo == 'entrada' %}border-green-200{% else %}border-red-200{% endif %} last:border-0 last:pb-0">
+                            <!-- Indicator -->
+                            <div class="absolute -left-1.5 top-0 w-3 h-3 rounded-full {% if t.tipo == 'entrada' %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
+                            
+                            <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg p-4 border-white/10">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <span class="text-xs font-bold uppercase {% if t.tipo == 'entrada' %}text-green-600{% else %}text-red-600{% endif %}">
+                                            {% if t.tipo == 'entrada' %}ENTRADA DE ESTOQUE (+){% else %}SAÍDA / DOAÇÃO (-){% endif %}
+                                        </span>
+                                        <h4 class="font-bold text-white mt-1">{{ t.quantidade }} unidades -> {{ t.destino_origem }}</h4>
+                                    </div>
+                                    <span class="text-xs text-gray-400 font-mono">{{ t.data_transacao|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <p class="text-sm text-gray-300 mb-3">{{ t.observacao|default:"Nenhuma observação." }}</p>
+                                
+                                <div class="flex justify-between items-center text-xs text-gray-400 font-medium pt-3 border-t border-white/10">
+                                    <span>Registrado por: {{ t.membro_responsavel.first_name }}</span>
+                                    {% if t.anexo_comprovante %}
+                                    <a href="{{ t.anexo_comprovante.url }}" target="_blank" class="text-brand-600 hover:text-blue-300 flex items-center gap-1">
+                                        <i data-lucide="file-text" class="w-4 h-4"></i> Comprovante/Foto
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-400 text-sm italic">Nenhuma movimentação registrada após a criação inicial.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE TRANSAÇÃO (Entrada/Saída) -->
+    <div x-show="openTransacao" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="openTransacao" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openTransacao = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="openTransacao" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form method="POST" action="{% url 'transacionar_alimento' lote.id %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo" x-model="tipoTransacao">
+                    
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg font-bold mb-4" :class="tipoTransacao == 'entrada' ? 'text-green-700' : 'text-red-700'">
+                            <span x-show="tipoTransacao == 'entrada'">Registrar Entrada no Lote</span>
+                            <span x-show="tipoTransacao == 'saida'">Registrar Saída/Doação do Lote</span>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Quantidade (Unidades/Caixas)</label>
+                                <input type="number" min="1" :max="tipoTransacao == 'saida' ? {{ lote.quantidade_atual }} : 9999" name="quantidade" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2">
+                                <p x-show="tipoTransacao == 'saida'" class="text-xs text-gray-400 mt-1">O saldo atual é de {{ lote.quantidade_atual }} un.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">
+                                    <span x-show="tipoTransacao == 'entrada'">Quem repôs / De onde veio?</span>
+                                    <span x-show="tipoTransacao == 'saida'">Para qual família/pessoa foi entregue?</span>
+                                </label>
+                                <input type="text" name="destino_origem" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Observações Extras</label>
+                                <textarea name="observacao" rows="2" class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Anexar Comprovante / Assinatura (Foto)</label>
+                                <input type="file" name="anexo_comprovante" accept="image/*,.pdf" class="mt-1 w-full border border-white/10 rounded px-3 py-2 text-sm bg-gray-900/40 backdrop-blur-md">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white sm:ml-3 sm:w-auto sm:text-sm" :class="tipoTransacao == 'entrada' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'">Confirmar Movimentação</button>
+                        <button type="button" @click="openTransacao = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-white/10 shadow-sm px-4 py-2 bg-gray-900/40 backdrop-blur-md text-base font-medium text-gray-300 hover:bg-gray-800/50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

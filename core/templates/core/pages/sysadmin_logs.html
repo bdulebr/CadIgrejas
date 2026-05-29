@@ -1,0 +1,247 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Auditoria Forense - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-8" x-data="{ modalOpen: false, currentLog: {} }" @open-forensic-modal.window="currentLog = $event.detail; modalOpen = true">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                    <a href="{% url 'sysadmin_dashboard' %}" class="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors text-sm font-bold flex items-center gap-2" title="Voltar ao Painel">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar
+                    </a>
+                    <i data-lucide="fingerprint" class="text-blue-500"></i> Auditoria Forense
+                </h1>
+                <p class="text-gray-400 mt-2 flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-green-500"></i> 
+                    Arquitetura Zero-Trust Imutável. Logs com validade jurídica e cadeia de Hashes (Blockchain).
+                </p>
+            </div>
+            
+            <div class="w-full md:w-96 relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                <input type="text" name="q" placeholder="Buscar por Nome, IP, Ação ou Tabela..." 
+                       hx-get="{% url 'sysadmin_logs' %}" 
+                       hx-trigger="keyup changed delay:500ms, search" 
+                       hx-target="#logs-tbody"
+                       class="w-full bg-black/40 border border-white/10 text-white placeholder-gray-500 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner">
+            </div>
+        </div>
+
+        <!-- Tabela -->
+        <div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-white/5 text-gray-400 text-xs uppercase tracking-wider border-b border-white/10">
+                            <th class="p-4 font-bold">Carimbo de Tempo</th>
+                            <th class="p-4 font-bold">Ator / Autor</th>
+                            <th class="p-4 font-bold">Tipo de Ação</th>
+                            <th class="p-4 font-bold">Vetor Afetado</th>
+                            <th class="p-4 font-bold">Origem (IP)</th>
+                            <th class="p-4 font-bold text-right">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody">
+                        {% include 'core/pages/partials/logs_table_body.html' %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL FORENSE (LAUDO) -->
+    <div x-show="modalOpen" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div x-show="modalOpen" x-transition.opacity class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" @click="modalOpen = false" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <!-- Modal panel -->
+            <div x-show="modalOpen" 
+                 x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 class="inline-block align-bottom bg-slate-900 border border-slate-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full">
+                
+                <!-- Modal Header -->
+                <div class="bg-slate-800 px-6 py-4 flex justify-between items-center border-b border-slate-700">
+                    <h3 class="text-lg leading-6 font-bold text-white flex items-center gap-2" id="modal-title">
+                        <i data-lucide="microscope" class="w-5 h-5 text-blue-400"></i> Detalhamento do Registro
+                        <span class="text-sm font-mono text-gray-500 font-normal ml-2" x-text="'#DB-' + currentLog.id"></span>
+                    </h3>
+                    <button @click="modalOpen = false" class="text-gray-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="px-6 py-6 bg-slate-900 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Card Ator -->
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Ator da Ação</h4>
+                            <p class="text-white font-bold text-lg" x-text="currentLog.autor"></p>
+                            <p class="text-sm text-gray-400 mt-1"><span class="font-bold text-gray-500">Data/Hora:</span> <span x-text="currentLog.data_hora"></span></p>
+                        </div>
+                        
+                        <!-- Card Vetor/Rede -->
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="network" class="w-4 h-4"></i> Rastreio de Rede</h4>
+                            <div class="text-sm text-gray-300 space-y-1">
+                                <p><span class="font-bold text-gray-500">IP Público:</span> <span class="font-mono text-blue-400" x-text="currentLog.ip"></span></p>
+                                <p><span class="font-bold text-gray-500">Localização:</span> <span x-text="currentLog.cidade"></span></p>
+                                <p><span class="font-bold text-gray-500">Provedor:</span> <span x-text="currentLog.isp"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card User Agent -->
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 mb-6">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Impressão do Dispositivo (User Agent)</h4>
+                        <p class="text-xs font-mono text-gray-400 break-words" x-text="currentLog.user_agent"></p>
+                    </div>
+
+                    <!-- Diff/UX Payload -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="file-json" class="w-4 h-4 text-yellow-500"></i> Payload da Ação / Intenção Capturada
+                        </h4>
+                        <div class="bg-black/60 p-4 rounded-xl border border-white/5 font-mono text-xs text-green-400 whitespace-pre-wrap overflow-x-auto shadow-inner" x-text="formatDiff(currentLog.diff)"></div>
+                    </div>
+
+                    <!-- Hash Chain -->
+                    <div class="bg-blue-900/10 p-5 rounded-xl border border-blue-500/20">
+                        <h4 class="text-sm font-bold text-blue-400 mb-4 flex items-center gap-2">
+                            <i data-lucide="link" class="w-4 h-4"></i> Assinatura Zero-Trust
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase mb-1">Hash do Bloco Anterior</p>
+                                <p class="font-mono text-xs text-gray-400 bg-black/40 p-2 rounded border border-white/5" x-text="currentLog.hash_anterior"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-blue-500 uppercase mb-1">Assinatura deste Log (SHA-256)</p>
+                                <p class="font-mono text-xs text-blue-300 bg-blue-900/20 p-2 rounded border border-blue-500/20" x-text="currentLog.hash_atual"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="bg-slate-800 px-6 py-4 flex justify-between items-center border-t border-slate-700">
+                    <p class="text-xs text-gray-500 flex items-center gap-1">
+                        <i data-lucide="lock" class="w-3 h-3"></i> Imutável judicialmente.
+                    </p>
+                    <div class="flex gap-3">
+                        <button @click="modalOpen = false" class="px-4 py-2 bg-transparent text-gray-300 hover:text-white font-bold transition-colors">
+                            Fechar
+                        </button>
+                        <a :href="'/sysadmin/logs/' + currentLog.id + '/pdf/'" target="_blank" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> Exportar Laudo (PDF)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- UX Tracker Global System (Injetado apenas para fins judiciais) -->
+<script>
+    function openForensicModal(logId) {
+        const dataScript = document.getElementById('log-data-' + logId);
+        if(dataScript) {
+            const data = JSON.parse(dataScript.textContent);
+            window.dispatchEvent(new CustomEvent('open-forensic-modal', { detail: data }));
+        }
+    }
+
+    function formatDiff(raw) {
+        try {
+            // Se for string que parece JSON
+            let parsed = raw;
+            if(typeof raw === 'string') {
+                // substitui escape
+                raw = raw.replace(/&quot;/g, '"').replace(/&#x27;/g, '"');
+                parsed = JSON.parse(raw);
+            }
+            return JSON.stringify(parsed, null, 4);
+        } catch(e) {
+            return raw;
+        }
+    }
+
+    // --- UX TRACKER ENGINE (SNIPER SCRIPT) ---
+    // Monitora "hesitação" em botões perigosos e envia log silencioso
+    document.addEventListener("DOMContentLoaded", () => {
+        let hoverTimer = null;
+        
+        // Selecionamos botões que geralmente são destrutivos ou de salvar
+        const watchElements = document.querySelectorAll('.btn-danger, .btn-primary, button[type="submit"], [hx-delete]');
+        
+        watchElements.forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                // Se a pessoa ficar 1.5s parada no botão, grava a intenção
+                hoverTimer = setTimeout(() => {
+                    sendUXLog('Hesitation', el);
+                }, 1500);
+            });
+            
+            el.addEventListener('mouseleave', () => {
+                clearTimeout(hoverTimer);
+            });
+            
+            el.addEventListener('click', (e) => {
+                clearTimeout(hoverTimer);
+                sendUXLog('Click', el);
+            });
+        });
+
+        function sendUXLog(intentType, element) {
+            // Não bombardear em dev
+            const elementText = (element.innerText || element.value || 'Botão sem texto').substring(0, 50).trim();
+            const payload = {
+                intent: intentType,
+                element: elementText,
+                url: window.location.href,
+                timestamp: new Date().toISOString()
+            };
+            
+            fetch('/sysadmin/logs/tracker/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(payload)
+            }).catch(e => console.log('UX Log Silenced'));
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

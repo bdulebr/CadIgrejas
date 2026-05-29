@@ -1,0 +1,110 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ acao }} Aviso - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen p-4 md:p-8">
+    <div class="max-w-3xl mx-auto bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] overflow-hidden">
+        <div class="p-6 border-b border-gray-800 bg-gradient-to-r from-blue-900/40 to-transparent">
+            <h2 class="text-2xl font-black text-white flex items-center gap-3">
+                <i data-lucide="message-square" class="w-6 h-6 text-blue-400"></i>
+                {{ acao }} Aviso no Mural
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">Publique recados, instruções ou links importantes para sua equipe.</p>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Título do Aviso *</label>
+                    <input type="text" name="titulo" value="{{ aviso.titulo|default:'' }}" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Departamento *</label>
+                    <select name="departamento" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        {% for dep in departamentos %}
+                        <option value="{{ dep.id }}" {% if aviso and aviso.departamento.id == dep.id %}selected{% endif %}>{{ dep.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Duração (Expiração) *</label>
+                    <select name="duracao" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        <option value="1" {% if acao == 'Criar' %}selected{% endif %}>24 Horas</option>
+                        <option value="7">1 Semana</option>
+                        <option value="30">1 Mês</option>
+                        <option value="365">1 Ano</option>
+                        <option value="">Para Sempre (Manual)</option>
+                    </select>
+                    {% if aviso and aviso.data_expiracao %}
+                    <p class="text-xs text-gray-500 mt-1">Expira atual: {{ aviso.data_expiracao|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mensagem *</label>
+                    <textarea name="mensagem" rows="6" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">{{ aviso.mensagem|default:'' }}</textarea>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Link Externo (Opcional)</label>
+                    <input type="url" name="link_externo" value="{{ aviso.link_externo|default:'' }}" placeholder="Ex: https://forms.google.com/..." class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Anexos (PDF, Imagens, etc)</label>
+                    <input type="file" name="anexos" multiple class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 file:cursor-pointer">
+                    <p class="text-xs text-gray-500 mt-2">Você pode selecionar múltiplos arquivos segurando a tecla Ctrl.</p>
+                </div>
+                
+                {% if aviso and aviso.anexos.all %}
+                <div class="md:col-span-2 bg-gray-950/40 p-4 rounded-xl border border-gray-800">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Anexos Atuais (Selecione para remover)</label>
+                    <div class="space-y-2">
+                        {% for anexo in aviso.anexos.all %}
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-gray-800/50 p-2 rounded-lg transition-colors">
+                            <input type="checkbox" name="remover_anexos" value="{{ anexo.id }}" class="w-4 h-4 bg-gray-900 border-gray-700 rounded text-red-500 focus:ring-red-500">
+                            <i data-lucide="file" class="w-4 h-4 text-gray-400"></i>
+                            <span class="text-sm text-gray-300">{{ anexo.nome_original }}</span>
+                            <span class="text-xs text-red-400 ml-auto font-medium">Remover</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="border-t border-gray-800 my-6"></div>
+            
+            <div class="space-y-4">
+                <label class="flex items-center gap-3 cursor-pointer p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/20 transition-colors">
+                    <input type="checkbox" name="fixado" {% if aviso and aviso.fixado %}checked{% endif %} class="w-5 h-5 bg-gray-900 border-gray-700 rounded text-yellow-500 focus:ring-yellow-500">
+                    <div>
+                        <span class="block text-sm font-bold text-yellow-500">Aviso Crítico / Fixado</span>
+                        <span class="block text-xs text-yellow-500/70">O aviso ficará destacado no topo do mural.</span>
+                    </div>
+                </label>
+
+                <label class="flex items-center gap-3 cursor-pointer p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-colors">
+                    <input type="checkbox" name="enviar_email" class="w-5 h-5 bg-gray-900 border-gray-700 rounded text-blue-500 focus:ring-blue-500">
+                    <div>
+                        <span class="block text-sm font-bold text-blue-400">Notificar por E-mail</span>
+                        <span class="block text-xs text-blue-400/70">Dispara um e-mail com este aviso para todos os membros do departamento selecionado.</span>
+                    </div>
+                </label>
+            </div>
+            
+            <div class="pt-6 flex justify-end gap-4">
+                <a href="{% url 'painel_avisos' %}" class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg border border-gray-600">Cancelar</a>
+                <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all">
+                    {% if acao == 'Criar' %}Postar Aviso{% else %}Salvar Alterações{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

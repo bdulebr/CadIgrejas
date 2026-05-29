@@ -1,0 +1,94 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Livro Caixa - Almoxarifado{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Livro Caixa: Almoxarifado</h1>
+                <p class="text-gray-400">Auditoria imutável e registro de empréstimos.</p>
+            </div>
+            <a href="{% url 'painel_inventario' %}" class="px-5 py-2.5 bg-gray-800/80 backdrop-blur-md hover:bg-gray-700 text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg">Voltar ao Almoxarifado</a>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Coluna 1: Histórico de Empréstimos Recentes -->
+            <div class="bg-gray-900/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[75vh]">
+                <div class="p-6 border-b border-white/10 bg-gray-950/50">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="arrow-right-left" class="text-blue-500"></i>
+                        Registro de Empréstimos
+                    </h2>
+                </div>
+                <div class="p-0 overflow-y-auto flex-1">
+                    <table class="w-full text-left text-sm text-gray-400">
+                        <thead class="bg-gray-950/80 text-gray-500 font-bold uppercase text-xs sticky top-0 backdrop-blur-md">
+                            <tr>
+                                <th class="px-6 py-4">Equipamento</th>
+                                <th class="px-6 py-4">Membro</th>
+                                <th class="px-6 py-4">Retirada</th>
+                                <th class="px-6 py-4">Status / Devolução</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% for emp in emprestimos %}
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="px-6 py-4 font-bold text-gray-200">{{ emp.ativo.nome }}</td>
+                                <td class="px-6 py-4">{{ emp.membro_solicitante.first_name }}</td>
+                                <td class="px-6 py-4 text-xs">{{ emp.data_retirada|date:"d/m/y H:i" }}</td>
+                                <td class="px-6 py-4">
+                                    {% if emp.data_devolucao_real %}
+                                        <span class="text-green-400 text-xs font-bold px-2 py-1 bg-green-500/10 rounded border border-green-500/20">Devolvido ({{ emp.data_devolucao_real|date:"d/m/y" }})</span>
+                                    {% else %}
+                                        <span class="text-yellow-500 text-xs font-bold px-2 py-1 bg-yellow-500/10 rounded border border-yellow-500/20">Pendente ({{ emp.data_devolucao_prevista|date:"d/m/y" }})</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhum empréstimo registrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Hash Chain Zero-Trust -->
+            <div class="bg-gray-900/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[75vh]">
+                <div class="p-6 border-b border-white/10 bg-gray-950/50 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="shield-check" class="text-green-500"></i>
+                        Logs Imutáveis (Zero-Trust)
+                    </h2>
+                    <span class="text-[10px] font-mono text-green-500/70 border border-green-500/30 px-2 py-1 rounded bg-green-500/10">HASH CHAIN SECURED</span>
+                </div>
+                <div class="p-6 overflow-y-auto flex-1 space-y-4">
+                    {% for log in logs %}
+                    <div class="bg-gray-950/80 p-4 rounded-xl border border-gray-800 shadow-inner hover:border-gray-700 transition-colors">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-xs font-bold px-2.5 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded uppercase tracking-wider">{{ log.acao_realizada }}</span>
+                            <span class="text-xs text-gray-500 font-mono">{{ log.data_acao|date:"d/m/Y H:i:s" }}</span>
+                        </div>
+                        <p class="text-sm text-gray-300 font-bold mb-1">Responsável: <span class="text-white">{{ log.usuario_acao.get_full_name|default:"Sistema" }}</span></p>
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="key" class="w-3 h-3 text-gray-600"></i>
+                            <p class="text-[10px] text-gray-500 font-mono break-all">{{ log.hash_atual }}</p>
+                        </div>
+                        <div class="bg-black p-3 rounded-lg border border-gray-800 text-[11px] text-gray-400 font-mono overflow-x-auto shadow-inner">
+                            {{ log.diferenca_json }}
+                        </div>
+                    </div>
+                    {% empty %}
+                        <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                            <i data-lucide="shield-alert" class="w-12 h-12 mb-3 opacity-50"></i>
+                            <p class="text-sm">Nenhum log registrado para o almoxarifado.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

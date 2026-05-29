@@ -1,0 +1,172 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{% if is_new %}Novo Template{% else %}Editar Template{% endif %} - PVE{% endblock %}
+
+{% block head %}
+<!-- GrapesJS Styles and Script -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/grapesjs/0.21.2/css/grapes.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/grapesjs/0.21.2/grapes.min.js"></script>
+<!-- GrapesJS Preset Webpage (Drag and Drop blocks) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/grapesjs-preset-webpage/1.0.2/grapesjs-preset-webpage.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/grapesjs-preset-newsletter/1.0.2/grapesjs-preset-newsletter.min.js"></script>
+
+<style>
+    /* Ocupar toda a tela para o editor */
+    #gjs {
+        height: 70vh;
+        border: 1px solid #4b5563;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    /* Toolbar custom do Grapes */
+    .gjs-cv-canvas {
+        background-color: #1f2937;
+    }
+    .gjs-block {
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-8">
+    <div class="max-w-7xl mx-auto">
+        
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <a href="{% url 'sysadmin_dashboard' %}" class="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar
+                </a>
+                {% if is_new %}Criar Novo Template Dinâmico{% else %}Editar Template: {{ template.nome_acao }}{% endif %}
+            </h1>
+            <button onclick="salvarTemplate()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2">
+                <i data-lucide="save" class="w-5 h-5"></i> Salvar Template
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="col-span-1 md:col-span-1">
+                <label class="block text-sm font-bold text-gray-300 mb-1">Nome da Ação / Gatilho</label>
+                <input type="text" id="nome_acao" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500" value="{{ template.nome_acao|default_if_none:'' }}" placeholder="Ex: escala_publicada" {% if not is_new %}readonly{% endif %}>
+            </div>
+            <div class="col-span-1 md:col-span-1">
+                <label class="block text-sm font-bold text-gray-300 mb-1">Tipo de Template</label>
+                <select id="tipo" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500">
+                    <option value="email" {% if template.tipo == 'email' %}selected{% endif %}>E-mail</option>
+                    <option value="pdf" {% if template.tipo == 'pdf' %}selected{% endif %}>PDF / Relatório</option>
+                </select>
+            </div>
+            <div class="col-span-1 md:col-span-2">
+                <label class="block text-sm font-bold text-gray-300 mb-1">Assunto Padrão (Se E-mail)</label>
+                <input type="text" id="assunto_padrao" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500" value="{{ template.assunto_padrao|default_if_none:'' }}" placeholder="Aviso: Nova Escala Publicada para {{ nome }}">
+            </div>
+        </div>
+        
+        <div class="bg-blue-900/20 border border-blue-800 p-4 rounded-lg mb-6">
+            <h4 class="text-blue-400 font-bold mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Variáveis Disponíveis (Copie e Cole nos Textos do Editor)</h4>
+            <p class="text-gray-300 text-sm">
+                <b>Comum:</b> <code>{{ "{{" }} nome {{ "}}" }}</code>, <code>{{ "{{" }} igreja.nome {{ "}}" }}</code><br>
+                <b>Escalas:</b> <code>{{ "{{" }} departamento.nome {{ "}}" }}</code>, <code>{{ "{{" }} departamento.logo.url {{ "}}" }}</code>, <code>{{ "{{" }} data {{ "}}" }}</code>, <code>{{ "{{" }} horario_inicio {{ "}}" }}</code>, <code>{{ "{{" }} horario_fim {{ "}}" }}</code>, <code>{{ "{{" }} link_painel {{ "}}" }}</code><br>
+                <b>Almoxarifado:</b> <code>{{ "{{" }} item.nome {{ "}}" }}</code>, <code>{{ "{{" }} data_devolucao {{ "}}" }}</code>
+            </p>
+        </div>
+
+        <!-- Editor GrapesJS -->
+        <div id="gjs">
+            {% if template.html_content %}
+                {{ template.html_content|safe }}
+                <style>{{ template.css_content|safe }}</style>
+            {% else %}
+                <div style="text-align:center; padding: 50px; font-family: Arial, sans-serif;">
+                    <h1 style="color: #333;">Arraste blocos da direita para cá!</h1>
+                    <p style="color: #666;">Comece a criar seu template visualmente.</p>
+                </div>
+            {% endif %}
+        </div>
+        
+    </div>
+</div>
+
+<script>
+    // Inicializa o GrapesJS com preset de Newsletter para E-mails responsivos
+    const editor = grapesjs.init({
+        container: '#gjs',
+        height: '100%',
+        width: 'auto',
+        storageManager: false, // Nós mesmos vamos salvar via API
+        plugins: ['gjs-preset-newsletter'],
+        pluginsOpts: {
+            'gjs-preset-newsletter': {
+                modalTitleImport: 'Importar HTML',
+            }
+        }
+    });
+    
+    // Se tivermos os componentes salvos em JSON, carregamos (mais preciso que HTML puro)
+    {% if template.components_json %}
+        try {
+            const components = {{ template.components_json|safe }};
+            editor.setComponents(components);
+        } catch(e) {
+            console.error('Erro ao carregar componentes JSON', e);
+        }
+    {% endif %}
+
+    function salvarTemplate() {
+        const nome_acao = document.getElementById('nome_acao').value;
+        if(!nome_acao) {
+            alert('Por favor, informe o Nome da Ação / Gatilho.');
+            return;
+        }
+        
+        const tipo = document.getElementById('tipo').value;
+        const assunto_padrao = document.getElementById('assunto_padrao').value;
+        
+        // Pega o HTML e CSS do editor
+        const html_content = editor.getHtml();
+        const css_content = editor.getCss();
+        const components_json = editor.getComponents();
+        
+        const payload = {
+            nome_acao: nome_acao,
+            tipo: tipo,
+            assunto_padrao: assunto_padrao,
+            html_content: html_content,
+            css_content: css_content,
+            components_json: JSON.parse(JSON.stringify(components_json))
+        };
+        
+        const url = "{% if is_new %}/sysadmin/templates/salvar/{% else %}/sysadmin/templates/{{ template.id }}/salvar/{% endif %}";
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert('Template salvo com sucesso!');
+                if("{{ is_new }}" === "True") {
+                    window.location.href = "/sysadmin/";
+                }
+            } else {
+                alert('Erro ao salvar: ' + (data.error || 'Desconhecido'));
+            }
+        })
+        .catch(err => {
+            alert('Erro de comunicação.');
+            console.error(err);
+        });
+    }
+</script>
+
+<!-- Icons lucide -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
+{% endblock %}

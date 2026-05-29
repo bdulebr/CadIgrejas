@@ -1,0 +1,19 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<h2 style="color: #14532d; margin-top: 0;">Bem-vindo à Intranet PV Enseada!</h2>
+<p>Olá, <strong>{{ nome }}</strong>! É uma alegria ter você servindo conosco.</p>
+<p>O seu cadastro na nova Intranet Administrativa foi criado com sucesso. A partir de agora você poderá acompanhar suas escalas, acessar o mural de avisos e atualizar suas habilidades pelo sistema.</p>
+
+<div class="alert-blue" style="margin: 24px 0;">
+    <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Suas credenciais de acesso:</strong></p>
+    <p style="margin: 0 0 8px 0;"><strong>E-mail (Login):</strong> {{ email_login }}</p>
+    <p style="margin: 0 0 8px 0;"><strong>Senha Provisória:</strong> <span style="font-family: monospace; background: white; padding: 2px 6px; border-radius: 4px;">{{ senha }}</span></p>
+</div>
+
+<p>Ao fazer o primeiro login, recomendamos fortemente que você vá até o seu "Perfil" e altere a senha para uma de sua preferência por segurança.</p>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{{ link_login }}" class="btn">Acessar o Sistema</a>
+</div>
+{% endblock %}

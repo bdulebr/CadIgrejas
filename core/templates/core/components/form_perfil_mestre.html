@@ -1,0 +1,132 @@
+<div class="space-y-6">
+    <!-- FOTO E DADOS BÁSICOS -->
+    <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">Informações Pessoais</h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="md:col-span-2">
+            <label class="block text-sm font-bold text-gray-300 mb-2">Foto de Perfil</label>
+            <div class="flex items-center gap-4">
+                {% if membro.foto_perfil %}
+                    <img src="{{ membro.foto_perfil.url }}" alt="Foto" class="w-16 h-16 rounded-full border-2 border-brand-500 object-cover">
+                {% else %}
+                    <div class="w-16 h-16 rounded-full bg-brand-700 text-white flex items-center justify-center text-xl font-bold border-2 border-brand-800">
+                        {{ membro.first_name|default:"?"|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+                <input type="file" name="foto_perfil" accept="image/*" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500 text-sm">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Nome</label>
+            <input type="text" name="first_name" value="{{ membro.first_name|default:'' }}" required class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Sobrenome</label>
+            <input type="text" name="last_name" value="{{ membro.last_name|default:'' }}" required class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">E-mail (Usado para Login)</label>
+            <input type="email" name="email" value="{{ membro.email|default:'' }}" required class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Nova Senha</label>
+            <input type="password" name="nova_senha" placeholder="Deixe em branco para manter a atual" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">CPF</label>
+            <input type="text" name="cpf" value="{{ membro.cpf|default:'' }}" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">RG</label>
+            <input type="text" name="rg" value="{{ membro.rg|default:'' }}" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Telefone / WhatsApp</label>
+            <input type="text" name="telefone" value="{{ membro.telefone|default:'' }}" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Data de Nascimento</label>
+            <input type="date" name="data_nascimento" value="{{ membro.data_nascimento|date:'Y-m-d'|default:'' }}" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Data de Casamento (Opcional)</label>
+            <input type="date" name="data_casamento" value="{{ membro.data_casamento|date:'Y-m-d'|default:'' }}" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+        </div>
+        
+        <div class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-1">Cônjuge (Sistema)</label>
+                <select name="conjuge_id" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+                    <option value="">Não informado / Sem cônjuge</option>
+                    {% for m in todos_membros %}
+                        <option value="{{ m.id }}" {% if membro.conjuge_id == m.id %}selected{% endif %}>{{ m.first_name }} {{ m.last_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-1">Filhos (Nomes e Idades)</label>
+                <input type="text" name="filhos" value="{{ membro.filhos|default:'' }}" placeholder="Ex: João (5), Maria (10)" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- HABILIDADES -->
+    <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2 mt-8">Minhas Habilidades / Funções</h3>
+    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-4 rounded-xl">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {% for hab in todas_habilidades %}
+            <label class="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg border border-transparent transition-colors">
+                <input type="checkbox" name="habilidades" value="{{ hab.id }}" {% if hab in habilidades_membro %}checked{% endif %} class="w-4 h-4 bg-gray-950 border-gray-700 rounded focus:ring-brand-500 text-brand-600">
+                <span class="text-sm font-medium text-gray-300">{{ hab.nome }}</span>
+            </label>
+            {% empty %}
+            <span class="text-sm text-gray-400 italic col-span-full">Nenhuma habilidade cadastrada no sistema.</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ÁREA EXCLUSIVA PARA LÍDERES -->
+    {% if is_lider_view %}
+    <h3 class="text-lg font-bold text-yellow-400 border-b border-yellow-500/30 pb-2 mt-8 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        Área Exclusiva Liderança
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-yellow-900/10 p-6 rounded-2xl border border-yellow-500/20">
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Nível Hierárquico</label>
+            <select name="nivel_hierarquico" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
+                <option value="membro_voluntario" {% if membro.nivel_hierarquico == 'membro_voluntario' %}selected{% endif %}>Membro Comum / Voluntário</option>
+                <option value="sub_lider" {% if membro.nivel_hierarquico == 'sub_lider' %}selected{% endif %}>Sub-líder</option>
+                <option value="lider" {% if membro.nivel_hierarquico == 'lider' %}selected{% endif %}>Líder</option>
+                <option value="missionario" {% if membro.nivel_hierarquico == 'missionario' %}selected{% endif %}>Missionário</option>
+                <option value="pastor" {% if membro.nivel_hierarquico == 'pastor' %}selected{% endif %}>Pastor Auxiliar</option>
+                <option value="pastor_regente" {% if membro.nivel_hierarquico == 'pastor_regente' %}selected{% endif %}>Pastor Regente</option>
+                <option value="super_admin" {% if membro.nivel_hierarquico == 'super_admin' %}selected{% endif %}>Super Administrador</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-bold text-gray-300 mb-1">Setores Vinculados</label>
+            <div class="border border-white/10 rounded-lg p-4 bg-gray-950/40 max-h-48 overflow-y-auto space-y-2">
+                {% for dep in todos_departamentos %}
+                <label class="flex items-center space-x-2 cursor-pointer hover:bg-white/5 p-1 rounded">
+                    <input type="checkbox" name="departamentos" value="{{ dep.id }}" {% if dep in departamentos_membro %}checked{% endif %} class="w-4 h-4 bg-gray-950 border-gray-700 rounded text-brand-600 focus:ring-brand-500">
+                    <span class="text-sm text-gray-300">{{ dep.nome }}</span>
+                </label>
+                {% empty %}
+                <span class="text-sm text-gray-400">Nenhum setor disponível.</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block text-sm font-bold text-gray-300 mb-1">Anotações da Liderança (Sigiloso)</label>
+            <p class="text-xs text-yellow-500/80 mb-2">O membro não vê este campo. Use para histórico, observações de liderança ou avaliações.</p>
+            <textarea name="anotacoes_lideranca" rows="4" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">{{ membro.anotacoes_lideranca|default:'' }}</textarea>
+        </div>
+    </div>
+    {% endif %}
+</div>

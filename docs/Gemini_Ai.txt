@@ -1,0 +1,28 @@
+Chave de API
+AIzaSyBLNh7SeHwhr61kcX_twQn1sALYSVc8ttc
+
+Nome
+Gemini API Key
+
+Nome do projeto
+projects/32022447872
+
+Número do projeto
+32022447872
+
+
+curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent" \
+  -H 'Content-Type: application/json' \
+  -H 'X-goog-api-key: AIzaSyBLNh7SeHwhr61kcX_twQn1sALYSVc8ttc' \
+  -X POST \
+  -d '{
+    "contents": [
+      {
+        "parts": [
+          {
+            "text": "Explain how AI works in a few words"
+          }
+        ]
+      }
+    ]
+  }'

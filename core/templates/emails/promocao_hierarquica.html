@@ -1,0 +1,18 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<h2 style="color: #1e40af; margin-top: 0;">Atualização no seu Perfil</h2>
+<p>Olá, <strong>{{ nome }}</strong>.</p>
+<p>Informamos que o seu Nível Hierárquico e Nível de Acesso na Intranet da PV Enseada foi atualizado pelos Administradores.</p>
+
+<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 20px 0; text-align: center;">
+    <p style="margin: 0; font-size: 14px; color: #6b7280;">Seu novo nível de acesso é:</p>
+    <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: bold; color: #1e40af; text-transform: uppercase;">{{ novo_cargo }}</p>
+</div>
+
+<p>Dependendo da sua nova função, novos painéis gerenciais foram liberados (como Gestão de Membros, Gestão de Escalas ou Painel do Líder). Acesse o sistema para conferir suas novas atribuições.</p>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{{ link_painel }}" class="btn" style="background-color: #2563eb;">Acessar Painel</a>
+</div>
+{% endblock %}

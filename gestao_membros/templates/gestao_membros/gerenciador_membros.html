@@ -1,0 +1,204 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block bg_image %}{% static 'img/bg_membros.png' %}{% endblock %}
+
+{% block title %}Painel de Comando: Membros - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ 
+    search: '', 
+    showImport: false,
+    matches(text, s) { 
+        const norm = (str) => str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return norm(text).includes(norm(s));
+    }
+}">
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Header & KPIs -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-2">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-tr from-brand-600 to-blue-400 rounded-xl flex items-center justify-center shadow-lg border border-white/10">
+                        <i data-lucide="users" class="text-white w-6 h-6"></i>
+                    </div>
+                    Comando de Membros
+                </h1>
+                <p class="text-gray-400 mt-2 text-sm md:text-base">Gestão centralizada de voluntários, líderes e exportação de relatórios.</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'dashboard' %}" class="px-4 py-2 bg-gray-800/80 hover:bg-gray-700 text-gray-300 border border-gray-600 rounded-lg font-bold transition-all shadow-sm flex items-center gap-2 text-sm">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar
+                </a>
+                <a href="{% url 'exportar_membros_excel' %}" class="px-4 py-2 bg-gray-900/60 hover:bg-gray-800 text-white border border-white/10 rounded-lg font-bold transition-all shadow-sm flex items-center gap-2 text-sm">
+                    <i data-lucide="download" class="w-4 h-4 text-green-400"></i> Exportar
+                </a>
+                {% if is_master %}
+                <button @click="showImport = !showImport" class="px-4 py-2 bg-gray-900/60 hover:bg-gray-800 text-white border border-white/10 rounded-lg font-bold transition-all shadow-sm flex items-center gap-2 text-sm">
+                    <i data-lucide="upload" class="w-4 h-4 text-blue-400"></i> Importar Lote
+                </button>
+                <a href="{% url 'adicionar_membro' %}" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center gap-2 text-sm">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Novo Membro
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Import Panel (Hidden by default) -->
+        <div x-show="showImport" x-transition.opacity class="bg-blue-900/20 backdrop-blur-md border border-blue-500/20 p-6 rounded-2xl shadow-lg" style="display: none;">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="text-lg font-bold text-blue-100 flex items-center gap-2">
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5 text-blue-400"></i>
+                        Importação Rápida em Massa
+                    </h3>
+                    <p class="text-sm text-blue-200/70">Faça o upload da planilha Excel para cadastrar vǭrios membros de uma vez.</p>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <a href="{% url 'baixar_modelo_importacao' %}" class="text-sm text-blue-400 hover:text-blue-300 underline whitespace-nowrap font-medium">Baixar Modelo .XLSX</a>
+                    <form method="POST" action="{% url 'importar_membros_excel' %}" enctype="multipart/form-data" class="flex gap-2 w-full">
+                        {% csrf_token %}
+                        <input type="file" name="arquivo_membros" accept=".xlsx, .xls" required class="flex-1 px-3 py-1.5 border border-white/10 rounded-lg text-sm bg-gray-950/60 text-white file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-colors text-sm">Processar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-5 rounded-2xl shadow-sm">
+                <div class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Total na Base</div>
+                <div class="text-3xl font-black text-white">{{ membros|length }}</div>
+            </div>
+        </div>
+
+        <!-- Dynamic Table Area -->
+        <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-lg overflow-hidden flex flex-col">
+            
+            <!-- Table Header & Search -->
+            <div class="p-5 border-b border-white/10 bg-gray-950/30 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="list-filter" class="w-5 h-5 text-gray-400"></i> Lista Dinâmica
+                </h3>
+                <div class="relative w-full md:w-96">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                    <input type="text" x-model="search" placeholder="Pesquisar por nome, email ou cargo..." class="w-full pl-10 pr-4 py-2 bg-gray-950/60 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                </div>
+            </div>
+
+            <!-- The Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-900/60 text-gray-400 text-xs uppercase tracking-wider border-b border-white/10">
+                            <th class="px-6 py-4 font-bold">Membro</th>
+                            <th class="px-6 py-4 font-bold">Contato</th>
+                            <th class="px-6 py-4 font-bold">Nível / Setores</th>
+                            {% if is_master %}
+                            <th class="px-6 py-4 font-bold text-right">Ações</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm text-gray-200">
+                        {% for membro in membros %}
+                        <tr class="hover:bg-white/5 transition-colors group" x-show="search === '' || matches($el.textContent, search)">
+                            
+                            <!-- Membro Info -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    {% if membro.foto_perfil %}
+                                        <img src="{{ membro.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover border border-white/20 shadow-md">
+                                    {% else %}
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center font-bold text-white shadow-md border border-white/10">
+                                            {{ membro.first_name|default:"?"|slice:":1"|upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="font-bold text-white text-base group-hover:text-brand-400 transition-colors">{{ membro.get_full_name }}</div>
+                                        <div class="text-xs text-gray-500">@{{ membro.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Contato -->
+                            <td class="px-6 py-4">
+                                <div class="text-gray-300">{{ membro.email }}</div>
+                                <div class="text-gray-500 text-xs mt-0.5 flex items-center gap-1">
+                                    <i data-lucide="phone" class="w-3 h-3"></i> {{ membro.telefone|default:"Sem telefone" }}
+                                </div>
+                            </td>
+
+                            <!-- Nível e Setores -->
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col gap-2 items-start">
+                                    <!-- Badge de Hierarquia -->
+                                    {% if membro.nivel_hierarquico == 'super_admin' or membro.nivel_hierarquico == 'pastor' or membro.nivel_hierarquico == 'pastor_regente' %}
+                                        <span class="px-2.5 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                            <i data-lucide="crown" class="w-3 h-3"></i> {{ membro.get_nivel_hierarquico_display }}
+                                        </span>
+                                    {% elif membro.nivel_hierarquico == 'lider' or membro.nivel_hierarquico == 'sub_lider' or membro.nivel_hierarquico == 'missionario' %}
+                                        <span class="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                            <i data-lucide="shield" class="w-3 h-3"></i> {{ membro.get_nivel_hierarquico_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1 bg-gray-500/20 text-gray-400 border border-gray-500/30 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                            <i data-lucide="user" class="w-3 h-3"></i> {{ membro.get_nivel_hierarquico_display }}
+                                        </span>
+                                    {% endif %}
+                                    
+                                    <!-- Setores -->
+                                    <div class="flex flex-wrap gap-1">
+                                        {% for d in membro.departamentos_ativos.all %}
+                                            <span class="text-[10px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded border border-white/10">{{ d.id_unico_fixo }}</span>
+                                        {% empty %}
+                                            <span class="text-[10px] text-red-400/70 italic">Sem setor</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Ações -->
+                            {% if is_master %}
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <a href="{% url 'editar_membro' membro.id %}" class="p-2 bg-brand-600/20 hover:bg-brand-600/40 text-brand-400 rounded-lg transition-colors" title="Editar Membro">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'excluir_membro' membro.id %}" onsubmit="return confirm('ATENÇÃO: Deseja apagar este membro definitivamente? Isso removerá também todas as suas escalas.')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Excluir Membro">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center text-gray-500">
+                                    <i data-lucide="users" class="w-12 h-12 mb-3 opacity-50"></i>
+                                    <p class="text-lg font-medium">Nenhum membro encontrado</p>
+                                    <p class="text-sm">Os membros cadastrados aparecerão aqui.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <!-- No Results fallback for Alpine JS Search -->
+                <div x-show="search !== '' && $el.previousElementSibling.querySelectorAll('tbody tr[style*=\'display: none\']').length === $el.previousElementSibling.querySelectorAll('tbody tr').length" class="px-6 py-12 text-center text-gray-500" style="display: none;">
+                    <p class="text-lg font-medium">Nenhum resultado para a busca.</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock content %}

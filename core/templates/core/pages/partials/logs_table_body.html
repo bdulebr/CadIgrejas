@@ -1,0 +1,88 @@
+{% for log in logs %}
+<tr class="hover:bg-white/5 transition-colors border-b border-white/5 group">
+    <td class="p-4 text-xs font-mono text-gray-400">
+        {{ log.data_hora|date:"d/m/Y H:i:s" }}
+    </td>
+    <td class="p-4">
+        {% if log.usuario_acao %}
+            <div class="flex items-center gap-3">
+                {% if log.usuario_acao.foto_perfil %}
+                    <img src="{{ log.usuario_acao.foto_perfil.url }}" class="w-8 h-8 rounded-full border border-gray-600 object-cover">
+                {% else %}
+                    <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300">
+                        {{ log.usuario_acao.first_name|first }}
+                    </div>
+                {% endif %}
+                <div>
+                    <p class="text-sm font-bold text-gray-200">{{ log.usuario_acao.get_full_name }}</p>
+                    <p class="text-xs text-gray-500">{{ log.usuario_acao.email }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-red-900/50 flex items-center justify-center text-xs font-bold text-red-500 border border-red-500/30">
+                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-red-400">Sistema / Rotina</p>
+                </div>
+            </div>
+        {% endif %}
+    </td>
+    <td class="p-4">
+        <span class="px-2 py-1 rounded-md text-xs font-bold 
+            {% if 'UX_Hover' in log.acao_realizada %}bg-purple-900/40 text-purple-400 border border-purple-500/30
+            {% elif log.acao_realizada == 'Deletar' %}bg-red-900/40 text-red-400 border border-red-500/30
+            {% elif log.acao_realizada == 'Editar' %}bg-yellow-900/40 text-yellow-400 border border-yellow-500/30
+            {% else %}bg-blue-900/40 text-blue-400 border border-blue-500/30{% endif %}">
+            {{ log.acao_realizada }}
+        </span>
+    </td>
+    <td class="p-4 text-sm text-gray-300">{{ log.tabela_afetada }}</td>
+    <td class="p-4 text-xs font-mono text-gray-500">
+        {{ log.ip_origem|default:"N/A" }}<br>
+        <span class="text-gray-600">{{ log.cidade_origem|default:"-" }}</span>
+    </td>
+    <td class="p-4 text-right">
+        <button onclick="openForensicModal({{ log.id }})" class="p-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors" title="Abrir Laudo Completo">
+            <i data-lucide="microscope" class="w-4 h-4"></i>
+        </button>
+        <!-- JSON Oculto para o Modal Ler -->
+        <script id="log-data-{{ log.id }}" type="application/json">
+            {
+                "id": "{{ log.id }}",
+                "data_hora": "{{ log.data_hora|date:'d/m/Y H:i:s' }}",
+                "autor": "{% if log.usuario_acao %}{{ log.usuario_acao.get_full_name }} ({{ log.usuario_acao.email }}){% else %}SISTEMA{% endif %}",
+                "ip": "{{ log.ip_origem|default:'Desconhecido' }}",
+                "cidade": "{{ log.cidade_origem|default:'Desconhecido' }}",
+                "isp": "{{ log.isp_origem|default:'Desconhecido' }}",
+                "user_agent": "{{ log.user_agent|default:'Desconhecido'|escapejs }}",
+                "acao": "{{ log.acao_realizada }}",
+                "tabela": "{{ log.tabela_afetada }}",
+                "hash_atual": "{{ log.hash_atual }}",
+                "hash_anterior": "{{ log.hash_anterior }}",
+                "diff": "{{ log.diferenca_json|escapejs }}"
+            }
+        </script>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="p-8 text-center text-gray-500">
+        Nenhum log encontrado para esta pesquisa.
+    </td>
+</tr>
+{% endfor %}
+
+{% if logs.has_next %}
+<tr id="replaceMe">
+    <td colspan="6" class="p-4 text-center">
+        <button hx-get="?q={{ q }}&page={{ logs.next_page_number }}" 
+                hx-target="#replaceMe" 
+                hx-swap="outerHTML"
+                class="px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded-lg text-sm font-bold transition-colors w-full">
+            Carregar mais logs antigos...
+        </button>
+    </td>
+</tr>
+{% endif %}

@@ -1,0 +1,290 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: gestao_membros/templates/gestao_membros/detalhes_departamento.html
+-->
+{% extends 'core/base.html' %}
+
+{% block title %}Detalhes do Departamento - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <div class="bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] flex justify-between items-start flex-wrap gap-4 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
+            <div class="flex items-center gap-6">
+                {% if dep.logo %}
+                <img src="{{ dep.logo.url }}" alt="Logo" class="w-24 h-24 rounded-2xl object-cover shadow-lg border border-gray-700">
+                {% else %}
+                <div class="w-24 h-24 rounded-2xl bg-gray-800 flex items-center justify-center border border-gray-700 shadow-lg">
+                    <i data-lucide="image" class="w-10 h-10 text-gray-500"></i>
+                </div>
+                {% endif %}
+                <div>
+                    <p class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">{{ dep.get_categoria_display|default:dep.categoria }}</p>
+                    <h1 class="text-3xl font-extrabold text-white">{{ dep.nome }}</h1>
+                    <p class="text-gray-400 mt-2 flex items-center gap-2">
+                        Código de Convite: 
+                        <span class="font-mono bg-gray-950/60 px-3 py-1 rounded-lg text-white font-bold tracking-widest border border-gray-700/50 shadow-inner">
+                            {{ dep.id_unico_fixo }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                {% if is_super %}
+                <form method="POST" action="{% url 'excluir_departamento' dep.id %}" onsubmit="return confirm('Deseja realmente apagar este departamento? Isso não pode ser desfeito.')">
+                    {% csrf_token %}
+                    <button type="submit" class="px-5 py-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 rounded-xl font-bold transition-all">Apagar Setor</button>
+                </form>
+                {% endif %}
+                <a href="{% url 'departamentos' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg border border-gray-600">Voltar</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Coluna Esq: Info e Funções -->
+            <div class="space-y-6 lg:col-span-1">
+                
+                <!-- Info Editor -->
+                {% if is_super or is_lider_master %}
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
+                    <h3 class="font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-2">
+                        <i data-lucide="edit-3" class="w-5 h-5 text-blue-400"></i> Editar Informações
+                    </h3>
+                    <form method="POST" action="{% url 'detalhes_departamento' dep.id %}" enctype="multipart/form-data" class="space-y-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="editar">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nome</label>
+                            <input type="text" name="nome" value="{{ dep.nome }}" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Categoria</label>
+                            <select name="categoria" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="grupo" {% if dep.categoria == 'grupo' %}selected{% endif %}>Grupo</option>
+                                <option value="setor" {% if dep.categoria == 'setor' %}selected{% endif %}>Setor</option>
+                                <option value="ministerio" {% if dep.categoria == 'ministerio' %}selected{% endif %}>Ministério</option>
+                                <option value="departamento" {% if dep.categoria == 'departamento' %}selected{% endif %}>Departamento</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Logo do Departamento</label>
+                            <input type="file" name="logo" accept="image/*" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30">
+                        </div>
+                        <button type="submit" class="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg">Salvar Modificações</button>
+                    </form>
+                </div>
+                
+                <!-- Criar Nova Função -->
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
+                    <h3 class="font-bold text-white mb-2 flex items-center gap-2 border-b border-gray-800 pb-2">
+                        <i data-lucide="briefcase" class="w-5 h-5 text-indigo-400"></i> Funções e Cargos
+                    </h3>
+                    <p class="text-xs text-gray-400 mb-4">Crie cargos específicos que existem neste departamento.</p>
+                    <form method="POST" action="{% url 'criar_funcao' dep.id %}">
+                        {% csrf_token %}
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-300">Nome da Função</label>
+                                <input type="text" name="nome" required placeholder="Ex: Operador de Câmera" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none text-sm">
+                            </div>
+                            <button type="submit" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl text-sm transition-colors border border-gray-600">+ Cadastrar Função</button>
+                        </div>
+                    </form>
+
+                    <div class="mt-6 space-y-2">
+                        {% for funcao in dep.funcoes.all %}
+                        <div class="p-3 border border-gray-700 bg-gray-800/50 rounded-xl flex justify-between items-center group hover:border-gray-500 transition-colors">
+                            <h4 class="font-bold text-white text-sm">{{ funcao.nome }}</h4>
+                            <form method="POST" action="{% url 'excluir_funcao' funcao.id %}" onsubmit="return confirm('Apagar função?')">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-400 opacity-50 group-hover:opacity-100 transition-opacity" title="Excluir">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% empty %}
+                        <p class="text-xs text-gray-500 text-center">Nenhum cargo cadastrado.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+
+            <!-- Coluna Central: Configuração de Escalas -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <div class="bg-gray-900/80 backdrop-blur-xl border border-blue-500/30 p-6 rounded-3xl shadow-[0_0_20px_rgba(59,130,246,0.1)] relative">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-t-3xl"></div>
+                    <h3 class="font-bold text-white mb-2 flex items-center gap-2 border-b border-gray-800 pb-2">
+                        <i data-lucide="calendar-cog" class="w-5 h-5 text-blue-400"></i> Configuração de Slots
+                    </h3>
+                    <p class="text-xs text-gray-400 mb-4">Defina quantas pessoas são necessárias por função para cada tipo de culto. Isso guiará o Motor Automático.</p>
+                    
+                    {% if is_super or is_lider_master %}
+                    <form method="POST" action="{% url 'salvar_configuracao_slot' dep.id %}" class="space-y-3 mb-6 bg-gray-950/40 p-4 rounded-2xl border border-gray-800">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Cultos/Eventos</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                                {% for id, nome in tipos_evento %}
+                                <label class="flex items-center gap-2 text-xs text-gray-300 bg-gray-900 p-2 rounded-lg border border-gray-700 cursor-pointer hover:border-blue-500 transition-colors leading-tight">
+                                    <input type="checkbox" name="tipo_evento" value="{{ id }}" class="rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-blue-500">
+                                    {{ nome }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mt-4">Função Requerida</label>
+                            <select name="funcao_id" required class="w-full mt-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm outline-none">
+                                {% for funcao in dep.funcoes.all %}
+                                <option value="{{ funcao.id }}">{{ funcao.nome }}</option>
+                                {% empty %}
+                                <option value="">Crie uma função primeiro!</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase">Quantidade de Vagas para esta Função</label>
+                            <input type="number" name="quantidade" min="1" value="1" required class="w-full mt-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm outline-none">
+                        </div>
+                        <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm transition-all shadow-md mt-2">
+                            ADICIONAR PARA OS DIAS SELECIONADOS
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <div class="space-y-4">
+                        {% regroup config_slots by get_tipo_evento_display as agrupados_por_evento %}
+                        {% for grupo in agrupados_por_evento %}
+                        <div class="bg-gray-800/40 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
+                            <h4 class="text-xs font-bold text-blue-400 uppercase border-b border-gray-700 pb-2">{{ grupo.grouper }}</h4>
+                            <div class="grid grid-cols-1 gap-2">
+                                {% for config in grupo.list %}
+                                <div class="flex justify-between items-center bg-gray-900/80 p-2.5 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">
+                                    <span class="text-white text-sm font-bold flex items-center gap-2"><i data-lucide="user-check" class="w-4 h-4 text-green-400"></i> {{ config.funcao.nome }}</span>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-blue-300 font-bold text-xs bg-blue-900/40 px-2 py-1 rounded shadow-inner">{{ config.quantidade }} vaga(s)</span>
+                                        {% if is_super or is_lider_master %}
+                                        <form method="POST" action="{% url 'remover_configuracao_slot' config.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-gray-500 hover:text-red-400 transition-colors" title="Remover Regra"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-6 text-gray-500 bg-gray-900/50 rounded-xl border border-gray-800 border-dashed">
+                            <i data-lucide="calendar-plus" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                            <p class="text-xs font-medium">Nenhum slot configurado ainda.</p>
+                            <p class="text-xs mt-1">Selecione os cultos acima e adicione as vagas necessárias.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Coluna Dir: Voluntários -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Liderança -->
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
+                    <h3 class="font-bold text-white mb-4 border-b border-gray-800 pb-2">Gestão de Liderança</h3>
+                    <div class="space-y-4 mb-4">
+                        <div class="bg-blue-900/20 border border-blue-500/20 p-4 rounded-xl">
+                            <h4 class="font-bold text-blue-400 text-xs uppercase mb-2">Líderes</h4>
+                            <ul class="text-sm text-gray-200 space-y-2">
+                                {% for lider in dep.lideres.all %}
+                                <li class="flex justify-between items-center">
+                                    <span class="font-medium">{{ lider.first_name }}</span>
+                                    <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">{% csrf_token %}<input type="hidden" name="acao" value="rem_lider"><input type="hidden" name="membro_id" value="{{ lider.id }}"><button type="submit" class="text-red-400 hover:text-red-300"><i data-lucide="x-circle" class="w-4 h-4"></i></button></form>
+                                </li>
+                                {% empty %}<li class="text-gray-500 text-xs">Nenhum líder.</li>{% endfor %}
+                            </ul>
+                        </div>
+                        <div class="bg-indigo-900/20 border border-indigo-500/20 p-4 rounded-xl">
+                            <h4 class="font-bold text-indigo-400 text-xs uppercase mb-2">Sub-Líderes</h4>
+                            <ul class="text-sm text-gray-200 space-y-2">
+                                {% for sub in dep.sub_lideres.all %}
+                                <li class="flex justify-between items-center">
+                                    <span class="font-medium">{{ sub.first_name }}</span>
+                                    <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">{% csrf_token %}<input type="hidden" name="acao" value="rem_sub"><input type="hidden" name="membro_id" value="{{ sub.id }}"><button type="submit" class="text-red-400 hover:text-red-300"><i data-lucide="x-circle" class="w-4 h-4"></i></button></form>
+                                </li>
+                                {% empty %}<li class="text-gray-500 text-xs">Nenhum sub-líder.</li>{% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    {% if is_super or is_lider_master %}
+                    <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}" class="space-y-3 pt-4 border-t border-gray-800">
+                        {% csrf_token %}
+                        <div>
+                            <select name="membro_id" required class="w-full px-3 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white text-sm outline-none">
+                                <option value="">Selecionar Membro...</option>
+                                {% for m in todos_membros %}
+                                <option value="{{ m.id }}">{{ m.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex gap-2">
+                            <select name="acao" class="flex-1 px-3 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white text-sm outline-none">
+                                <option value="add_membro">Apenas Membro</option>
+                                <option value="add_lider">Tornar Líder</option>
+                                <option value="add_sub">Tornar Sub-Líder</option>
+                            </select>
+                            <button type="submit" class="px-4 py-2 bg-gray-800 text-white text-sm font-bold rounded-lg border border-gray-600 hover:bg-gray-700">Add</button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <!-- Lista de Voluntários -->
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-3xl shadow-lg overflow-hidden flex flex-col" style="max-height: 500px;">
+                    <div class="p-6 border-b border-gray-800 flex justify-between items-center shrink-0">
+                        <h3 class="font-bold text-white flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5 text-green-400"></i> Voluntários
+                        </h3>
+                        <span class="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-bold border border-gray-700">{{ membros.count }}</span>
+                    </div>
+                    <ul class="divide-y divide-gray-800 overflow-y-auto flex-1">
+                        {% for m in membros %}
+                        <li class="p-4 flex items-center justify-between hover:bg-gray-800/50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                {% if m.foto_perfil %}
+                                <img src="{{ m.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover border border-gray-700">
+                                {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 font-bold border border-gray-700">{{ m.first_name|slice:":1" }}</div>
+                                {% endif %}
+                                <div>
+                                    <p class="font-bold text-white text-sm leading-tight">{{ m.get_full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ m.get_nivel_hierarquico_display }}</p>
+                                </div>
+                            </div>
+                            {% if is_super or is_lider_master %}
+                            <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="acao" value="rem_membro">
+                                <input type="hidden" name="membro_id" value="{{ m.id }}">
+                                <button type="submit" class="text-red-500 hover:text-red-400 p-2" title="Remover do Setor"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                            </form>
+                            {% endif %}
+                        </li>
+                        {% empty %}
+                        <li class="p-8 text-center text-gray-500 text-sm">Nenhum membro inscrito.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

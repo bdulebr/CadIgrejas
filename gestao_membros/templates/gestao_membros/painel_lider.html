@@ -1,0 +1,377 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block bg_image %}{% static 'img/bg_membros.png' %}{% endblock %}
+
+{% block title %}Painel do Líder - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div class="flex-grow">
+                <h1 class="text-3xl font-bold text-white mb-2">Painel do Líder</h1>
+                
+                <!-- Global Search (Omnisearch) -->
+                <div class="relative w-full max-w-md" x-data="{ query: '', isOpen: false }" @click.away="isOpen = false">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                        </span>
+                        <input type="text"
+                               name="q"
+                               x-model="query"
+                               @focus="isOpen = true"
+                               hx-get="{% url 'pesquisa_global_api' %}"
+                               hx-trigger="keyup changed delay:300ms"
+                               hx-target="#search-results-container-lider"
+                               class="block w-full pl-10 pr-3 py-2 bg-gray-800/80 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm backdrop-blur-sm"
+                               placeholder="Buscar em todo o sistema (Ctrl+K)"
+                               autocomplete="off">
+                    </div>
+                    <!-- Dropdown de Resultados -->
+                    <div x-show="isOpen && query.length >= 2" 
+                         id="search-results-container-lider"
+                         class="absolute top-full left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden z-[99999] max-h-96 overflow-y-auto"
+                         style="display: none;">
+                    </div>
+                </div>
+            </div>
+            <form method="GET" action="{% url 'painel_lider' %}" class="flex items-center gap-2">
+                <label class="text-sm font-bold text-gray-300">Setor:</label>
+                <select name="depto_id" onchange="this.form.submit()" class="bg-gray-900/80 border border-brand-500/30 text-white rounded-lg px-4 py-2 outline-none focus:border-brand-500 shadow-lg backdrop-blur-md">
+                    {% for dept in departamentos %}
+                    <option value="{{ dept.id }}" {% if departamento_ativo and dept.id == departamento_ativo.id %}selected{% endif %}>{{ dept.nome }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            
+            <a href="{% url 'dashboard' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white hover:text-white hover:text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg backdrop-blur-md">Voltar ao Painel</a>
+        </div>
+
+        {% if not departamento_ativo %}
+        <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-8 rounded-2xl text-center text-gray-400">
+            Você não gerencia nenhum departamento ou nenhum departamento foi selecionado.
+        </div>
+        {% else %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Coluna 1: Widgets -->
+            <div class="space-y-6 lg:col-span-1">
+                
+                <!-- Mural de Recados -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-blue-500/20 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
+                        <i data-lucide="message-square" class="w-5 h-5"></i> Avisos Ativos
+                    </h3>
+                    {% if avisos %}
+                        <ul class="space-y-3 mb-4">
+                            {% for aviso in avisos %}
+                            <li class="bg-gray-950/50 p-3 rounded-lg border {% if aviso.fixado %}border-yellow-500/50{% else %}border-gray-800{% endif %}">
+                                <p class="font-bold text-sm {% if aviso.fixado %}text-yellow-400{% else %}text-blue-300{% endif %}">{{ aviso.titulo }}</p>
+                                <p class="text-xs text-gray-400 mt-1 line-clamp-2">{{ aviso.mensagem }}</p>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-300 mb-3">Nenhum aviso ativo no momento.</p>
+                    {% endif %}
+                    <a href="{% url 'painel_avisos' %}" class="w-full block text-center py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 rounded-lg text-sm font-bold transition-colors uppercase">GERENCIAR MURAIS</a>
+                </div>
+                
+                <!-- Próximos Cultos / Escalas -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-brand-400 mb-4 flex items-center gap-2">
+                        <i data-lucide="calendar-check" class="w-5 h-5"></i> Próximos Eventos do Setor
+                    </h3>
+                    {% if proximos_cultos %}
+                        <ul class="space-y-3">
+                            {% for escala in proximos_cultos %}
+                            <li class="bg-gray-950/50 p-3 rounded-lg border border-gray-800">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-white font-bold text-sm">{{ escala.data_escala|date:"d/m" }} - {{ escala.horario_inicio|time:"H:i" }}</p>
+                                        <p class="text-gray-400 text-xs">{{ escala.membro_escalado.first_name }} ({{ escala.funcao_alocada.nome|default:"Geral" }})</p>
+                                    </div>
+                                    <span class="text-[10px] uppercase font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20">Confirmado</span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-400">Nenhum voluntário escalado confirmado para os próximos dias neste setor.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Rascunhos -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-yellow-500/20 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                        <i data-lucide="edit-3" class="w-5 h-5"></i> Rascunhos Pendentes
+                    </h3>
+                    {% if escalas_rascunho %}
+                        <p class="text-sm text-gray-300 mb-3">Existem {{ escalas_rascunho.count }} escalas em rascunho prontas para lançamento no Painel de Escalas.</p>
+                        <a href="{% url 'painel_escalas' %}" class="w-full block text-center py-2 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-300 border border-yellow-500/30 rounded-lg text-sm font-bold transition-colors">IR PARA ESCALAS</a>
+                    {% else %}
+                        <p class="text-sm text-gray-400">Nenhum rascunho. O motor automático está livre.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Pendentes -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span> Aguardando Aprovação
+                    </h3>
+                    {% if membros_pendentes %}
+                        <ul class="space-y-3">
+                            {% for membro in membros_pendentes %}
+                            <li class="bg-gray-950/50 p-4 rounded-lg border border-gray-800">
+                                <p class="font-bold text-white text-sm">{{ membro.get_full_name }}</p>
+                                <p class="text-xs text-gray-400 mb-2">{{ membro.telefone }}</p>
+                                <div class="flex gap-2">
+                                    <form method="POST" action="{% url 'aprovar_membro' membro.id %}" class="flex-1">
+                                        {% csrf_token %}
+                                        <button type="submit" class="w-full px-2 py-1.5 bg-green-600/80 hover:bg-green-600 text-white text-xs font-bold rounded transition-colors">APROVAR</button>
+                                    </form>
+                                    <form method="POST" action="{% url 'rejeitar_membro' membro.id %}" class="flex-1">
+                                        {% csrf_token %}
+                                        <button type="submit" class="w-full px-2 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/20 text-xs font-bold rounded transition-colors" onclick="return confirm('Tem certeza?')">REJEITAR</button>
+                                    </form>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-400">Sua fila de aprovação está vazia.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Indisponibilidades -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-red-500/20 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
+                        <i data-lucide="user-minus" class="w-5 h-5"></i> Indisponíveis (30 dias)
+                    </h3>
+                    {% if indisponiveis %}
+                        <ul class="space-y-3">
+                            {% for indisp in indisponiveis %}
+                            <li class="bg-gray-950/50 p-3 rounded-lg border border-gray-800">
+                                <p class="font-bold text-white text-sm">{{ indisp.membro.first_name }} {{ indisp.membro.last_name }}</p>
+                                <p class="text-xs text-red-400">{{ indisp.data_inicio|date:"d/m" }} a {{ indisp.data_fim|date:"d/m" }}</p>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-400">Nenhum membro registrou ausência para os próximos dias.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Aniversariantes do Mês -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-pink-500/20 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-pink-400 mb-4 flex items-center gap-2">
+                        <i data-lucide="gift" class="w-5 h-5"></i> Aniversariantes do Mês
+                    </h3>
+                    {% if aniversariantes %}
+                        <ul class="space-y-3">
+                            {% for aniversariante in aniversariantes %}
+                            <li class="bg-gray-950/50 p-3 rounded-lg border border-gray-800 flex justify-between items-center">
+                                <p class="font-bold text-white text-sm">{{ aniversariante.first_name }} {{ aniversariante.last_name }}</p>
+                                <span class="text-xs bg-pink-500/20 text-pink-300 px-2 py-1 rounded">{{ aniversariante.data_nascimento|date:"d/m" }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-400">Nenhum aniversariante este mês no setor.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coluna 2: Lista de Membros (Gestão Completa) -->
+            <div class="lg:col-span-2">
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm overflow-hidden h-full flex flex-col">
+                    <div class="p-6 border-b border-white/10 bg-gray-900/60 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5 text-blue-400"></i> Minha Equipe Ativa ({{ departamento_ativo.nome }})
+                        </h2>
+                        <div class="flex items-center gap-3">
+                            <div class="bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-700 flex items-center gap-2" title="Código de Convite do Setor">
+                                <span class="text-xs text-gray-400">CÓDIGO:</span>
+                                <span class="text-sm font-mono font-bold text-brand-400 tracking-wider">{{ departamento_ativo.id_unico_fixo }}</span>
+                            </div>
+                            <a href="{% url 'detalhes_departamento' departamento_ativo.id %}" class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 rounded-lg text-sm font-bold transition-colors flex items-center gap-1">
+                                <i data-lucide="settings" class="w-4 h-4"></i> Editar Setor
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 flex-1">
+                        {% if membros_aprovados %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {% for membro in membros_aprovados %}
+                            <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-5 hover:border-brand-500/50 transition-colors relative group">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div class="flex items-center gap-3">
+                                        {% if membro.foto_perfil %}
+                                            <img src="{{ membro.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover border border-gray-700">
+                                        {% else %}
+                                            <div class="w-10 h-10 rounded-full bg-brand-800 flex items-center justify-center font-bold text-white border border-gray-700">{{ membro.first_name|slice:":1" }}</div>
+                                        {% endif %}
+                                        <div>
+                                            <h4 class="font-bold text-white">{{ membro.first_name }} {{ membro.last_name }}</h4>
+                                            <p class="text-xs text-gray-400">{{ membro.telefone|default:"Sem Telefone" }}</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="openGerirModal('{{ membro.id }}', '{{ membro.first_name }}', '{{ membro.nivel_hierarquico }}', '{{ membro.horario_trabalho_inicio|time:'H:i' }}', '{{ membro.horario_trabalho_fim|time:'H:i' }}', '{{ membro.dias_trabalho }}', '{{ membro.dias_folga }}', `{{ membro.anotacoes_lideranca|escapejs }}`)" class="text-gray-400 hover:text-white p-2">
+                                        <i data-lucide="settings" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="text-xs text-brand-300 font-semibold mb-2">
+                                    {{ membro.get_nivel_hierarquico_display }}
+                                </div>
+                                
+                                <div class="flex flex-wrap gap-1 mt-3">
+                                    {% for hab in membro.habilidades.all %}
+                                        {% if hab in departamento_ativo.habilidades.all or hab.departamento == departamento_ativo %}
+                                        <span class="text-[10px] px-2 py-0.5 bg-blue-900/30 text-blue-300 border border-blue-800/50 rounded">{{ hab.nome }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="h-full flex flex-col items-center justify-center text-gray-400">
+                            <i data-lucide="users-x" class="w-12 h-12 mb-3 text-gray-400"></i>
+                            <p>Você ainda não possui voluntários aprovados na equipe.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- MODAL GESTÃO DO MEMBRO -->
+<div id="gerirModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all scale-95 opacity-0" id="gerirModalBox">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-gray-950/50">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="user-cog" class="w-5 h-5 text-brand-400"></i> Gerenciar: <span id="modalMembroNome" class="text-brand-300"></span>
+            </h3>
+            <button onclick="closeGerirModal()" class="text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Esquerda: Info e Nivel -->
+            <div class="space-y-6">
+                <!-- Alterar Nivel Hierarquico -->
+                <div class="bg-gray-800/30 p-4 rounded-xl border border-white/5">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nível Hierárquico</label>
+                    <form method="POST" id="formEvoluirNivel">
+                        {% csrf_token %}
+                        <input type="hidden" name="depto_id" value="{{ departamento_ativo.id }}">
+                        <select name="nivel_hierarquico" id="modalNivel" class="w-full bg-gray-950/60 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 outline-none focus:border-brand-500 mb-2">
+                            <option value="membro_voluntario">Membro Voluntário</option>
+                            <option value="sub_lider">Sub-Líder</option>
+                            <option value="lider">Líder</option>
+                            {% if user.nivel_hierarquico == 'super_admin' %}
+                            <option value="pastor">Pastor</option>
+                            <option value="pastor_regente">Pastor Regente</option>
+                            {% endif %}
+                        </select>
+                        <button type="submit" class="w-full text-center py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold rounded transition-colors">ALTERAR NÍVEL</button>
+                    </form>
+                </div>
+                
+                <!-- Horários e Escalas -->
+                <div class="bg-gray-800/30 p-4 rounded-xl border border-white/5">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Disponibilidade Declarada</label>
+                    <div class="text-sm text-gray-300 space-y-1">
+                        <p><span class="font-bold text-gray-500">Expediente:</span> <span id="modalExpediente">--:-- às --:--</span></p>
+                        <p><span class="font-bold text-gray-500">Dias Trab:</span> <span id="modalDiasTrab">-</span></p>
+                        <p><span class="font-bold text-gray-500">Folga Fixa:</span> <span id="modalFolga">-</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Direita: Anotações e Ações Criticas -->
+            <div class="space-y-6 flex flex-col justify-between">
+                
+                <!-- Anotações -->
+                <form method="POST" id="formAnotacoes" class="flex-1 flex flex-col bg-gray-800/30 p-4 rounded-xl border border-white/5">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="salvar_anotacoes">
+                    <input type="hidden" name="depto_id" value="{{ departamento_ativo.id }}">
+                    
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex justify-between">
+                        Anotações Privadas
+                        <span class="text-[9px] text-brand-400 normal-case">(O membro não vê)</span>
+                    </label>
+                    <textarea name="anotacoes_lideranca" id="modalAnotacoes" rows="4" class="w-full bg-gray-950/60 border border-gray-700 text-white text-sm rounded-lg p-3 outline-none focus:border-brand-500 flex-1 resize-none" placeholder="Ex: Tem dificuldade com horário na quinta-feira..."></textarea>
+                    
+                    <button type="submit" class="w-full mt-3 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded transition-colors shadow-sm">SALVAR ANOTAÇÕES</button>
+                </form>
+                
+                <!-- Ações Críticas -->
+                <div class="border-t border-red-500/20 pt-4 mt-2">
+                    <form method="POST" id="formRemoverBanco">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="remover_setor">
+                        <input type="hidden" name="depto_id" value="{{ departamento_ativo.id }}">
+                        
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/30 text-xs font-bold rounded transition-colors" onclick="return confirm('Atenção: Isso enviará o voluntário para o BANCO (fora deste setor). Ele não será mais escalado neste setor. Tem certeza?')">
+                            <i data-lucide="user-minus" class="w-4 h-4"></i> REMOVER DO SETOR (ENVIAR P/ BANCO)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openGerirModal(id, nome, nivel, hr_inicio, hr_fim, dias_trab, dias_folga, anotacoes) {
+        document.getElementById('modalMembroNome').innerText = nome;
+        
+        // Atualizar formulários dinâmicos com o ID correto do membro
+        document.getElementById('formEvoluirNivel').action = `/membros/evoluir/${id}/`;
+        document.getElementById('formAnotacoes').action = `/membro/gerir-lider/${id}/`;
+        document.getElementById('formRemoverBanco').action = `/membro/gerir-lider/${id}/`;
+        
+        // Setar valores
+        document.getElementById('modalNivel').value = nivel;
+        document.getElementById('modalAnotacoes').value = anotacoes;
+        
+        const hrStr = (hr_inicio || hr_fim) ? `${hr_inicio || '--:--'} às ${hr_fim || '--:--'}` : 'Não declarado';
+        document.getElementById('modalExpediente').innerText = hrStr;
+        document.getElementById('modalDiasTrab').innerText = dias_trab || 'Não declarado';
+        document.getElementById('modalFolga').innerText = dias_folga || 'Não declarado';
+        
+        // Exibir modal com animação suave
+        const modal = document.getElementById('gerirModal');
+        const box = document.getElementById('gerirModalBox');
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            box.classList.remove('scale-95', 'opacity-0');
+            box.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+    
+    function closeGerirModal() {
+        const modal = document.getElementById('gerirModal');
+        const box = document.getElementById('gerirModalBox');
+        
+        box.classList.remove('scale-100', 'opacity-100');
+        box.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200); // duracao da transicao
+    }
+</script>
+{% endblock content %}

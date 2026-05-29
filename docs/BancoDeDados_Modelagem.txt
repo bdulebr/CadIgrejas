@@ -1,0 +1,39 @@
+NOME DO ARQUIVO: BancoDeDados_Modelagem.txt
+PROJETO: Palavra de Vida Enseada - Intranet (Versão 0.0.1)
+OBJETIVO: Mapeamento de Entidade-Relacionamento (ER) a nível de engenharia para o Django ORM (PostgreSQL/SQLite3).
+
+1. ENTIDADE DE USUÁRIOS E HIERARQUIA (Base Zero-Trust):
+- Tabela 'Membro' (Estende AbstractUser do Django):
+  * Campos Pessoais: Nome Completo, CPF (Único), RG, E-mail (Único), Senha (Hash), Telefone, Foto_Perfil, Data_Nascimento, Data_Casamento, Conjuge (Relacionamento com outro Membro), Filhos.
+  * Controle de Acesso: Nivel_Hierarquico (Super-admin, Pastor Regente, Pastor, Missionário, Líder, Sub-líder, Membro Voluntário).
+  * LGPD e Sistema: Termos_Aceitos (Booleano), Hash_Aceite_LGPD (String Imutável), Data_Aceite.
+  * Escalas: Dias_Indisponiveis (Tabela relacional para múltiplos dias).
+
+2. ENTIDADE DE ORGANIZAÇÃO (Departamentos e Setores):
+- Tabela 'Departamento':
+  * Campos: ID_Unico_Fixo (String Alfanumérica, ex: PRT-001), Nome, Categoria (Grupo, Setor, Ministério, Departamento).
+  * Relacionamentos N:N: Lideres, Sub-lideres, Membros_Ativos.
+  * Personalização: Habilidades_Requeridas (JSON).
+
+3. ENTIDADE DE ESCALAS (Motor de Resolução de Conflitos):
+- Tabela 'Escala':
+  * Campos: Data_Escala, Horario_Inicio, Horario_Fim, Tipo_Evento (Quarta, Domingo_Manha, Domingo_Noite, Evento_Extra).
+  * Relacionamentos: Membro_Escalado (FK), Departamento_Alocado (FK).
+  * Status: Confirmado, Aguardando, Substituído, Falta_Justificada.
+  * Proteção do Motor (Constraint): O banco deve bloquear (UNIQUE CONSTRAINT) o mesmo "Membro_Escalado", "Data_Escala" e "Horario_Inicio" em departamentos diferentes.
+
+4. ENTIDADE DE ALMOXARIFADO E ATIVOS (Gestão Física):
+- Tabela 'Item_Almoxarifado':
+  * Campos: Codigo_QR_Barras (String Única), Nome, Categoria (Eletrônico, Descartável, Alimento), Quantidade_Estoque, Validade (Para Alimentos), Localizacao_Fisica.
+- Tabela 'Livro_Retirada' (Log de Movimentação):
+  * Campos: Item_Retirado (FK), Membro_Solicitante (FK), Lider_Aprovador (FK - Nível Exigido), Quantidade, Data_Retirada, Data_Devolucao_Prevista.
+  * Status: Retirado, Devolvido, Consumido, Vencido.
+
+5. ENTIDADE DE MÍDIA E LGPD (Imutabilidade de Documentos):
+- Tabela 'Documento_LGPD':
+  * Campos: Membro_Assinante (FK), Caminho_PDF_Drive (URL), Hash_Assinatura_Eletronica (SHA-256), Data_Geracao_Aceite.
+  * Regra de Negócio: Registro cravado como "Read-Only" no nível do banco. Edições são proibidas, permitindo apenas a inserção de Anexos_Extras atrelados ao registro original.
+
+6. ENTIDADE DE AUDITORIA (Logs Imutáveis para Segurança Info):
+- Tabela 'Log_Auditoria':
+  * Campos: Usuario_Acao (FK), Acao_Realizada (Criar, Editar, Deletar), Tabela_Afetada, IP_Origem, Data_Hora, Diferenca_JSON (O que era "Antes" e o que ficou "Depois").

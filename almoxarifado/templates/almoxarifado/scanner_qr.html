@@ -1,0 +1,72 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Scanner de Patrimônio - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 p-4 md:p-8 flex flex-col items-center justify-center">
+    
+    <div class="max-w-md w-full bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        <div class="p-6 text-center border-b border-white/10 bg-gray-900/40 backdrop-blur-md border border-white/10">
+            <h1 class="text-2xl font-bold text-white mb-2">Scanner Inteligente</h1>
+            <p class="text-sm text-gray-400">Aponte a câmera para a etiqueta QR Code do equipamento para abrir a Ficha de Raio-X.</p>
+        </div>
+        
+        <div class="p-6">
+            <div id="reader" class="w-full rounded-2xl overflow-hidden border-4 border-dashed border-white/10"></div>
+            
+            <div id="result" class="mt-6 text-center hidden">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-3">
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-lg text-white">QR Code Detectado!</h3>
+                <p class="text-gray-400 text-sm mt-1 mb-4 font-mono" id="qr-result-text"></p>
+                <p class="text-xs text-gray-400">Redirecionando para o Raio-X do Ativo...</p>
+            </div>
+            
+            <div id="error-message" class="mt-4 p-4 bg-red-900/20 text-red-700 text-sm rounded-lg hidden text-center border border-red-200">
+                Ativo não encontrado na base de dados com este código.
+            </div>
+        </div>
+        
+        <div class="p-4 bg-gray-900/40 backdrop-blur-md border border-white/10 border-t border-white/10 text-center">
+            <a href="{% url 'painel_inventario' %}" class="text-sm font-medium text-gray-300 hover:text-white">Voltar ao Almoxarifado</a>
+        </div>
+    </div>
+</div>
+
+<!-- Incluir a biblioteca HTML5 QR Code Scanner via CDN -->
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const scannerConfig = { fps: 10, qrbox: {width: 250, height: 250} };
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", scannerConfig, false);
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Desliga o scanner para evitar múltiplas leituras
+            html5QrcodeScanner.clear();
+            
+            document.getElementById('reader').classList.add('hidden');
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('qr-result-text').textContent = "Código: " + decodedText;
+            
+            // O código de patrimônio no DB é texto/string.
+            // Precisamos procurar o Ativo. Porém, o scanner_qr não recebe POST nativo ainda.
+            // Para resolver isso de forma elegante sem recriar uma API JSON,
+            // podemos fazer um window.location.href passando o decodedText para uma URL.
+            // Mas ativo_detalhe espera ID numérico. Então eu vou fazer um fetch
+            // para uma view rápida ou, melhor ainda, criar um form hidden e enviar.
+            
+            // Mas espera, como a view 'ativo_detalhe' requer o ID, eu vou redirecionar com o código_patrimonio.
+            // Vou usar uma busca rápida.
+            
+            window.location.href = "{% url 'painel_inventario' %}?busca_codigo=" + encodeURIComponent(decodedText);
+        }
+
+        function onScanFailure(error) {
+            // console.warn(`Code scan error = ${error}`);
+        }
+
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    });
+</script>
+{% endblock content %}

@@ -1,0 +1,114 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block bg_image %}{% static 'img/bg_escalas.png' %}{% endblock %}
+
+{% block title %}Escalas - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Gestão de Escalas</h1>
+                <p class="text-gray-300 font-medium">Controle de meses e grupos de escalas (Competências).</p>
+            </div>
+            <a href="{% url 'dashboard' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg backdrop-blur-md border border-gray-600">Voltar ao Painel</a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Nova Competência -->
+            <div class="bg-gray-900/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] border border-gray-700/50 h-fit relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
+                
+                <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+                    <i data-lucide="folder-plus" class="w-5 h-5 text-blue-400"></i>
+                    Nova Escala Mensal
+                </h3>
+                
+                <form method="POST" action="{% url 'nova_competencia' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mês/Ano (Ex: 06/2026)</label>
+                        <input type="text" name="mes_ano" placeholder="06/2026" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-950/60 text-white font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Departamento</label>
+                        <select name="departamento_id" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-950/60 text-white">
+                            {% for dept in departamentos %}
+                            <option value="{{ dept.id }}">{{ dept.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 mt-6 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                        CRIAR E EDITAR ESCALAS
+                    </button>
+                </form>
+            </div>
+
+            <!-- Listagem de Competências -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
+                    <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="layers" class="w-5 h-5 text-blue-400"></i>
+                            Escalas Criadas (Competências)
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-950/50 text-gray-400 text-xs uppercase tracking-wider">
+                                    <th class="px-6 py-4 font-bold">Mês/Ano</th>
+                                    <th class="px-6 py-4 font-bold">Departamento</th>
+                                    <th class="px-6 py-4 font-bold">Status</th>
+                                    <th class="px-6 py-4 font-bold text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800 text-sm text-gray-200">
+                                {% for comp in competencias %}
+                                <tr class="hover:bg-gray-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white text-lg">{{ comp.mes_ano }}</td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2.5 py-1 bg-gray-800 border border-gray-700 rounded-md text-xs font-bold uppercase block w-fit mb-1">{{ comp.departamento.nome }}</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {% if comp.status == 'rascunho' %}
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Rascunho
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Publicada
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <a href="{% url 'editor_escala_manual' comp.id %}" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600/20 hover:bg-blue-600 border border-blue-500/50 hover:border-blue-500 text-blue-300 hover:text-white font-bold rounded-lg transition-all text-xs">
+                                            {% if comp.status == 'rascunho' %}EDITAR ESCALAS{% else %}VER E EDITAR{% endif %}
+                                        </a>
+                                        {% if comp.pdf_gerado %}
+                                        <a href="{{ comp.pdf_gerado.url }}" target="_blank" class="inline-flex items-center justify-center px-3 py-2 bg-gray-800 border border-gray-600 hover:bg-red-600 hover:border-red-500 text-gray-300 hover:text-white font-bold rounded-lg transition-all text-xs ml-2">
+                                            PDF
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-12 text-center text-gray-500 font-medium">Nenhuma competência de escala foi criada ainda.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock content %}

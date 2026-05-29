@@ -1,0 +1,18 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<h2 style="color: #d97706; margin-top: 0;">Novo Aviso no Mural: {{ departamento }}</h2>
+<p>Olá!</p>
+<p>O líder <strong>{{ autor }}</strong> acaba de postar um novo aviso importante no painel do seu departamento.</p>
+
+<div class="alert-yellow">
+    <h3 style="margin: 0 0 8px 0; color: #92400e;">{{ titulo }}</h3>
+    <p style="margin: 0; font-size: 14px; white-space: pre-wrap;">{{ mensagem }}</p>
+</div>
+
+<p>Por favor, não deixe de ler e se manter atualizado sobre as atividades da equipe.</p>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{{ link_painel }}" class="btn" style="background-color: #d97706;">Ler no Mural</a>
+</div>
+{% endblock %}

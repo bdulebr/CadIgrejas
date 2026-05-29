@@ -1,0 +1,56 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/urls.py
+* DESCRIÇÃO: Rotas do módulo core.
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 25/05/2026 13:50
+* LOG DE ALTERAÇÕES:
+* - 25/05/2026 13:50: Criação inicial
+"""
+
+from django.urls import path
+from django.contrib.auth import views as auth_views
+from . import views
+
+urlpatterns = [
+    path('', views.login_view, name='login'),
+    # Recuperação de Senha Segura
+    path('recuperar-senha/', views.CustomPasswordResetView.as_view(), name='password_reset'),
+    path('recuperar-senha/bloqueado/', views.password_reset_blocked, name='password_reset_blocked'),
+    path('recuperar-senha/enviado/', auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'), name='password_reset_done'),
+    path('recuperar-senha/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'), name='password_reset_confirm'),
+    path('recuperar-senha/completo/', auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
+    path('register/', views.register_view, name='register'),
+    path('dashboard/', views.dashboard_view, name='dashboard'),
+    path('logout/', views.logout_view, name='logout'),
+    path('perfil/', views.editar_perfil, name='editar_perfil'),
+    path('seguranca/trocar-senha/', views.forcar_troca_senha, name='forcar_troca_senha'),
+    path('sysadmin/', views.sysadmin_dashboard, name='sysadmin_dashboard'),
+    path('pesquisa/', views.pesquisa_global_api, name='pesquisa_global_api'),
+    path('bi/', views.bi_dashboard_geral, name='bi_dashboard_geral'),
+    path('bi/almoxarifado/', views.bi_almoxarifado, name='bi_almoxarifado'),
+    path('bi/escalas/', views.bi_escalas, name='bi_escalas'),
+    path('sysadmin/toggle-manutencao/', views.sysadmin_toggle_manutencao, name='sysadmin_toggle_manutencao'),
+    path('sysadmin/toggle-email/', views.sysadmin_toggle_email, name='sysadmin_toggle_email'),
+    path('sysadmin/backup/baixar/', views.sysadmin_baixar_backup, name='sysadmin_baixar_backup'),
+    path('sysadmin/backup/subir/', views.sysadmin_subir_backup, name='sysadmin_subir_backup'),
+    path('sysadmin/backup/gdrive/', views.sysadmin_backup_gdrive, name='sysadmin_backup_gdrive'),
+    path('sysadmin/zerar/', views.sysadmin_zerar_banco, name='sysadmin_zerar_banco'),
+    path('sysadmin/desbloquear-ip/', views.sysadmin_desbloquear_ip, name='sysadmin_desbloquear_ip'),
+    path('sysadmin/toggle-debug/', views.sysadmin_toggle_debug, name='sysadmin_toggle_debug'),
+    path('sysadmin/salvar-env/', views.sysadmin_salvar_env, name='sysadmin_salvar_env'),
+    path('sysadmin/salvar-igreja/', views.sysadmin_salvar_igreja, name='sysadmin_salvar_igreja'),
+    path('sysadmin/templates/', views.sysadmin_templates_list, name='sysadmin_templates_list'),
+    path('sysadmin/templates/novo/', views.sysadmin_template_editor, name='sysadmin_template_novo'),
+    path('sysadmin/templates/<int:template_id>/editar/', views.sysadmin_template_editor, name='sysadmin_template_editar'),
+    path('sysadmin/templates/<int:template_id>/salvar/', views.sysadmin_template_salvar, name='sysadmin_template_salvar'),
+    path('sysadmin/templates/salvar/', views.sysadmin_template_salvar, name='sysadmin_template_salvar_novo'),
+    path('sysadmin/templates/<int:template_id>/deletar/', views.sysadmin_template_deletar, name='sysadmin_template_deletar'),
+    
+    # Auditoria Zero-Trust Forense
+    path('sysadmin/logs/', views.sysadmin_logs_list, name='sysadmin_logs'),
+    path('sysadmin/logs/tracker/', views.sysadmin_ux_tracker, name='sysadmin_ux_tracker'),
+    path('sysadmin/logs/<int:log_id>/pdf/', views.sysadmin_log_pdf, name='sysadmin_log_pdf'),
+]
+

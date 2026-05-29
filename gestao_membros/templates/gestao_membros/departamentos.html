@@ -1,0 +1,109 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: gestao_membros/templates/gestao_membros/departamentos.html
+-->
+{% extends 'core/base.html' %}
+
+{% block title %}Departamentos - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Departamentos e Setores</h1>
+                <p class="text-gray-300 font-medium">Gestão global de ministérios e configurações de escalas.</p>
+            </div>
+            <a href="{% url 'dashboard' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg backdrop-blur-md border border-gray-600">Voltar ao Painel</a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {% if is_master %}
+            <!-- Formulário Criar -->
+            <div class="bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] h-fit relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-blue-400"></i>
+                    Novo Departamento
+                </h3>
+                <form method="POST" action="{% url 'departamentos' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nome</label>
+                        <input type="text" name="nome" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Categoria</label>
+                        <select name="categoria" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option value="grupo">Grupo</option>
+                            <option value="setor">Setor</option>
+                            <option value="ministerio">Ministério</option>
+                            <option value="departamento">Departamento</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                        CRIAR SETOR
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Lista de Departamentos -->
+            <div class="{% if is_master %}lg:col-span-2{% else %}lg:col-span-3{% endif %}">
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-3xl shadow-lg overflow-hidden">
+                    <div class="p-6 border-b border-gray-800">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="layers" class="w-5 h-5 text-blue-400"></i> Setores Gerenciados
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-950/50 text-gray-400 text-xs uppercase tracking-wider">
+                                    <th class="px-6 py-4 font-bold">Nome</th>
+                                    <th class="px-6 py-4 font-bold">Categoria</th>
+                                    <th class="px-6 py-4 font-bold">Código</th>
+                                    <th class="px-6 py-4 font-bold">Voluntários</th>
+                                    <th class="px-6 py-4 font-bold text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800 text-sm text-gray-200">
+                                {% for dept in departamentos %}
+                                <tr class="hover:bg-gray-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white flex items-center gap-3">
+                                        {% if dept.logo %}
+                                        <img src="{{ dept.logo.url }}" class="w-8 h-8 rounded-lg object-cover border border-gray-700">
+                                        {% else %}
+                                        <div class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center border border-gray-700">
+                                            <i data-lucide="image" class="w-4 h-4 text-gray-500"></i>
+                                        </div>
+                                        {% endif %}
+                                        {{ dept.nome }}
+                                    </td>
+                                    <td class="px-6 py-4 capitalize">{{ dept.categoria }}</td>
+                                    <td class="px-6 py-4 font-mono text-blue-400 font-bold tracking-widest">{{ dept.id_unico_fixo }}</td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center justify-center px-3 py-1 bg-blue-900/30 border border-blue-500/30 text-blue-300 rounded-lg text-xs font-bold">{{ dept.membros_ativos.count }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <a href="{% url 'detalhes_departamento' dept.id %}" class="inline-flex items-center justify-center px-4 py-2 bg-gray-800 hover:bg-blue-600 border border-gray-600 hover:border-blue-500 text-gray-300 hover:text-white font-bold rounded-lg transition-all text-xs">
+                                            GERENCIAR &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 font-medium">Nenhum departamento gerenciado por você.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock content %}

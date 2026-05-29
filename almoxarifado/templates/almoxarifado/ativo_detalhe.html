@@ -1,0 +1,248 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Detalhes do Ativo - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-8" x-data="{ openManutencao: false, openConcluir: false, openAlocar: false, selectedManutencao: null }">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'painel_inventario' %}" class="text-gray-400 hover:text-brand-600 bg-gray-900/40 backdrop-blur-md border border-white/10 p-2 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+                <div>
+                    <h1 class="text-3xl font-bold text-white">Raio-X: {{ ativo.nome }}</h1>
+                    <p class="text-gray-400 font-mono">Cód: {{ ativo.codigo_patrimonio }} | Depto: {{ ativo.departamento_dono.nome }}</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                {% if ativo.status == 'disponivel' %}
+                <button @click="openAlocar = true" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium shadow-sm transition-colors">
+                    <i data-lucide="map-pin"></i> Alocar Uso Fixo
+                </button>
+                {% endif %}
+                
+                {% if ativo.status == 'em_uso_fixo' %}
+                <form method="POST" action="{% url 'remover_uso_fixo' ativo.id %}" onsubmit="return confirm('Retornar este item para o Almoxarifado (tornar Disponível)?')">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-medium shadow-sm transition-colors border border-purple-300">
+                        Remover do Uso Fixo
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if ativo.status == 'disponivel' or ativo.status == 'quebrado' %}
+                <button @click="openManutencao = true" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-sm transition-colors">
+                    <i data-lucide="wrench"></i> Enviar para Manutenção
+                </button>
+                {% endif %}
+                
+                {% if request.user.nivel_hierarquico in 'super_admin,pastor_regente,pastor' %}
+                <form method="POST" action="{% url 'deletar_ativo' ativo.id %}" onsubmit="return confirm('ATENÇÃO: Você está prestando a excluir este item definitivamente do patrimônio. Esta ação será auditada e não pode ser desfeita. Continuar?')">
+                    {% csrf_token %}
+                    <button type="submit" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white hover:text-white hover:text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg backdrop-blur-md">
+                        <i data-lucide="trash"></i> Excluir / Arquivar
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Coluna 1: Dados do Ativo -->
+            <div class="col-span-1">
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm border-white/10 overflow-hidden mb-6">
+                    {% if ativo.foto_item %}
+                    <img src="{{ ativo.foto_item.url }}" alt="{{ ativo.nome }}" class="w-full h-48 object-cover">
+                    {% else %}
+                    <div class="w-full h-48 bg-gray-800/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400">
+                        <i data-lucide="image" class="text-4xl"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Status Atual</p>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium mt-1 {% if ativo.status == 'disponivel' %}bg-green-100 text-green-800 elif 'emprestado' %}bg-yellow-100 text-yellow-800 'manutencao' %}bg-blue-100 text-blue-800 'em_uso_fixo' %}bg-purple-100 text-purple-800 else %}bg-red-100 text-red-800{% endif %}">
+                                {{ ativo.get_status_display }}
+                            </span>
+                            {% if ativo.status == 'em_uso_fixo' %}
+                            <p class="text-sm text-purple-700 font-bold mt-2"><i data-lucide="map-pin"></i> Local: {{ ativo.localizacao }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase">Origem</p>
+                                <p class="text-sm text-white font-medium">{{ ativo.get_origem_display }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase">Valor Aquis.</p>
+                                <p class="text-sm text-white font-medium">R$ {{ ativo.valor|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if ativo.fornecedor_doador %}
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase">Fornecedor / Doador</p>
+                            <p class="text-sm text-white">{{ ativo.fornecedor_doador }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ativo.anexo_comprovante %}
+                        <div class="pt-4 border-t border-white/10">
+                            <a href="{{ ativo.anexo_comprovante.url }}" target="_blank" class="w-full flex justify-center items-center gap-2 px-4 py-2 border-2 border-brand-100 text-blue-400 bg-blue-900/40 backdrop-blur-md border border-blue-500/20 text-white hover:bg-blue-900/60 border border-blue-500/30 rounded-lg font-medium transition-colors">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                Ver Nota/Comprovante
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 2 e 3: Histórico -->
+            <div class="col-span-1 md:col-span-2 space-y-6">
+                
+                <!-- Manutenções -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm border-white/10 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="wrench" class="text-red-500 w-5 h-5"></i> Histórico de Manutenção</h3>
+                    <div class="space-y-4">
+                        {% for man in historico_manutencoes %}
+                        <div class="border border-white/10 rounded-lg p-4 {% if not man.data_retorno_real %}bg-red-900/20 border-red-200{% endif %}">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-bold text-white">{{ man.oficina_tecnico }}</p>
+                                    <p class="text-sm text-gray-300 mt-1">Defeito: {{ man.descricao_problema }}</p>
+                                </div>
+                                {% if not man.data_retorno_real %}
+                                <button @click="openConcluir = true; selectedManutencao = {{ man.id }}" class="px-3 py-1 bg-gray-900/40 backdrop-blur-md border border-white/10 border-red-300 text-red-700 rounded text-sm font-medium hover:bg-red-50">Registrar Retorno</button>
+                                {% else %}
+                                <span class="text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded">R$ {{ man.custo|floatformat:2 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-4 mt-3 text-xs text-gray-400 font-medium">
+                                <span>Enviado: {{ man.data_envio|date:"d/m/Y" }}</span>
+                                {% if man.data_retorno_real %}
+                                <span>Retornado: {{ man.data_retorno_real|date:"d/m/Y" }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-400 text-sm">Nenhum histórico de manutenção.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Emprestimos -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm border-white/10 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="clock" class="text-brand-500 w-5 h-5"></i> Histórico de Empréstimos</h3>
+                    <div class="space-y-4">
+                        {% for emp in historico_emprestimos %}
+                        <div class="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                            <div>
+                                <p class="font-bold text-white">{{ emp.membro_solicitante.get_full_name }}</p>
+                                <p class="text-xs text-gray-400">Retirou: {{ emp.data_retirada|date:"d/m/Y H:i" }} | Devolveu: {% if emp.data_devolucao_real %}{{ emp.data_devolucao_real|date:"d/m/Y H:i" }}{% else %}<span class="text-yellow-600 font-bold">Em Aberto</span>{% endif %}</p>
+                            </div>
+                            <div>
+                                <a href="{% url 'gerar_termo_pdf' ativo.id %}" target="_blank" class="text-gray-400 hover:text-brand-600"><i data-lucide="file-text" class="w-4 h-4"></i></a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-400 text-sm">Nenhum histórico de empréstimo.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ENVIAR MANUTENCAO -->
+    <div x-show="openManutencao" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="openManutencao" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openManutencao = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="openManutencao" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form method="POST" action="{% url 'enviar_manutencao' ativo.id %}">
+                    {% csrf_token %}
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg font-bold text-white mb-4">Enviar Equipamento para Oficina</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Oficina / Técnico Responsável</label>
+                                <input type="text" name="oficina_tecnico" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Descrição do Defeito</label>
+                                <textarea name="descricao_problema" required rows="3" class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 sm:ml-3 sm:w-auto sm:text-sm">Confirmar Envio</button>
+                        <button type="button" @click="openManutencao = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-white/10 shadow-sm px-4 py-2 bg-gray-900/40 backdrop-blur-md text-base font-medium text-gray-300 hover:bg-gray-800/50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONCLUIR MANUTENCAO -->
+    <div x-show="openConcluir" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="openConcluir" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openConcluir = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="openConcluir" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form method="POST" :action="'/almoxarifado/manutencao/' + selectedManutencao + '/concluir/'">
+                    {% csrf_token %}
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg font-bold text-white mb-4">Registrar Retorno da Oficina</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Custo do Conserto (R$)</label>
+                                <input type="number" step="0.01" min="0" name="custo" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Solução Aplicada</label>
+                                <textarea name="solucao_aplicada" rows="3" class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2" placeholder="O que foi consertado/trocado?"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 sm:ml-3 sm:w-auto sm:text-sm">Concluir e Disponibilizar Ativo</button>
+                        <button type="button" @click="openConcluir = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-white/10 shadow-sm px-4 py-2 bg-gray-900/40 backdrop-blur-md text-base font-medium text-gray-300 hover:bg-gray-800/50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ALOCAR USO FIXO -->
+    <div x-show="openAlocar" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="openAlocar" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openAlocar = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="openAlocar" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form method="POST" action="{% url 'alocar_uso_fixo' ativo.id %}">
+                    {% csrf_token %}
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg font-bold text-white mb-4">Alocar Ativo em Uso Fixo</h3>
+                        <p class="text-sm text-gray-300 mb-4">Ao alocar em uso fixo, este equipamento não aparecerá mais nas opções de empréstimo do Almoxarifado.</p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Sala / Localização Exata</label>
+                                <input type="text" name="localizacao" placeholder="Ex: Salão Principal, Cadeira 3" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full border border-white/10 rounded px-3 py-2">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 sm:ml-3 sm:w-auto sm:text-sm">Confirmar Alocação</button>
+                        <button type="button" @click="openAlocar = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-white/10 shadow-sm px-4 py-2 bg-gray-900/40 backdrop-blur-md text-base font-medium text-gray-300 hover:bg-gray-800/50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock content %}

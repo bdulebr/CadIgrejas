@@ -1,0 +1,138 @@
+Gemini, quero que voce seja uma desenvolvedora senior com experiencia e conhecimento na area de desenvolvimentos de sistemas e engenharia de software e ciencia de dados.
+quero que voce desenvolva para mim tod oum sistema que iremos criar para igreja Palavra de Vida Enseada.
+
+Regras:
+1. Sempre criar o codigo completo de forma que ele seja auto testavel, e auto corrigivel des do inicio para criar um motor de auto correção de banco de dados e sistema que iremos desenvolver.
+2. Auto teste, debug do codigo e Auto correção sempre que voce estiver terminando um sprint.
+3. Sempre que terminar os testes correção, adicionar em documento de .md para sempre ter um registro do que foi feito com ID, Data e Hora e tudo que foi feito com detalhes bem descrito para vocer mesmo consultar para não haver erro, e que cada arquivo de codigo dentro deste sistema tenha LOG completo no topo para um leitura perfieta que voce vai criar e manter aqui C:\Users\MarcosLira\Desktop\Marcos\Projeto
+4. O sistema sera desvolvido em uma maquina WIndows 10 PRO porem sera a produção sera posta em uma VPS linux ubuntu server 24.04.02 PRO usando dns pvenseada.org
+5. Todos sistema tera e sera personalizavel da forma que precisarmos para auterar qualquer função, banco de dados hibrido não importando o peso ou não
+6. VPS tera 32GB ram 8vCPU 400GB NMVE
+7. Sempre olhar C:\Users\MarcosLira\Desktop\Marcos\Projeto, aqui vai esta todas as regras e objeticos, informações importantes para desenvolver
+8. DIRETRIZ DE INICIALIZAÇÃO OBRIGATÓRIA E LEITURA DE CONTEXTO (PRE-FLIGHT CHECK):
+Antes de iniciar qualquer análise, planejamento de sprint, alteração de banco de dados ou geração de código, o motor de desenvolvimento (Antigravity/IA) DEVE, obrigatoriamente e sem exceções, ler e processar todos os documentos base do sistema (Tecnologias, Modulos, UI-Designer, Integracao, BancoDeDados_Modelagem, Metodologias_Arquitetura, etc.), além de ler as credenciais dos usuários administradores.
+Mais importante ainda: a IA deve ler todos os arquivos de LOG (.md) já gerados dentro do diretório C:\Users\MarcosLira\Desktop\Marcos\Projeto para entender exatamente o estado atual do projeto antes de prosseguir. Nenhuma ação será executada baseada em suposições, apenas na leitura direta dessa pasta raiz.
+
+/////////////////////////////////////////////////////////////////////
+
+
+NOME DO SISTEMA: "Palavra de Vida Enseada - Intranet"
+Versão: "0.0.1"
+Dev: "Marcos Roberto Lira"
+Setor: "Servidores da Palavra"
+email: "marcos@pvenseada.org"
+
+/////////////////////////////////////////////////////////////////////
+
+OBJETIVO:
+Desenvolver um sistema de gestão para nossa Igreja voltado para membros que servem, gestão financeira e ativos, escalas. parte tecnica que fica em oculto.
+Nosso principal hoje sera 4 Gestão de membros Voluntarios, Escala, Almoxarifado,Agerndda da Igreja.
+Esse 4 Modulos são o calcanhar do sistema. para depois quando precisar criar mais eles serão os que vão liderar
+O sistema precisa ser intuitivo, lembrando que Jovens, Meia Idade e Idosos que tem e não tem facilidade com tecnologia, as cores do sistema não podem se mistrurar com o fundo e virse e versa. as letras precisam ser legiveis e fontes intendiveis para humanos.
+
+
+/////////////////////////////////////////////////////////////////////
+
+
+HIRAQUIA - NIVEL DE ACESSO
+
+Super-admin: Acesso total
+Pastor Regente: Pastor Chefe que manda na Igreja e Tem acesso a Tudo, pode fazer tudo
+Pastor: Tem o mesmo poder de um lider
+Missionario: Tem o Mesmo poder de um lider
+Lider: Comanda um ou mais ministerio, pode adicionar membros Voluntarios, subir nivel de Hiraquia, Criar Escalas, Editar, excluir e Adicionar onde ele for lider
+Sub-lider: Pode Editar escalas na qual ele é sub-lider, Pode editar esclas mas não pode excluir ou criar. 
+Membro Voluntario: Pode ver suas escalas, adicionar informações de retirada no livro do almoxarifado/ativos, pedir folga de escala, avisar de indiponibilidade para dias esqpecificos, ver e editar seu proprio perfil.
+RESPEITE SEMPRE OS NIVEIS HIERARQUICOS!
+
+/////////////////////////////////////////////////////////////////////
+
+GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS
+
+Grupos e Ministerios são area dentro da igreja que não são tecnicas
+Setor é uma area tecnica
+Toda a igreja é dividida por esses 4 tipos, e todos seguem o mesmo papel e facilidade, todos os departamentos são perosnalizados e todos eles quando são criados precisam geraqr um ID unico fixo para que quando o membro for se cadastrar pela primeira vez ja se cadastrar usando o codigo do local e ja entrar direto como se fosse um codigo de convite
+cada ministerio/grupo/setor/departamento pode ter suas proprias categorias de habilidades, copetencias e funções, para que na hora da escala não tenha duvida para que aquela pessoa foi chamada. que sejam tudo personalizado de acordo com cada pratica, area, grupo, departamento e setor
+Alem disso, 
+RESPEITE SEMPRE OS NIVEIS HIERARQUICOS!
+
+/////////////////////////////////////////////////////////////////////
+
+
+PERFIL DE ACESSO/Membro
+
+Na teoria, pastor, lider, sub-lider, pessoas que trabalham para igreja são Membros e todos eles podem editar suas informações, independente.
+Nome completo, Data de nascimento, data de casamento, Com quem é casado, se tem filhos, nomes dos filhos, foto, CPF, RG, email, usuario e senha.
+Aqui tambem a pessoa pode alterar sua senha, colocar seus dias que não da para ir caso tenha, colocar foto, atualizar ela se precisar.
+Cada membro tera um dashboard interativo mostrando as escalas que ele esta, as datas do cultos e eventos para as proximas semanas, tera um local onde ele ve o dashboard do GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS que ele faz parte que pode sim se mais de um, e para isso precisa existir um inteligencia no sistema que não deixe repetir escala para os mesmos dias, exemplo: João ta escalo dia 13 paqra midia, mas dia 13 ele tambem esta na portaria, precisa se atentar o sistema para não cometer esse tipo de erro de escala, outra coisa, o sistema não pode ser comprometido.
+Lideres podem ser membros de outros ministerios e serem lideres de mais de um por isso é portante existir um dashboard so para lideres e sub-liders para que eles tenha a opção de escoher qual eles querem editar para não ter erro.
+No menu principal teremos um botão de login interativo e loga abaixo um auto cadastro somente com, nome, telefone, email e o codigo obrigatorio de GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS.
+Todo o GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS tera um quadro de avisos onde sera postado para todos a quem pertecem a eles mensagens, avisos, lembretes, com pop-up e notificação real.
+Todos os GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS terão um dashboard individual para mostrar informações de escala, para o membro ele podera vizualisar todas as informações referente a Escala, Mural de recados, avisos e lembrentes.
+todos os GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS para lideres e sub-lideres ele poderão personalizar tudo ali dentro, postar informações para membros, caso ele tenha mais de um GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS ele pode selecionar a qual ele quer visualizar e editar.
+RESPEITE SEMPRE OS NIVEIS HIERARQUICOS!
+
+
+
+
+/////////////////////////////////////////////////////////////////////
+
+ESCALAS:
+
+O Sistema de criação de escala sera feito de 3 formas, automatica, onde o sistema escolhe quem é daquele departamento que não servil o suficiente respeitando limites de escala para não cansar o membro, respeitando as dastas colocadas de indisponibilidade e gera para o mes todo de acordo com os cultos.
+de forma Manual, onde o lider e sub-lider conseuge escala de forma que arrasta e solta nome das pessoas gerando assim escala para o mes todo de forma padronizada e forma por escaner de exel onde o motor com ajuda da IA gemini gratuita vai fazer o OCR e ler o arquivo e gerar as escalas com os nomes que estão lá.
+Os cultos eles são padronizados: Quarta: (20:00 as 22:00) e Domingo: (09:30 as 11:30 e 19:30 as 21:30) Lembrando que sempre na segunda semana no domingo sera santa ceia nos dois horarios.
+Escala de eventos so da para fazer de forma manual.
+Tdodas as escalas precisam ser gerardas ao final em PDF e XLSX, CSV para enviar via email e por whatsapp pra que os lideres e sub-lideres entreghuem via grupo mou individual.
+Membro pode servir em mais de um GRUPOS, SETORES, MINISTERIOS E DEPARTAMENTOS.
+Sistema de escala pecisa ser intuitivo, facil e escalonavel
+Programações extras da igreja são: que não precisa ter escala mas pode deixar para escalar como opcional:
+Segunda: Culto de Oração: 19:30 as 20:30
+Terça: Atendimento Pastorial: 09:30 as 18:30 
+Quinta: Quinta do Saber 19:30 as 20:30
+Tem os ensaios que reuniões que a liderança e sub-liderança marca e isso totalmente opcional.
+RESPEITE SEMPRE OS NIVEIS HIERARQUICOS!
+
+
+/////////////////////////////////////////////////////////////////////
+
+
+MIDIA:
+
+Hoje a midia tem um problema com pessoas que precisam aceitar os termos de compartilhamento de dados, para postagem em redes sociais, aparecer a imagem na Live que fica garvada depois no youtube, voz e video.
+precisamos criar um local onde armazena os aceites destas pessoas, a midia vai gerar o documento, vai enviar de forma automatica para o email da pessoa, a pessoa aceita os termos e retorna para a o sistema que a pessoa aceito os termos.
+precisa ter um historico, e se precisar anexar mais documentos que tenha a opção de anexar junto a aquele aceite que foi dado.
+Esses documentos precisam ser facilmente editavel pela equipe da midia para que eles enviem tambem outros tipos de documentos para outras pessoas e assim vai!
+lembrando que documentos ja gerados e ja criados assinados pelo usuario não podem ser mexidos por nada, somente serem anexados mais documentos e depois poder baixar eles quando precisar!
+
+
+/////////////////////////////////////////////////////////////////////
+
+
+Almoxarifado:
+Aqui é o coração da gestão de tudo que tem dentro da igreja, esse modulo precisa ser dado atenção aqui, mas muita mesmo...
+teremos aqui um livro que quam for retirar algo (qualquer um cadastrado no sistema) precisa registrar saida do material com o consentimento do lider ou sub-lider deste setor, 
+esse setor ele vai controlar todos os ativos da igreja, não so eletronicos mas tambem materias descartaveis, alimentos tudo.
+Alimentos: O controle de alimento precisa ser objetivo e detalhado, com data de vencimento, uma locla so para monitorar eles, para ver quando vai vencer, para onde foi, quem retirou, se foi vendido, etc...
+Ativos da igreja geral: Asism como allimentos, precisamos ver anexar documetnos, ou seja um sistema de almoxarifado completo e complexo para gestão de todo o material da igreja sem exeções
+Qr code e codigo de barras, IDs unicos: Vamos usar essa forma para controle e gestão, assim como fica para o livro do almoxarifado de retirada para preenchimento via qr code que alguem vai ler e precher e retirar, assim que ler vai para o lider ou sub-lier ele ve quem retirou via notificação e email no web-app dele.
+Tera umdashboard proprio
+RESPEITE SEMPRE OS NIVEIS HIERARQUICOS!
+
+
+/////////////////////////////////////////////////////////////////////
+
+
+INTERGRAÇÂO
+
+existe um JSON da Google Workspaces e Google Cloud na pasta C:\Users\MarcosLira\Desktop\Marcos\Projeto
+Faça leitura dele sempre, precisamos da agenda, google drive, gmail e meet
+eles são os principais opção de intergração
+RESPEITE SEMPRE OS NIVEIS HIERARQUICOS!
+
+/////////////////////////////////////////////////////////////////////
+
+SEGURANÇA:
+O sistema usara hash nas senhas, LOGs imutaveis e consultaveis para ver oque fezm quando fez e data e hora. o sistema tera um auto sistema de correção de bugs e dados e bugs, o sistema tera bootstrap para inicializar de forma sempre correta e se faltar algo ele vai criar, vai fazr acontecer.
+o sistema usara ZERO-TRUST, tera um local para fazer backup automatico, um local para botar o sistema em mautenção e retirar depois, derrubar todos os que estão logados, tera anti, aplicara todas as regras de LGPD 2026 em todo o sistema.
+Quando qualquer usuario se cadatsar tera que da uma aceite em termos do site para coleta de dados, vai mexer com informações pessoais escalas e documentos que não pode ser compartilhados sem autorização da igreja e assim vai tudo seguindo regras juridicas e LGDP e entendivel com leis e normas.

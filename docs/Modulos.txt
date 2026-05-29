@@ -1,0 +1,33 @@
+NOME DO ARQUIVO: Modulos.txt
+PROJETO: Palavra de Vida Enseada - Intranet (Versão 0.0.1) [cite: 7]
+OBJETIVO: Definir as regras de negócio e limites dos quatro módulos principais.
+
+0. SEGURANÇA E HIERARQUIA (ZERO-TRUST) - APLICA-SE A TODOS OS MÓDULOS[cite: 42]:
+- Todo acesso valida o nível do usuário: Super-admin, Pastor Regente, Pastor, Missionário, Líder, Sub-líder e Membro Voluntário[cite: 10, 11].
+- O sistema usará hash nas senhas, e toda ação sensível criará Logs Imutáveis para auditoria (quem fez, quando e onde)[cite: 40].
+- Aplicação rigorosa das diretrizes da LGPD (2026) em formulários e coleta de dados[cite: 42].
+
+1. GESTÃO DE MEMBROS VOLUNTÁRIOS:
+- Cadastro interativo que exige a vinculação com o ID único gerado pelos Grupos, Setores, Ministérios ou Departamentos[cite: 12, 20].
+- Edição de perfil contendo: Nome completo, data de nascimento/casamento, dependentes, fotos, CPF, RG, e-mail e senha[cite: 16].
+- O membro pode definir dias de indisponibilidade e solicitar folgas[cite: 11, 17].
+
+2. ESCALAS:
+- Prevenção de Conflitos: O motor possui inteligência para impedir que um membro seja escalado para o mesmo horário em funções/departamentos distintos (ex: Mídia e Portaria)[cite: 18, 60].
+- 3 Métodos de Criação:
+  a) Automática: Preenche o mês inteiro baseando-se no limite de cansaço, indisponibilidades e histórico do membro[cite: 24].
+  b) Manual: Líderes e sub-líderes usam uma interface "arrastar e soltar"[cite: 25].
+  c) Excel OCR: Upload de planilha e leitura via inteligência artificial[cite: 25].
+- Horários Padronizados: Quarta (20h às 22h), Domingo (09:30 às 11:30 e 19:30 às 21:30)[cite: 26].
+- Geração de arquivos finais em PDF, XLSX e CSV[cite: 28].
+
+3. ALMOXARIFADO E ATIVOS:
+- Gestão e controle rigoroso de eletrônicos, descartáveis e alimentos[cite: 36].
+- Módulo de Alimentos: Monitoramento de lotes, datas de vencimento e destino[cite: 37].
+- Retiradas: O preenchimento da saída do material é feito por leitura de QR Code ou Código de Barras via câmera do PWA[cite: 37, 51].
+- A cada retirada, o líder ou sub-líder do setor recebe um alerta por notificação direta (push) e e-mail[cite: 38].
+
+4. MÍDIA E ACEITE LGPD:
+- Sistema de geração de documentos para uso de imagem/dados. O sistema envia automaticamente para o e-mail do membro[cite: 32].
+- O usuário aceita os termos, o que gera um hash único no banco de dados vinculando o aceite[cite: 57].
+- O PDF gerado é travado contra edições e salvo de forma imutável, permitindo apenas anexar novos documentos se necessário[cite: 35, 58].

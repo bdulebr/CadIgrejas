@@ -1,0 +1,21 @@
+NOME DO ARQUIVO: UI-Designer.txt
+PROJETO: Palavra de Vida Enseada - Intranet (Versão 0.0.1) [cite: 7]
+OBJETIVO: Diretrizes visuais e de experiência de usuário (UX/UI).
+
+1. ACESSIBILIDADE E CLAREZA:
+- As cores da interface não podem se misturar ou gerar baixo contraste com os fundos de tela[cite: 8].
+- A tipografia deve utilizar fontes inteligíveis, com letras legíveis e de fácil leitura, garantindo que membros de todas as idades (jovens a idosos) compreendam o sistema sem dificuldades[cite: 8, 9].
+- Utilização exclusiva do Tailwind CSS para manter a consistência deste design system responsivo[cite: 48].
+
+2. COMPORTAMENTO E NAVEGAÇÃO:
+- A interface não pode travar. O sistema deve usar HTMX para funcionar de maneira fluida (SPA), sem carregamentos brutos de tela inteira[cite: 49, 50].
+- O login principal deve ser interativo com opção de auto-cadastro imediatamente abaixo[cite: 20].
+
+3. DASHBOARDS E ESPAÇOS DE TRABALHO:
+- Membros: Dashboard pessoal com resumo de escalas em que estão envolvidos e eventos das próximas semanas[cite: 18].
+- Departamentos/Grupos: Cada área possuirá um painel individualizado com as escalas do setor, mural de recados e gestão de permissões para os líderes e sub-líderes[cite: 22, 23].
+- Se um líder gerencia múltiplos departamentos, a UI deve apresentar um seletor visual claro para que ele alterne entre eles sem risco de editar o local errado[cite: 19, 23].
+
+4. NOTIFICAÇÕES (PWA):
+- O design deve suportar alertas visuais pop-up na tela[cite: 21].
+- Suporte nativo para Notificações Push via Service Worker para chamados de mural, recados de liderança e retiradas no almoxarifado[cite: 21, 51].

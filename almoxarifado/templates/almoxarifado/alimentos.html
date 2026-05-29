@@ -1,0 +1,141 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Controle de Alimentos - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-8" x-data="{ openNovoLote: false }">
+    <div class="max-w-6xl mx-auto">
+        
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Estoque de Alimentos</h1>
+                <p class="text-gray-400">Gestão de lotes, validades e insumos para Cozinha e Ação Social.</p>
+            </div>
+            <div class="flex gap-2">
+                <button @click="openNovoLote = true" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm">
+                    + Adicionar Lote
+                </button>
+                <a href="{% url 'painel_inventario' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white hover:text-white hover:text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg backdrop-blur-md">Voltar</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for lote in lotes %}
+            <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm {% if lote.is_vencido %}border-red-300 bg-red-50{% else %}border-white/10{% endif %} p-6 relative overflow-hidden">
+                {% if lote.is_vencido %}
+                <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 uppercase rounded-bl-lg">
+                    Vencido
+                </div>
+                {% endif %}
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <a href="{% url 'alimento_detalhe' lote.id %}" class="font-bold text-lg text-white hover:text-brand-600 hover:underline">{{ lote.nome }}</a>
+                        <p class="text-xs font-semibold uppercase text-brand-600">{{ lote.departamento.nome }}</p>
+                    </div>
+                    <span class="bg-gray-800/60 backdrop-blur-md border border-white/10 text-white text-sm font-bold px-3 py-1 rounded-full">{{ lote.quantidade_atual }} un</span>
+                </div>
+                
+                <div class="space-y-2 text-sm text-gray-300 mb-6">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="calendar" class="text-gray-400"></i> Vencimento: <span class="{% if lote.is_vencido %}text-red-600 font-bold{% else %}text-white font-medium{% endif %}">{{ lote.data_vencimento|date:"d/m/Y" }}</span>
+                    </div>
+                    {% if lote.observacoes %}
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="info" class="text-gray-400 mt-0.5"></i> <span class="italic text-xs">{{ lote.observacoes }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex justify-end pt-4 border-t border-white/10">
+                    <form method="POST" action="{% url 'deletar_alimento' lote.id %}" onsubmit="return confirm('Deseja sinalizar este lote como consumido ou removê-lo do estoque?')">
+                        {% csrf_token %}
+                        <button type="submit" class="text-xs font-medium text-red-600 hover:text-red-800 bg-red-900/20 hover:bg-red-100 px-3 py-1.5 rounded transition-colors">
+                            Consumir/Remover Lote
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm border-white/10 p-12 text-center">
+                <p class="text-gray-400 font-medium">Nenhum lote de alimento cadastrado no momento.</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+    </div>
+
+    <!-- MODAL: CADASTRAR LOTE -->
+    <div x-show="openNovoLote" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="openNovoLote" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openNovoLote = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div x-show="openNovoLote" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form method="POST" action="{% url 'adicionar_alimento' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-white mb-4" id="modal-title">Adicionar Lote de Alimento</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300">Nome/Descrição (Ex: Arroz 5kg)</label>
+                                <input type="text" name="nome" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Qtd. Inicial (Unidades)</label>
+                                    <input type="number" min="1" name="quantidade" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Data de Vencimento</label>
+                                    <input type="date" name="data_vencimento" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Origem do Alimento</label>
+                                    <select name="origem" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                        <option value="doado">Doado (Membro/Instituição)</option>
+                                        <option value="comprado">Comprado (Nota Fiscal)</option>
+                                        <option value="banco_alimentos">Banco de Alimentos Municipal</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Doador / Supermercado</label>
+                                    <input type="text" name="fornecedor_doador" class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Depto Responsável</label>
+                                    <select name="departamento_id" required class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                        {% for dept in departamentos %}
+                                        <option value="{{ dept.id }}">{{ dept.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Prateleira/Localização</label>
+                                    <input type="text" name="localizacao" class="bg-gray-950/60 border-gray-700/80 text-white mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Foto do Lote / Caixa</label>
+                                    <input type="file" accept="image/*" name="foto_lote" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-gray-900/40 backdrop-blur-md border-white/10 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300">Anexo/Nota Fiscal</label>
+                                    <input type="file" accept="image/*,.pdf" name="anexo_nota_fiscal" class="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-gray-900/40 backdrop-blur-md border-white/10 text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Salvar Lote</button>
+                        <button type="button" @click="openNovoLote = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-white/10 shadow-sm px-4 py-2 bg-gray-900/40 backdrop-blur-md text-base font-medium text-gray-300 hover:bg-gray-800/50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

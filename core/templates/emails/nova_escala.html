@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Você foi escalado(a)!</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #334155; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .header { background-color: #2563eb; color: #ffffff; padding: 30px; text-align: center; }
+        .content { padding: 30px; }
+        .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+        h1 { margin: 0; font-size: 24px; font-weight: bold; }
+        .btn { display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+        .info-box { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            {% if departamento_logo %}
+            <img src="{{ departamento_logo }}" alt="Logo {{ departamento }}" style="max-height: 80px; margin-bottom: 10px; border-radius: 8px;">
+            {% endif %}
+            <h1>Nova Escala: {{ departamento }}</h1>
+        </div>
+        <div class="content">
+            <p>Olá, <strong>{{ nome }}</strong>!</p>
+            <p>Você foi escalado(a) para atuar no departamento <strong>{{ departamento }}</strong>. O líder responsável acaba de publicar a escala oficial.</p>
+            
+            <div class="info-box">
+                <p><strong>Data:</strong> {{ data }}</p>
+                <p><strong>Horário:</strong> {{ horario_inicio }} às {{ horario_fim }}</p>
+                {% if funcao %}
+                <p><strong>Função/Papel:</strong> {{ funcao }}</p>
+                {% endif %}
+            </div>
+            
+            <p>Caso haja algum imprevisto e você não possa comparecer, por favor, avise sua liderança com antecedência ou cadastre sua indisponibilidade no sistema.</p>
+            
+            <center>
+                <a href="{{ link_painel }}" class="btn">Acessar Minhas Escalas</a>
+            </center>
+        </div>
+        <div class="footer">
+            <p>Esta é uma mensagem automática da Intranet PVE. Por favor, não responda este e-mail.</p>
+        </div>
+    </div>
+</body>
+</html>

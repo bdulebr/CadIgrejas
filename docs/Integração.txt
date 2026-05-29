@@ -1,0 +1,15 @@
+NOME DO ARQUIVO: Integracao.txt
+PROJETO: Palavra de Vida Enseada - Intranet (Versão 0.0.1) [cite: 7]
+OBJETIVO: Mapear todas as comunicações externas e APIs ligadas ao sistema.
+
+1. WORKSPACE E GOOGLE CLOUD:
+- O sistema fará a leitura obrigatória e contínua do arquivo de credenciais JSON fornecido e armazenado em C:\Users\MarcosLira\Desktop\Marcos\Projeto[cite: 39].
+
+2. SERVIÇOS DO GOOGLE INTEGRADOS:
+- Google Agenda (Calendar): Gerenciamento do módulo "Agenda da Igreja", sincronizando eventos, cultos e reuniões extraoficiais[cite: 7, 39].
+- Google Drive: Serviço de armazenamento imutável para os documentos PDF gerados pelo Módulo de Mídia e arquivos anexados do Almoxarifado[cite: 35, 37, 39].
+- Gmail: Motor de disparo automático de e-mails para envio de PDFs de escalas (também via CSV/XLSX), termos de aceite de LGPD para membros e notificações de retiradas no Almoxarifado para líderes[cite: 28, 32, 38, 39].
+- Google Meet: Integração nativa para criação de links de reuniões de liderança e atendimentos[cite: 39].
+
+3. INTEGRAÇÃO COM INTELIGÊNCIA ARTIFICIAL:
+- Motor OCR de Escalas: Utilização da API gratuita da IA Gemini para ler e interpretar planilhas Excel submetidas por upload, gerando as escalas automaticamente dentro do sistema[cite: 25].
