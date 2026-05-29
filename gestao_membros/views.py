@@ -30,7 +30,7 @@ def listar_departamentos(request):
         Departamento.objects.create(nome=nome, categoria=categoria)
         messages.success(request, f'Departamento {nome} criado.')
     departamentos = Departamento.objects.all()
-    return render(request, 'gestao_membros/departamentos.html', {'departamentos': departamentos})
+    return render(request, 'gestao_membros/departamentos.html', {'departamentos': departamentos, 'is_master': is_super_admin(request.user)})
 
 @login_required
 @user_passes_test(is_lider)
@@ -221,7 +221,7 @@ def painel_membros(request):
         membros = Membro.objects.all()
     else:
         membros = Membro.objects.filter(departamentos_ativos__in=request.user.departamentos_liderados.all()).distinct()
-    return render(request, 'gestao_membros/gerenciador_membros.html', {'membros': membros})
+    return render(request, 'gestao_membros/gerenciador_membros.html', {'membros': membros, 'is_master': is_super_admin(request.user)})
 
 @login_required
 def exportar_membros_excel(request):
