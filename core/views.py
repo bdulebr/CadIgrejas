@@ -166,7 +166,8 @@ def editar_perfil(request):
         # Dados basicos
         user.first_name = request.POST.get('first_name', user.first_name)
         user.last_name = request.POST.get('last_name', user.last_name)
-        user.cpf = request.POST.get('cpf', user.cpf)
+        cpf_input = request.POST.get('cpf', user.cpf)
+        user.cpf = cpf_input if cpf_input else None
         user.rg = request.POST.get('rg', user.rg)
         user.telefone = request.POST.get('telefone', user.telefone)
         user.email = request.POST.get('email', user.email)
