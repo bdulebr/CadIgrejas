@@ -17,7 +17,7 @@ from .models import LogAuditoria, ConfiguracaoSistema
 import json
 import psutil
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Membro
 from axes.models import AccessAttempt
 from axes.utils import reset
@@ -28,6 +28,10 @@ from pathlib import Path
 from django.utils import timezone
 import datetime
 from gestao_membros.models import AvisoMural
+
+
+def is_super_admin(user):
+    return user.is_authenticated and (user.nivel_hierarquico == 'super_admin' or user.is_superuser)
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -204,9 +208,8 @@ def logout_view(request):
     return redirect('login')
 
 @login_required
+@user_passes_test(is_super_admin)
 def sysadmin_dashboard(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito ao Administrador do Sistema.")
         
     config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
     
@@ -267,9 +270,8 @@ def sysadmin_dashboard(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_toggle_manutencao(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
     
     if request.method == 'POST':
         config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
@@ -282,9 +284,8 @@ def sysadmin_toggle_manutencao(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_toggle_email(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
     
     if request.method == 'POST':
         config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
@@ -297,9 +298,8 @@ def sysadmin_toggle_email(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_desbloquear_ip(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     if request.method == 'POST':
         ip_address = request.POST.get('ip_address')
@@ -314,9 +314,8 @@ def sysadmin_desbloquear_ip(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_toggle_debug(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     if request.method == 'POST':
         env_file = Path(settings.BASE_DIR) / '.env'
@@ -356,9 +355,8 @@ def sysadmin_toggle_debug(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_salvar_env(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     if request.method == 'POST':
         env_file = Path(settings.BASE_DIR) / '.env'
@@ -398,9 +396,8 @@ def sysadmin_salvar_env(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_salvar_igreja(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     if request.method == 'POST':
         config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
@@ -422,9 +419,8 @@ def sysadmin_salvar_igreja(request):
     return redirect('sysadmin_dashboard')
 
 @login_required
+@user_passes_test(is_super_admin)
 def sysadmin_baixar_backup(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     import os
     db_path = 'db.sqlite3'
@@ -439,9 +435,8 @@ def sysadmin_baixar_backup(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_subir_backup(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     if request.method == 'POST':
         arquivo = request.FILES.get('backup_file')
@@ -462,9 +457,8 @@ def sysadmin_subir_backup(request):
     return redirect('sysadmin_dashboard')
 
 @login_required
+@user_passes_test(is_super_admin)
 def sysadmin_backup_gdrive(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     from intranet.services.gdrive import upload_backup_to_gdrive
     try:
@@ -477,9 +471,8 @@ def sysadmin_backup_gdrive(request):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_zerar_banco(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     if request.method == 'POST':
         # Mantemos Departamentos, ConfiguracaoSistema e TermoLGPD intactos.
@@ -661,7 +654,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 import datetime
 import json
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from core.models import Membro, TemplateDocumento
@@ -828,16 +821,14 @@ from django.http import JsonResponse
 from core.models import TemplateDocumento
 
 @login_required
+@user_passes_test(is_super_admin)
 def sysadmin_templates_list(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
     # Redireciona de volta para o sysadmin dashboard na aba de templates
     return redirect('/sysadmin/')
 
 @login_required
+@user_passes_test(is_super_admin)
 def sysadmin_template_editor(request, template_id=None):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     template_doc = None
     if template_id:
@@ -851,9 +842,8 @@ def sysadmin_template_editor(request, template_id=None):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_template_salvar(request, template_id=None):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return JsonResponse({"error": "Acesso restrito."}, status=403)
         
     if request.method == 'POST':
         try:
@@ -892,6 +882,7 @@ def sysadmin_template_salvar(request, template_id=None):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_template_deletar(request, template_id):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Acesso restrito.")
@@ -949,9 +940,8 @@ from core.utils_forensics import registrar_log_forense
 from core.services.pdf_auditoria import gerar_laudo_pericial_pdf
 
 @login_required
+@user_passes_test(is_super_admin)
 def sysadmin_logs_list(request):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     query = request.GET.get('q', '')
     logs_list = LogAuditoria.objects.all().order_by('-data_hora')
@@ -980,9 +970,8 @@ def sysadmin_logs_list(request):
     return render(request, 'core/pages/sysadmin_logs.html', context)
 
 @login_required
+@user_passes_test(is_super_admin)
 def sysadmin_log_pdf(request, log_id):
-    if request.user.nivel_hierarquico != 'super_admin' and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
         
     log = get_object_or_404(LogAuditoria, id=log_id)
     pdf_bytes = gerar_laudo_pericial_pdf(log)
@@ -993,6 +982,7 @@ def sysadmin_log_pdf(request, log_id):
 
 @login_required
 @csrf_exempt
+@user_passes_test(is_super_admin)
 def sysadmin_ux_tracker(request):
     """
     Recebe requests silenciosos do ux_tracker.js via POST/AJAX

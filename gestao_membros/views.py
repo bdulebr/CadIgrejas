@@ -10,13 +10,13 @@ from core.models import Membro
 import csv, openpyxl, datetime
 
 def is_super_admin(user):
-    return user.nivel_hierarquico == 'sysadmin'
+    return user.nivel_hierarquico == 'super_admin'
 
 def is_lider(user):
-    return user.nivel_hierarquico in ['lider', 'sysadmin']
+    return user.nivel_hierarquico in ['lider', 'super_admin']
 
 def is_sysadmin_ou_lider_global(user):
-    return user.nivel_hierarquico in ['sysadmin', 'lider_global']
+    return user.nivel_hierarquico in ['super_admin', 'lider_global']
 
 def enviar_email_html(destinatario, assunto, template_name, context):
     pass # mock para não quebrar a view
@@ -150,7 +150,38 @@ def excluir_aviso(request, aviso_id):
 
 @login_required
 def exportar_aviso_pdf(request, aviso_id):
-    return HttpResponse("Função de exportar PDF será implementada em breve.")
+    aviso = get_object_or_404(AvisoMural, id=aviso_id)
+    from django.template.loader import render_to_string
+    import os
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Aviso_Mural_{aviso.id}.pdf"'
+    
+    # Gerador Básico via ReportLab
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import inch
+    
+    p = canvas.Canvas(response, pagesize=A4)
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(1 * inch, 10.5 * inch, "INTRANET PV ENSEADA")
+    p.setFont("Helvetica", 12)
+    p.drawString(1 * inch, 10 * inch, f"Aviso Oficial: {aviso.titulo}")
+    p.drawString(1 * inch, 9.5 * inch, f"Data de Publicação: {aviso.data_publicacao.strftime('%d/%m/%Y %H:%M')}")
+    p.drawString(1 * inch, 9.0 * inch, "Conteúdo:")
+    
+    # Strip HTML and write basic text
+    from django.utils.html import strip_tags
+    import textwrap
+    text = strip_tags(aviso.conteudo)
+    y_position = 8.5 * inch
+    for line in textwrap.wrap(text, width=80):
+        p.drawString(1 * inch, y_position, line)
+        y_position -= 0.25 * inch
+        
+    p.showPage()
+    p.save()
+    return response
 
 @login_required
 def detalhes_departamento(request, dep_id):
@@ -194,7 +225,18 @@ def painel_membros(request):
 
 @login_required
 def exportar_membros_excel(request):
-    return HttpResponse("Função de exportar Excel será implementada em breve.")
+    import csv
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="membros.csv"'
+    
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Nome Completo', 'Email', 'Telefone', 'Nivel Hierarquico', 'Data de Nascimento'])
+    
+    membros = Membro.objects.all().order_by('nome_completo')
+    for m in membros:
+        writer.writerow([m.nome_completo, m.email, m.telefone, m.get_nivel_hierarquico_display(), m.data_nascimento.strftime('%d/%m/%Y') if m.data_nascimento else 'N/A'])
+        
+    return response
 
 @login_required
 def importar_membros_excel(request):
