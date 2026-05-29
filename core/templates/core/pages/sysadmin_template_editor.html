@@ -65,9 +65,9 @@
         <div class="bg-blue-900/20 border border-blue-800 p-4 rounded-lg mb-6">
             <h4 class="text-blue-400 font-bold mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Variáveis Disponíveis (Copie e Cole nos Textos do Editor)</h4>
             <p class="text-gray-300 text-sm">
-                <b>Comum:</b> <code>{{ "{{" }} nome {{ "}}" }}</code>, <code>{{ "{{" }} igreja.nome {{ "}}" }}</code><br>
-                <b>Escalas:</b> <code>{{ "{{" }} departamento.nome {{ "}}" }}</code>, <code>{{ "{{" }} departamento.logo.url {{ "}}" }}</code>, <code>{{ "{{" }} data {{ "}}" }}</code>, <code>{{ "{{" }} horario_inicio {{ "}}" }}</code>, <code>{{ "{{" }} horario_fim {{ "}}" }}</code>, <code>{{ "{{" }} link_painel {{ "}}" }}</code><br>
-                <b>Almoxarifado:</b> <code>{{ "{{" }} item.nome {{ "}}" }}</code>, <code>{{ "{{" }} data_devolucao {{ "}}" }}</code>
+                <b>Comum:</b> <code>{% templatetag openvariable %} nome {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} igreja.nome {% templatetag closevariable %}</code><br>
+                <b>Escalas:</b> <code>{% templatetag openvariable %} departamento.nome {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} departamento.logo.url {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} data {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} horario_inicio {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} horario_fim {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} link_painel {% templatetag closevariable %}</code><br>
+                <b>Almoxarifado:</b> <code>{% templatetag openvariable %} item.nome {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} data_devolucao {% templatetag closevariable %}</code>
             </p>
         </div>
 

@@ -221,7 +221,7 @@ def painel_membros(request):
         membros = Membro.objects.all()
     else:
         membros = Membro.objects.filter(departamentos_ativos__in=request.user.departamentos_liderados.all()).distinct()
-    return render(request, 'gestao_membros/membros.html', {'membros': membros})
+    return render(request, 'gestao_membros/gerenciador_membros.html', {'membros': membros})
 
 @login_required
 def exportar_membros_excel(request):
