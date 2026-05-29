@@ -65,3 +65,8 @@ django-crispy-forms # Renderização avançada de formulários
 crispy-tailwind     # Pacote de Tailwind para os formulários Crispy
 pytest-django       # Framework líder para testes automatizados avançados
 markdown            # Para renderização de Markdown direto no painel
+
+# Dependências para Deploy em Produção Linux (VPS)
+gunicorn==22.0.0
+psycopg2-binary==2.9.9
+dj-database-url==2.1.0
