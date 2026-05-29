@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
 from django.conf import settings
+from django.utils import timezone
 from django.core.mail import send_mail
 
 from .models import Departamento, Habilidade, Funcao, ConfiguracaoSlotEscala, AvisoMural, AvisoAnexo
@@ -42,9 +43,33 @@ def painel_lider(request):
     
     membros_pendentes = Membro.objects.filter(is_active=False)
     
+    depto_id = request.GET.get('depto_id') or request.GET.get('depto')
+    if depto_id:
+        departamento_ativo = get_object_or_404(Departamento, id=depto_id)
+        if not is_super_admin(request.user) and departamento_ativo not in departamentos:
+            return HttpResponseForbidden("Sem permissão para gerenciar este setor.")
+    else:
+        departamento_ativo = departamentos.first() if departamentos.exists() else None
+
+    membros_aprovados = departamento_ativo.membros_ativos.filter(is_active=True) if departamento_ativo else []
+
+    # Indisponibilidades - mock ou real
+    try:
+        from escalas.models import Indisponibilidade
+        hoje = timezone.now().date()
+        indisponibilidades = Indisponibilidade.objects.filter(
+            membro__in=membros_aprovados, 
+            data_fim__gte=hoje
+        ).order_by('data_inicio')
+    except ImportError:
+        indisponibilidades = []
+
     return render(request, 'gestao_membros/painel_lider.html', {
         'departamentos': departamentos,
-        'membros_pendentes': membros_pendentes
+        'membros_pendentes': membros_pendentes,
+        'departamento_ativo': departamento_ativo,
+        'membros_aprovados': membros_aprovados,
+        'indisponibilidades': indisponibilidades
     })
 
 @login_required
