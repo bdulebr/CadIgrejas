@@ -21,16 +21,16 @@ urlpatterns = [
     path('escalas/competencia/<int:comp_id>/publicar/', views.publicar_competencia, name='publicar_competencia'),
     path('escalas/competencia/deletar-slot/<int:escala_id>/', views.deletar_slot_escala, name='deletar_slot_escala'),
     path('escalas/gerar-automatica/', views.gerar_escala_automatica, name='gerar_escala_automatica'),
-    
+
     # Gestão de Cultos e Eventos (Super Admin)
     path('escalas/cultos/', views.gerenciar_cultos, name='gerenciar_cultos'),
     path('escalas/cultos/criar/', views.criar_culto, name='criar_culto'),
     path('escalas/cultos/<int:culto_id>/editar/', views.editar_culto, name='editar_culto'),
     path('escalas/cultos/<int:culto_id>/excluir/', views.excluir_culto, name='excluir_culto'),
-    
+
     path('escalas/api/alocar-slot/', views.alocar_slot_api, name='alocar_slot_api'),
     path('escalas/api/remover-slot/', views.remover_slot_api, name='remover_slot_api'),
-    
+
     path('minhas-escalas/', views.minhas_escalas, name='minhas_escalas'),
     path('escalas/pdf/', views.exportar_escalas_pdf, name='exportar_escalas_pdf'),
     path('escalas/excel/', views.exportar_escalas_excel, name='exportar_escalas_excel'),
@@ -39,4 +39,5 @@ urlpatterns = [
     path('escalas/indisponibilidade/<int:ind_id>/remover/', views.remover_indisponibilidade, name='remover_indisponibilidade'),
     path('escalas/disponibilidade-fixa/', views.salvar_disponibilidade_fixa, name='salvar_disponibilidade_fixa'),
     path('escalas/baixar-publica/', views.baixar_escala_publica, name='baixar_escala_publica'),
+    path('escalas/importar-ocr/', views.importar_escala_ocr, name='importar_escala_ocr'),
 ]

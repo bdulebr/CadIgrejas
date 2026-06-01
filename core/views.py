@@ -1106,3 +1106,55 @@ def sysadmin_ux_tracker(request):
             pass
 
     return JsonResponse({'status': 'ignored'})
+
+@login_required
+def ai_insights_bi(request):
+    try:
+        from intranet.services.groq_ai import obter_client_groq
+        client = obter_client_groq()
+        if not client:
+            return HttpResponse('<div class="p-4 bg-red-900/50 text-red-200 rounded-lg">Erro: Chave do Groq não configurada.</div>')
+
+        # Coletar estatísticas globais
+        from core.models import Membro
+        from gestao_membros.models import Departamento
+        from escalas.models import CompetenciaEscala
+        from almoxarifado.models import Ativo, Emprestimo
+        from django.utils import timezone
+
+        hoje = timezone.now().date()
+        total_membros = Membro.objects.filter(is_active=True).count()
+        membros_inativos = Membro.objects.filter(is_active=False).count()
+        total_deptos = Departamento.objects.count()
+        escalas_ativas = CompetenciaEscala.objects.filter(status='publicada').count()
+        ativos = Ativo.objects.count()
+
+        import json
+        context_data = {
+            'membros_ativos': total_membros,
+            'membros_inativos': membros_inativos,
+            'total_departamentos': total_deptos,
+            'escalas_publicadas': escalas_ativas,
+            'itens_patrimonio': ativos
+        }
+
+        prompt = f"""
+        Você é um Diretor de Inteligência de Negócios (BI) e Estratégia de uma Igreja.
+        Analise o resumo de dados operacionais abaixo e retorne um pequeno relatório de insights em HTML (sem usar tags Markdown como ```html).
+        Use classes TailwindCSS (text-blue-400, font-bold, bg-gray-800, p-4, rounded-lg) para formatar a resposta.
+        Dê 3 insights valiosos de gestão para o pastor/diretoria baseados nestes números:
+
+        {json.dumps(context_data)}
+        """
+
+        response = client.chat.completions.create(
+            model='llama-3.3-70b-versatile',
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.7
+        )
+
+        html_response = response.choices[0].message.content.replace('```html', '').replace('```', '')
+        return HttpResponse(html_response)
+
+    except Exception as e:
+        return HttpResponse(f'<div class="p-4 bg-red-900/50 text-red-200 rounded-lg">Erro ao conectar com a LPU Groq: {str(e)}</div>')

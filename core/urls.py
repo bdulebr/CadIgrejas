@@ -47,14 +47,14 @@ urlpatterns = [
     path('sysadmin/templates/<int:template_id>/salvar/', views.sysadmin_template_salvar, name='sysadmin_template_salvar'),
     path('sysadmin/templates/salvar/', views.sysadmin_template_salvar, name='sysadmin_template_salvar_novo'),
     path('sysadmin/templates/<int:template_id>/deletar/', views.sysadmin_template_deletar, name='sysadmin_template_deletar'),
-    
+
     # Links Rápidos
     path('sysadmin/links/salvar/', views.sysadmin_link_salvar, name='sysadmin_link_salvar'),
     path('sysadmin/links/<int:link_id>/deletar/', views.sysadmin_link_deletar, name='sysadmin_link_deletar'),
-    
+
     # Auditoria Zero-Trust Forense
     path('sysadmin/logs/', views.sysadmin_logs_list, name='sysadmin_logs'),
     path('sysadmin/logs/tracker/', views.sysadmin_ux_tracker, name='sysadmin_ux_tracker'),
     path('sysadmin/logs/<int:log_id>/pdf/', views.sysadmin_log_pdf, name='sysadmin_log_pdf'),
+    path('bi/ai-insights/', views.ai_insights_bi, name='ai_insights_bi'),
 ]
-
