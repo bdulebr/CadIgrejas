@@ -177,9 +177,13 @@
             <label class="block text-sm font-bold text-gray-300 mb-1">Tamanho de Camiseta</label>
             <select name="tamanho_camisa" class="w-full px-4 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
                 <option value="">Selecione...</option>
-                {% for t in "PP P M G GG XG XXG"|split %}
-                    <option value="{{ t }}" {% if membro.tamanho_camisa == t %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
+                <option value="PP" {% if membro.tamanho_camisa == "PP" %}selected{% endif %}>PP</option>
+                <option value="P" {% if membro.tamanho_camisa == "P" %}selected{% endif %}>P</option>
+                <option value="M" {% if membro.tamanho_camisa == "M" %}selected{% endif %}>M</option>
+                <option value="G" {% if membro.tamanho_camisa == "G" %}selected{% endif %}>G</option>
+                <option value="GG" {% if membro.tamanho_camisa == "GG" %}selected{% endif %}>GG</option>
+                <option value="XG" {% if membro.tamanho_camisa == "XG" %}selected{% endif %}>XG</option>
+                <option value="XXG" {% if membro.tamanho_camisa == "XXG" %}selected{% endif %}>XXG</option>
             </select>
         </div>
         <div>

@@ -295,9 +295,9 @@ def exportar_membros_excel(request):
     writer = csv.writer(response, delimiter=';')
     writer.writerow(['Nome Completo', 'Email', 'Telefone', 'Nivel Hierarquico', 'Data de Nascimento'])
     
-    membros = Membro.objects.all().order_by('nome_completo')
+    membros = Membro.objects.all().order_by('first_name', 'last_name')
     for m in membros:
-        writer.writerow([m.nome_completo, m.email, m.telefone, m.get_nivel_hierarquico_display(), m.data_nascimento.strftime('%d/%m/%Y') if m.data_nascimento else 'N/A'])
+        writer.writerow([m.get_full_name(), m.email, m.telefone, m.get_nivel_hierarquico_display(), m.data_nascimento.strftime('%d/%m/%Y') if m.data_nascimento else 'N/A'])
         
     return response
 
