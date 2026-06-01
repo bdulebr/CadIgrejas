@@ -32,4 +32,5 @@ urlpatterns = [
     path('almoxarifado/scanner/', views.scanner_qr, name='scanner_qr'),
     path('almoxarifado/pegar-item/', views.pegar_item_almoxarifado, name='pegar_item_almoxarifado'),
     path('almoxarifado/livro-caixa/', views.livro_caixa_almoxarifado, name='livro_caixa_almoxarifado'),
+    path('almoxarifado/ai-insights/', views.ai_insights_almoxarifado, name='ai_insights_almoxarifado'),
 ]

@@ -197,7 +197,7 @@ EMAIL_HOST_USER = env('EMAIL_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('EMAIL_USER', default='intranet@pvenseada.org')
 
-GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
+GROQ_API_KEY = env('GROQ_API_KEY', default='')
 
 GDRIVE_FOLDER_ID = env('GDRIVE_FOLDER_ID', default='')
 GCALENDAR_ID = env('GCALENDAR_ID', default='primary')

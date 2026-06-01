@@ -5,7 +5,7 @@
 {% block content %}
 <div class="min-h-screen bg-transparent p-8" x-data="{ openUpload: false, activeTab: 'geral' }">
     <div class="max-w-7xl mx-auto">
-        
+
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-white flex items-center gap-3">
@@ -19,7 +19,7 @@
                     <i data-lucide="database"></i> Acessar Painel Nativo Django (Admin)
                 </a>
             </div>
-            
+
             <form method="POST" action="{% url 'sysadmin_toggle_manutencao' %}" onsubmit="return confirm('ATENÇÃO: Ligar o modo de manutenção desconectará todos os usuários (exceto Admins) imediatamente. Continuar?')">
                 {% csrf_token %}
                 <button type="submit" class="px-6 py-2 rounded-lg font-bold shadow-sm transition-colors text-white {% if config.is_maintenance %}bg-red-600 hover:bg-red-700{% else %}bg-gray-800 hover:bg-black{% endif %}">
@@ -128,7 +128,7 @@
                         <p class="text-sm text-gray-500">Tamanho Atual: {{ db_size_mb|floatformat:2 }} MB</p>
                     </div>
                 </div>
-                
+
                 <div class="flex flex-col gap-3 w-full md:w-auto">
                     <div class="flex gap-3 w-full">
                         <button @click="openUpload = true" class="w-full md:w-auto px-6 py-3 bg-white/10 hover:bg-gray-200 text-gray-200 rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
@@ -151,7 +151,7 @@
         <div x-show="activeTab === 'instituicao'" style="display: none;" x-transition>
             <div class="bg-white/5 backdrop-blur-md text-white p-8 rounded-2xl shadow-sm border border-white/10 mb-8">
                 <p class="text-sm text-gray-500 mb-6">Estas informações são injetadas dinamicamente nos rodapés, e-mails, relatórios em PDF e Títulos/Abas de navegador do sistema.</p>
-                
+
                 <form method="POST" action="{% url 'sysadmin_salvar_igreja' %}" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {% csrf_token %}
                     <div>
@@ -188,7 +188,7 @@
                             <input type="file" name="favicon" accept=".ico,.png,.jpg,.jpeg,.svg" class="bg-gray-950/60 text-sm text-gray-400 w-full px-4 py-1.5 border border-white/20 rounded-lg file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
                         </div>
                     </div>
-                    
+
                     <div class="col-span-1 md:col-span-2 mt-2">
                         <button type="submit" class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
                             <i data-lucide="save"></i> Salvar Dados da Instituição
@@ -206,7 +206,7 @@
                     <i data-lucide="plus"></i> Criar Novo Template
                 </a>
             </div>
-            
+
             <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden mb-8">
                 <table class="w-full text-left text-sm text-gray-300">
                     <thead class="bg-gray-900/50 text-xs uppercase font-bold text-gray-400">
@@ -251,14 +251,14 @@
                     </tbody>
                 </table>
             </div>
-            
+
             <!-- Motor de E-mail Global -->
             <div class="bg-white/5 backdrop-blur-md text-white p-6 rounded-2xl shadow-sm border border-white/10 flex flex-col justify-between">
                 <div class="mb-4">
                     <h3 class="text-lg font-bold text-white mb-1">Disparo Global de E-mails</h3>
                     <p class="text-sm text-gray-500">Controla o disparo de e-mails em todos os módulos (Escalas, Avisos, Cadastro). <b>Útil para manutenção silenciosa</b>.</p>
                 </div>
-                
+
                 <div class="flex-grow flex items-center justify-center mb-4">
                     {% if config.envios_email_ativos %}
                     <div class="bg-blue-100 text-blue-800 px-6 py-3 rounded-full font-bold flex items-center gap-2 border border-blue-300">
@@ -270,7 +270,7 @@
                     </div>
                     {% endif %}
                 </div>
-                
+
                 <form method="POST" action="{% url 'sysadmin_toggle_email' %}">
                     {% csrf_token %}
                     <button type="submit" class="w-full py-2 rounded-lg font-bold text-sm transition-colors text-white {% if config.envios_email_ativos %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %}">
@@ -289,7 +289,7 @@
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-200">Gerenciador de Links Rápidos (Sidebar)</h2>
             </div>
-            
+
             <div class="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl mb-8">
                 <form method="POST" action="{% url 'sysadmin_link_salvar' %}" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     {% csrf_token %}
@@ -308,7 +308,7 @@
                     </div>
                 </form>
             </div>
-            
+
             <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden mb-8">
                 <table class="w-full text-left text-sm text-gray-300">
                     <thead class="bg-gray-900/50 text-xs uppercase font-bold text-gray-400">
@@ -357,7 +357,7 @@
                         <h3 class="text-lg font-bold text-white mb-1">Proteção contra Força Bruta</h3>
                         <p class="text-sm text-gray-500">Bloqueios ativos por excesso de tentativas de senha (Axes).</p>
                     </div>
-                    
+
                     {% if tentativas_bloqueadas %}
                     <div class="max-h-40 overflow-y-auto mb-4 border border-white/10 rounded-lg">
                         <ul class="divide-y divide-gray-100">
@@ -395,7 +395,7 @@
                         <h3 class="text-lg font-bold text-white mb-1">Modo de Depuração (DEBUG)</h3>
                         <p class="text-sm text-gray-500">Controla a exibição de erros detalhados. <b>Obrigatório estar DESLIGADO em produção</b> para evitar vazamento de dados confidenciais.</p>
                     </div>
-                    
+
                     <div class="flex-grow flex items-center justify-center mb-4">
                         {% if is_debug_active %}
                         <div class="animate-pulse bg-red-100 text-red-800 px-6 py-3 rounded-full font-bold flex items-center gap-2 border border-red-300">
@@ -407,7 +407,7 @@
                         </div>
                         {% endif %}
                     </div>
-                    
+
                     <form method="POST" action="{% url 'sysadmin_toggle_debug' %}" onsubmit="return confirm('Alterar o modo DEBUG irá reiniciar o servidor web instantaneamente. Confirmar?')">
                         {% csrf_token %}
                         <button type="submit" class="w-full py-2 rounded-lg font-bold text-sm transition-colors text-white {% if is_debug_active %}bg-green-600 hover:bg-green-700{% else %}bg-red-600 hover:bg-red-700{% endif %}">
@@ -425,18 +425,18 @@
             <div class="bg-white/5 backdrop-blur-md text-white p-8 rounded-2xl shadow-sm border border-white/10 mb-6">
                 <h3 class="text-xl font-bold text-white mb-1">Credenciais do Servidor (SMTP e APIs)</h3>
                 <p class="text-sm text-gray-500 mb-6">Ao salvar, o sistema reiniciará para aplicar os dados com segurança. Os valores atuais ficam ocultos (mascarados) se já configurados.</p>
-                
+
                 <form method="POST" action="{% url 'sysadmin_salvar_env' %}" class="grid grid-cols-1 md:grid-cols-2 gap-6" onsubmit="return confirm('Alterar credenciais de SMTP e IA pode tirar o sistema do ar temporariamente. Confirmar?')">
                     {% csrf_token %}
                     <div class="col-span-1 md:col-span-2">
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Google Gemini AI Token</label>
-                        <input type="password" name="GEMINI_API_KEY" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.GEMINI_API_KEY_MASKED }}" placeholder="AIzaSy...">
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Google Groq AI Token</label>
+                        <input type="password" name="GROQ_API_KEY" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.GROQ_API_KEY_MASKED }}" placeholder="AIzaSy...">
                     </div>
                     <div class="col-span-1 md:col-span-2">
                         <label class="block text-sm font-bold text-gray-300 mb-1">Domínio do Sistema (BASE_URL) - <i>Única Fonte da Verdade</i></label>
                         <input type="text" name="BASE_URL" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.BASE_URL }}" placeholder="http://127.0.0.1:8000 ou https://intranet.pvenseada.org">
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-bold text-gray-300 mb-1">SMTP Host (Servidor de E-mail)</label>
                         <input type="text" name="EMAIL_HOST" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.EMAIL_HOST }}" placeholder="smtp.gmail.com">
@@ -453,7 +453,7 @@
                         <label class="block text-sm font-bold text-gray-300 mb-1">Senha (App Password)</label>
                         <input type="password" name="EMAIL_PASSWORD" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.EMAIL_PASSWORD_MASKED }}" placeholder="Deixe em branco para não alterar">
                     </div>
-                    
+
                     <div class="col-span-1 md:col-span-2 mt-2">
                         <button type="submit" class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
                             <i data-lucide="save"></i> Salvar Credenciais no Servidor (.env)
@@ -467,7 +467,7 @@
                     <h3 class="text-xl font-bold text-red-900">Zerar Dados de Operação (Manter Usuários)</h3>
                     <p class="text-sm text-red-700 max-w-2xl mt-1">Isso apagará permanentemente todos os registros de Estoque, Empréstimos, Manutenções, Transações, Mídias LGPD e Escalas. Serão preservados <b>apenas os Usuários (Membros) e as Configurações do Sistema</b>.</p>
                 </div>
-                
+
                 <form method="POST" action="{% url 'sysadmin_zerar_banco' %}" onsubmit="return confirm('TEM CERTEZA ABSOLUTA? ISSO NÃO PODE SER DESFEITO!')">
                     {% csrf_token %}
                     <button type="submit" class="w-full md:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
@@ -488,7 +488,7 @@
                         <div class="bg-white/5 backdrop-blur-md text-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                             <h3 class="text-xl font-bold text-red-600 mb-2 flex items-center gap-2"><i data-lucide="alert-octagon"></i> Restaurar Banco de Dados</h3>
                             <p class="text-sm text-gray-400 mb-6">Esta ação irá substituir integralmente os dados atuais pelo arquivo `.sqlite3` que você fizer upload. Recomenda-se colocar o sistema em Manutenção antes de prosseguir.</p>
-                            
+
                             <div class="border-2 border-dashed border-white/20 rounded-xl p-8 text-center bg-white/5 hover:bg-gray-700/50 transition-colors cursor-pointer relative">
                                 <i data-lucide="upload" class="text-4xl text-gray-400 mb-2"></i>
                                 <p class="text-gray-400 font-medium">Clique para selecionar o arquivo db.sqlite3</p>
