@@ -55,16 +55,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
         'django_htmx',
     'axes',
-    
+
     # API & Mobile App Ready
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'api',
-    
+
     # Local apps
     'core',
     'gestao_membros',
@@ -88,6 +88,7 @@ MIDDLEWARE = [
     'core.middleware.ForcarTrocaSenhaMiddleware',
     'core.middleware.RequestMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
+    'core.error_middleware.JsonErrorLoggerMiddleware',
 ]
 
 # Configurações do Django-Axes (Proteção contra Força Bruta)
