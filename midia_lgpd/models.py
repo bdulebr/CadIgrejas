@@ -83,6 +83,13 @@ class ArquivoMidia(models.Model):
         return self.titulo
 
 class DocumentoTemplate(models.Model):
+    TIPO_CHOICES = [
+        ('pdf_lgpd', 'PDF Assinatura (LGPD/Contratos)'),
+        ('pdf_escala', 'PDF Escala de Voluntários'),
+        ('email', 'E-mail do Sistema')
+    ]
+    tipo_documento = models.CharField(max_length=20, choices=TIPO_CHOICES, default='pdf_lgpd')
+    identificador_sistema = models.CharField(max_length=50, blank=True, null=True, help_text="Código interno para disparo automático (ex: email_boas_vindas)", unique=True)
     titulo = models.CharField(max_length=200, help_text="Ex: Autorização de Acampamento")
     descricao = models.TextField(blank=True, null=True)
     conteudo_base = models.TextField(help_text="Corpo do contrato/documento. Use {{NOME}} para variáveis.")

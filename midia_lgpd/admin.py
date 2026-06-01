@@ -23,21 +23,18 @@ from .models import PastaVirtual, CompartilhamentoPasta, DocumentoTemplate, Docu
 
 @admin.register(PastaVirtual)
 class PastaVirtualAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'dono', 'parent_folder', 'criado_em')
-    search_fields = ('nome', 'dono__first_name')
-    list_filter = ('criado_em',)
+    list_display = ('nome', 'departamento')
+    search_fields = ('nome',)
 
 @admin.register(CompartilhamentoPasta)
 class CompartilhamentoPastaAdmin(admin.ModelAdmin):
-    list_display = ('pasta', 'membro', 'permissao', 'compartilhado_por')
-    list_filter = ('permissao',)
+    list_display = ('pasta', 'departamento_destino')
 
 @admin.register(DocumentoTemplate)
 class DocumentoTemplateAdmin(admin.ModelAdmin):
-    list_display = ('titulo', 'criado_por', 'criado_em')
+    list_display = ('titulo',)
     search_fields = ('titulo',)
 
 @admin.register(DocumentoGerado)
 class DocumentoGeradoAdmin(admin.ModelAdmin):
-    list_display = ('template', 'membro_alvo', 'gerado_por', 'data_geracao')
-    list_filter = ('data_geracao', 'template')
+    list_display = ('template', 'email_destino')

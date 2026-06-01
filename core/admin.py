@@ -46,6 +46,6 @@ from .models import LinkRapido
 
 @admin.register(LinkRapido)
 class LinkRapidoAdmin(admin.ModelAdmin):
-    list_display = ('titulo', 'url', 'ordem', 'criado_em')
+    list_display = ('titulo', 'url', 'ordem')
     search_fields = ('titulo', 'url')
     ordering = ('ordem',)

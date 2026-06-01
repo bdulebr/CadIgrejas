@@ -17,6 +17,5 @@ from .models import CultoEvento
 
 @admin.register(CultoEvento)
 class CultoEventoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'data_hora', 'recorrente', 'ativo')
-    list_filter = ('recorrente', 'ativo', 'data_hora')
+    list_display = ('nome',)
     search_fields = ('nome',)

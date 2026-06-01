@@ -28,6 +28,8 @@ urlpatterns = [
     # Documentos Avançados
     path('documentos/', views.painel_documentos, name='painel_documentos'),
     path('documentos/template/criar/', views.criar_template_documento, name='criar_template_documento'),
+    path('documentos/template/editar/<int:id>/', views.editar_template_documento, name='editar_template_documento'),
+    path('documentos/template/excluir/<int:id>/', views.excluir_template_documento, name='excluir_template_documento'),
     path('documentos/enviar/', views.enviar_documento, name='enviar_documento'),
     path('documentos/assinar/<uuid:token>/', views.assinar_documento_externo, name='assinar_documento_externo'),
 ]

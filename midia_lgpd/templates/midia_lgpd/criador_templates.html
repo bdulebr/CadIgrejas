@@ -41,7 +41,7 @@
         <a href="{% url 'painel_documentos' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg backdrop-blur-md">Voltar</a>
     </div>
 
-    <form method="POST" action="{% url 'criar_template_documento' %}" @submit="prepareForm(event)" class="space-y-6">
+    <form method="POST" action="{% if is_edit %}{% url 'editar_template_documento' template.id %}{% else %}{% url 'criar_template_documento' %}{% endif %}" @submit="prepareForm(event)" class="space-y-6">
         {% csrf_token %}
         <input type="hidden" name="html_canva" id="html_canva">
         <input type="hidden" name="css_canva" id="css_canva">
@@ -53,13 +53,26 @@
             <div class="lg:col-span-1 bg-gray-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
                 <h3 class="font-bold text-white mb-4 border-b border-white/10 pb-2">Informações Base</h3>
                 <div class="space-y-4">
-                    <div>
+                                        <div>
                         <label class="block text-sm font-bold text-gray-300 mb-1">Título do Documento</label>
-                        <input type="text" name="titulo" required placeholder="Ex: Contrato de Serviço" class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                        <input type="text" name="titulo" required placeholder="Ex: Contrato de Serviço" value="{{ template.titulo|default:'' }}" class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-brand-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-300 mb-1">Descrição</label>
-                        <input type="text" name="descricao" placeholder="Finalidade deste documento" class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                        <input type="text" name="descricao" placeholder="Finalidade deste documento" value="{{ template.descricao|default:'' }}" class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Tipo de Documento</label>
+                        <select name="tipo_documento" required class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value="pdf_lgpd" {% if template.tipo_documento == 'pdf_lgpd' %}selected{% endif %}>PDF Assinatura (Contratos)</option>
+                            <option value="email" {% if template.tipo_documento == 'email' %}selected{% endif %}>E-mail Automático</option>
+                            <option value="pdf_escala" {% if template.tipo_documento == 'pdf_escala' %}selected{% endif %}>PDF de Escala</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">ID do Sistema <span class="text-xs text-red-400">(Avançado)</span></label>
+                        <input type="text" name="identificador_sistema" placeholder="Ex: email_boas_vindas" value="{{ template.identificador_sistema|default:'' }}" class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-gray-400 focus:ring-2 focus:ring-brand-500 outline-none font-mono text-sm" {% if not request.user.is_superuser %}readonly{% endif %}>
+                        <p class="text-[10px] text-gray-500 mt-1">Usado pelo código para encontrar o template exato na hora do disparo.</p>
                     </div>
                 </div>
             </div>
@@ -119,10 +132,10 @@
 
     function formBuilder() {
         return {
-            campos: [
+                        campos: {% if is_edit %}{{ template.campos_json|safe }}{% else %}[
                 { nome: 'NOME_PESSOA', label: 'Nome Completo' },
                 { nome: 'CPF_PESSOA', label: 'CPF' }
-            ],
+            ]{% endif %},
             init() {
                 // Iniciar o GrapesJS após o Alpine montar
                 setTimeout(() => {
@@ -163,7 +176,7 @@
                 });
             },
             initEditor() {
-                editor = grapesjs.init({
+                                editor = grapesjs.init({
                     container: '#gjs',
                     height: '100%',
                     width: 'auto',
@@ -181,8 +194,11 @@
                         ]
                     }
                 });
-
-                // Configurar o tamanho do Canvas para parecer uma folha A4
+                
+                {% if is_edit %}
+                editor.setComponents(`{{ template.html_canva|safe }}`);
+                editor.setStyle(`{{ template.css_canva|safe }}`);
+                {% endif %}// Configurar o tamanho do Canvas para parecer uma folha A4
                 editor.Canvas.getBody().style.backgroundColor = '#f4f4f4'; // Fundo fora do papel
                 editor.Canvas.getWrapper().set({
                     style: {

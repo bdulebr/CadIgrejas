@@ -21,24 +21,36 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
         return True # Retorna True para não quebrar a lógica das rotinas
         
     try:
-        from core.models import TemplateDocumento
+        from midia_lgpd.models import DocumentoTemplate
+        from core.models import ConfiguracaoSistema
         from django.template import Template, Context
         
-        # Tenta achar um template customizado no banco. (Ex: 'escala_cancelada.html' -> 'escala_cancelada')
+        # Tenta achar o template no banco. (Ex: 'escala_cancelada.html' -> 'email_escala_cancelada')
         acao = template_name.replace('.html', '')
-        template_dinamico = TemplateDocumento.objects.filter(nome_acao=acao, tipo='email', ativo=True).first()
+        identificador = f"email_{acao}"
+        
+        template_dinamico = DocumentoTemplate.objects.filter(identificador_sistema=identificador, ativo=True).first()
+        
+        # Injeta variáveis globais como IGREJA_NOME, IGREJA_LOGO
+        config_sys = ConfiguracaoSistema.objects.first()
+        if config_sys:
+            context['IGREJA_NOME'] = config_sys.igreja_nome
+            context['IGREJA_CNPJ'] = config_sys.cnpj
+            if config_sys.logo:
+                context['IGREJA_LOGO'] = settings.BASE_URL + config_sys.logo.url
         
         if template_dinamico:
-            if template_dinamico.assunto_padrao:
-                assunto = template_dinamico.assunto_padrao
+            if template_dinamico.titulo and template_dinamico.titulo.startswith('E-mail:'):
+                assunto = template_dinamico.titulo.replace('E-mail: ', '')
+            elif template_dinamico.titulo:
+                assunto = template_dinamico.titulo
             
-            # GrapesJS costuma ter CSS e HTML separados
-            raw_html = f"<style>{template_dinamico.css_content}</style>\n{template_dinamico.html_content}"
+            raw_html = f"<style>{template_dinamico.css_canva}</style>\n{template_dinamico.html_canva}"
             t = Template(raw_html)
             c = Context(context)
             html_content = t.render(c)
         else:
-            # Fallback para os arquivos físicos
+            # Fallback para os arquivos físicos caso o template falhe
             html_content = render_to_string(f"emails/{template_name}", context)
             
         # Versão segura de texto puro

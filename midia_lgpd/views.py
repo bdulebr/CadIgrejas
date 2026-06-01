@@ -217,6 +217,8 @@ def criar_template_documento(request):
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
         descricao = request.POST.get('descricao', '')
+        tipo_documento = request.POST.get('tipo_documento', 'pdf_lgpd')
+        identificador = request.POST.get('identificador_sistema', '')
         conteudo = request.POST.get('conteudo_base', '')
         campos_raw = request.POST.get('campos_json')
         
@@ -231,6 +233,8 @@ def criar_template_documento(request):
         DocumentoTemplate.objects.create(
             titulo=titulo,
             descricao=descricao,
+            tipo_documento=tipo_documento,
+            identificador_sistema=identificador,
             conteudo_base=conteudo,
             campos_json=campos_json,
             html_canva=html_canva,
@@ -240,7 +244,42 @@ def criar_template_documento(request):
         messages.success(request, 'Template Visual criado com sucesso!')
         return redirect('painel_documentos')
         
-    return render(request, 'midia_lgpd/criador_templates.html')
+    return render(request, 'midia_lgpd/criador_templates.html', {'is_edit': False})
+
+@login_required
+@user_passes_test(is_super_admin)
+def editar_template_documento(request, id):
+    template = get_object_or_404(DocumentoTemplate, id=id)
+    if request.method == 'POST':
+        template.titulo = request.POST.get('titulo')
+        template.descricao = request.POST.get('descricao', '')
+        template.tipo_documento = request.POST.get('tipo_documento', 'pdf_lgpd')
+        template.identificador_sistema = request.POST.get('identificador_sistema', '')
+        template.conteudo_base = request.POST.get('conteudo_base', '')
+        
+        template.html_canva = request.POST.get('html_canva', '')
+        template.css_canva = request.POST.get('css_canva', '')
+        
+        campos_raw = request.POST.get('campos_json')
+        try:
+            template.campos_json = json.loads(campos_raw) if campos_raw else []
+        except:
+            pass
+            
+        template.save()
+        messages.success(request, 'Template Visual atualizado com sucesso!')
+        return redirect('painel_documentos')
+        
+    return render(request, 'midia_lgpd/criador_templates.html', {'template': template, 'is_edit': True})
+
+@login_required
+@user_passes_test(is_super_admin)
+def excluir_template_documento(request, id):
+    template = get_object_or_404(DocumentoTemplate, id=id)
+    template.ativo = False
+    template.save()
+    messages.success(request, 'Template arquivado/excluído com sucesso!')
+    return redirect('painel_documentos')
 
 @login_required
 @user_passes_test(is_super_admin)
