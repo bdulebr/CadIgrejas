@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import IntegrityError
-from django.http import HttpResponse, JsonResponse, FileResponse
+from django.http import HttpResponse, JsonResponse, FileResponse, HttpResponseForbidden
 from .models import Escala, CompetenciaEscala, CultoEvento
 from gestao_membros.models import Departamento, Indisponibilidade, Funcao
 from core.models import Membro, ConfiguracaoSistema
