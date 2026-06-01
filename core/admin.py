@@ -41,3 +41,11 @@ class TemplateDocumentoAdmin(admin.ModelAdmin):
     list_display = ('nome_acao', 'tipo', 'ativo', 'atualizado_em')
     list_filter = ('tipo', 'ativo')
     search_fields = ('nome_acao', 'assunto_padrao')
+
+from .models import LinkRapido
+
+@admin.register(LinkRapido)
+class LinkRapidoAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'url', 'ordem', 'criado_em')
+    search_fields = ('titulo', 'url')
+    ordering = ('ordem',)

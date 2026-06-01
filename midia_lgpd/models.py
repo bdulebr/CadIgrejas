@@ -40,13 +40,44 @@ class AssinaturaLGPD(models.Model):
     def __str__(self):
         return f"{self.membro.first_name} aceitou {self.termo.titulo}"
 
+class PastaVirtual(models.Model):
+    nome = models.CharField(max_length=100)
+    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='pastas')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subpastas')
+    criado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    is_excluida = models.BooleanField(default=False)
+    data_exclusao = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        if self.parent:
+            return f"{self.parent.nome} / {self.nome} ({self.departamento.nome})"
+        return f"{self.nome} ({self.departamento.nome})"
+
+class CompartilhamentoPasta(models.Model):
+    pasta = models.ForeignKey(PastaVirtual, on_delete=models.CASCADE, related_name='compartilhamentos')
+    departamento_destino = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='pastas_compartilhadas')
+    criado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    validade = models.DateTimeField(null=True, blank=True)
+    is_ativo = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.pasta.nome} -> {self.departamento_destino.nome}"
+
 class ArquivoMidia(models.Model):
     titulo = models.CharField(max_length=200)
     arquivo = models.FileField(upload_to='arquivos/%Y/%m/')
     departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='arquivos_midia')
+    pasta = models.ForeignKey(PastaVirtual, on_delete=models.CASCADE, related_name='arquivos', null=True, blank=True)
     enviado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
     data_envio = models.DateTimeField(auto_now_add=True)
+    tamanho_bytes = models.BigIntegerField(default=0)
+    extensao = models.CharField(max_length=20, blank=True)
+    hash_sha256 = models.CharField(max_length=64, blank=True)
     is_publico_para_membros = models.BooleanField(default=False, help_text="Se marcado, voluntários comuns do setor poderão baixar o arquivo")
+    is_excluido = models.BooleanField(default=False)
+    data_exclusao = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.titulo
@@ -56,6 +87,9 @@ class DocumentoTemplate(models.Model):
     descricao = models.TextField(blank=True, null=True)
     conteudo_base = models.TextField(help_text="Corpo do contrato/documento. Use {{NOME}} para variáveis.")
     campos_json = models.JSONField(default=list, help_text="Lista de campos: [{'nome': 'NOME', 'tipo': 'text', 'label': 'Nome Completo'}]")
+    html_canva = models.TextField(blank=True, help_text="Estrutura HTML do Editor Canva")
+    css_canva = models.TextField(blank=True, help_text="Estilos CSS do Editor Canva")
+    json_canva = models.JSONField(null=True, blank=True, help_text="Grafo de elementos GrapesJS/Fabric")
     criado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
     ativo = models.BooleanField(default=True)

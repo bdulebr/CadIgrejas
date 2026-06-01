@@ -73,26 +73,46 @@
                 <span x-show="sidebarOpen" class="whitespace-nowrap">Estoque / Itens</span>
             </a>
             
+            {% if links_rapidos %}
+            <div x-show="sidebarOpen" class="text-[10px] uppercase font-bold text-blue-500 tracking-widest pl-3 mt-4 mb-1">Links Rápidos</div>
+            <nav class="flex flex-col gap-1 px-2 mb-4">
+                {% for link in links_rapidos %}
+                <a href="{{ link.url }}" target="_blank" class="flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
+                    <img src="https://www.google.com/s2/favicons?domain={{ link.url }}&sz=64" alt="{{ link.titulo }}" class="w-5 h-5 rounded-sm object-contain bg-white/5 p-0.5 grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300">
+                    <span x-show="sidebarOpen" class="whitespace-nowrap">{{ link.titulo }}</span>
+                </a>
+                {% endfor %}
+            </nav>
+            {% endif %}
+
             {% if user.nivel_hierarquico == 'super_admin' or user.is_superuser %}
-            <!-- Agrupamento: Administração -->
             <div x-show="sidebarOpen" class="text-[10px] uppercase font-bold text-red-500 tracking-widest pl-3 mt-4 mb-1">Administração</div>
-            
-            <a href="{% url 'painel_midia' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Gestão de Arquivos">
-                <i data-lucide="folder-open" class="w-5 h-5 min-w-[20px] text-red-400 group-hover:text-red-300"></i>
-                <span x-show="sidebarOpen" class="whitespace-nowrap">Arquivos</span>
-            </a>
-            <a href="{% url 'departamentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Gestão de Departamentos">
-                <i data-lucide="layers" class="w-5 h-5 min-w-[20px] text-red-400 group-hover:text-red-300"></i>
-                <span x-show="sidebarOpen" class="whitespace-nowrap">Departamentos</span>
-            </a>
-            <a href="{% url 'painel_membros' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Todos os Membros">
-                <i data-lucide="user-check" class="w-5 h-5 min-w-[20px] text-red-400 group-hover:text-red-300"></i>
-                <span x-show="sidebarOpen" class="whitespace-nowrap">Membros</span>
-            </a>
-            <a href="{% url 'sysadmin_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Configurações do Sistema">
-                <i data-lucide="settings" class="w-5 h-5 min-w-[20px] text-red-400 group-hover:text-red-300"></i>
-                <span x-show="sidebarOpen" class="whitespace-nowrap">Configurações</span>
-            </a>
+            <nav class="flex flex-col gap-1 px-2">
+                <a href="{% url 'pv_drive_home' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
+                    <i data-lucide="cloud" class="w-5 h-5 text-gray-400 group-hover:text-blue-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap">PV Drive</span>
+                </a>
+                <a href="{% url 'painel_documentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
+                    <i data-lucide="file-signature" class="w-5 h-5 text-gray-400 group-hover:text-blue-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap">Assinaturas e Docs</span>
+                </a>
+                <a href="{% url 'departamentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
+                    <i data-lucide="network" class="w-5 h-5 text-gray-400 group-hover:text-purple-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap">Departamentos</span>
+                </a>
+                {% if request.user.nivel_hierarquico == 'super_admin' %}
+                <a href="{% url 'painel_membros' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
+                    <i data-lucide="users-round" class="w-5 h-5 text-gray-400 group-hover:text-indigo-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap">Gestão de Membros</span>
+                </a>
+                {% endif %}
+                {% if request.user.nivel_hierarquico == 'super_admin' %}
+                <a href="{% url 'sysadmin_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Configurações do Sistema">
+                    <i data-lucide="settings" class="w-5 h-5 text-gray-400 group-hover:text-gray-200"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap">Configurações Sysadmin</span>
+                </a>
+                {% endif %}
+            </nav>
             {% endif %}
             
         </nav>

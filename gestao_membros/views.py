@@ -19,8 +19,7 @@ def is_lider(user):
 def is_sysadmin_ou_lider_global(user):
     return user.nivel_hierarquico in ['super_admin', 'lider_global']
 
-def enviar_email_html(destinatario, assunto, template_name, context):
-    pass # mock para não quebrar a view
+from intranet.services.gmail_service import enviar_email_html
 
 @login_required
 @user_passes_test(is_super_admin)
@@ -34,35 +33,27 @@ def listar_departamentos(request):
     return render(request, 'gestao_membros/departamentos.html', {'departamentos': departamentos, 'is_master': is_super_admin(request.user)})
 
 @login_required
-@user_passes_test(is_lider)
+@user_passes_test(is_super_admin)
 def painel_lider(request):
-    if is_super_admin(request.user):
-        departamentos = Departamento.objects.all()
-    else:
-        departamentos = request.user.departamentos_liderados.all()
+    departamentos = Departamento.objects.all()
     
     membros_pendentes = Membro.objects.filter(is_active=False)
     
     depto_id = request.GET.get('depto_id') or request.GET.get('depto')
     if depto_id:
         departamento_ativo = get_object_or_404(Departamento, id=depto_id)
-        if not is_super_admin(request.user) and departamento_ativo not in departamentos:
-            return HttpResponseForbidden("Sem permissão para gerenciar este setor.")
     else:
         departamento_ativo = departamentos.first() if departamentos.exists() else None
 
     membros_aprovados = departamento_ativo.membros_ativos.filter(is_active=True) if departamento_ativo else []
 
-    # Indisponibilidades - mock ou real
-    try:
-        from escalas.models import Indisponibilidade
-        hoje = timezone.now().date()
-        indisponibilidades = Indisponibilidade.objects.filter(
-            membro__in=membros_aprovados, 
-            data_fim__gte=hoje
-        ).order_by('data_inicio')
-    except ImportError:
-        indisponibilidades = []
+    # Indisponibilidades reais
+    from gestao_membros.models import Indisponibilidade
+    hoje = timezone.now().date()
+    indisponibilidades = Indisponibilidade.objects.filter(
+        membro__in=membros_aprovados, 
+        data_fim__gte=hoje
+    ).order_by('data_inicio')
 
     return render(request, 'gestao_membros/painel_lider.html', {
         'departamentos': departamentos,
@@ -73,38 +64,32 @@ def painel_lider(request):
     })
 
 @login_required
+@user_passes_test(is_super_admin)
 def aprovar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
-    if is_lider(request.user):
-        membro.is_active = True
-        membro.save()
-        messages.success(request, 'Membro aprovado.')
+    membro.is_active = True
+    membro.status_conta = 'ativo'
+    membro.save()
+    messages.success(request, 'Membro aprovado.')
     return redirect('painel_lider')
 
 @login_required
+@user_passes_test(is_super_admin)
 def rejeitar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
-    if is_lider(request.user):
-        membro.delete()
-        messages.success(request, 'Membro rejeitado.')
+    membro.delete()
+    messages.success(request, 'Membro rejeitado.')
     return redirect('painel_lider')
 
 @login_required
+@user_passes_test(is_super_admin)
 def evoluir_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
-    if is_lider(request.user):
-        membro.nivel_hierarquico = 'lider'
-        membro.save()
-        messages.success(request, 'Membro evoluído para Líder.')
+    membro.nivel_hierarquico = 'lider'
+    membro.save()
+    messages.success(request, 'Membro evoluído para Líder.')
     return redirect('painel_lider')
 
-@login_required
-def atualizar_habilidades(request, dep_id):
-    dep = get_object_or_404(Departamento, id=dep_id)
-    if request.method == 'POST' and is_lider(request.user):
-        # Atualização mockada
-        messages.success(request, 'Habilidades atualizadas.')
-    return redirect('detalhes_departamento', dep_id=dep.id)
 
 @login_required
 def criar_habilidade(request, dep_id):
@@ -139,7 +124,7 @@ def excluir_funcao(request, funcao_id):
 @login_required
 def painel_avisos(request):
     avisos = AvisoMural.objects.all().order_by('-data_postagem')
-    return render(request, 'gestao_membros/avisos.html', {'avisos': avisos})
+    return render(request, 'gestao_membros/painel_avisos.html', {'avisos': avisos})
 
 @login_required
 def criar_aviso(request):
@@ -226,8 +211,11 @@ def detalhes_departamento(request, dep_id):
         messages.success(request, 'Departamento atualizado.')
         return redirect('detalhes_departamento', dep_id=dep.id)
         
-    from .models import ConfiguracaoSlotEscala
-    tipos_evento = ConfiguracaoSlotEscala.TIPO_EVENTO_CHOICES if hasattr(ConfiguracaoSlotEscala, 'TIPO_EVENTO_CHOICES') else []
+    from escalas.models import CultoEvento
+    tipos_evento = []
+    for c in CultoEvento.objects.all().order_by('tipo', 'dia_semana', 'data_evento'):
+        key = c.chave_slug if c.chave_slug else str(c.id)
+        tipos_evento.append((key, str(c)))
     
     context = {
         'dep': dep,
@@ -359,16 +347,23 @@ def editar_membro(request, membro_id):
         departamentos_ids = request.POST.getlist('departamentos')
         membro.departamentos_ativos.set(departamentos_ids)
         
-        membro.cpf = request.POST.get('cpf', membro.cpf)
-        membro.rg = request.POST.get('rg', membro.rg)
-        membro.telefone = request.POST.get('telefone', membro.telefone)
+        # CPF needs to be None if empty to avoid UNIQUE constraint violations
+        cpf_val = request.POST.get('cpf', '').strip()
+        membro.cpf = cpf_val if cpf_val else None
+        
+        rg_val = request.POST.get('rg', '').strip()
+        membro.rg = rg_val if rg_val else None
+        
+        tel_val = request.POST.get('telefone', '').strip()
+        membro.telefone = tel_val if tel_val else None
+        
         membro.anotacoes_lideranca = request.POST.get('anotacoes_lideranca', membro.anotacoes_lideranca)
         
         data_nascimento = request.POST.get('data_nascimento')
-        if data_nascimento: membro.data_nascimento = data_nascimento
+        membro.data_nascimento = data_nascimento if data_nascimento else None
         
         data_casamento = request.POST.get('data_casamento')
-        if data_casamento: membro.data_casamento = data_casamento
+        membro.data_casamento = data_casamento if data_casamento else None
 
         membro.horario_trabalho_inicio = request.POST.get('horario_trabalho_inicio') or None
         membro.horario_trabalho_fim = request.POST.get('horario_trabalho_fim') or None

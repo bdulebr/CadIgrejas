@@ -1,0 +1,252 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block bg_image %}{% static 'img/bg_midia.png' %}{% endblock %}
+
+{% block title %}PV Drive - Gestão de Arquivos{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ openUpload: false, openNewFolder: false, openPreview: false, previewUrl: '', previewType: '', previewName: '' }">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                    <svg class="w-8 h-8 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                    PV Drive
+                </h1>
+                <p class="text-gray-400 mt-1">Armazenamento em nuvem exclusivo para Liderança.</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-2">
+                <!-- Barra de Busca -->
+                <form method="GET" action="{% url 'pv_drive_home' %}" class="relative flex items-center">
+                    <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Buscar arquivos..." class="px-4 py-2 pl-10 bg-gray-900/60 border border-white/10 rounded-lg text-white font-medium focus:outline-none focus:border-brand-500 backdrop-blur-md w-full md:w-64">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </form>
+                
+                <!-- Seletor de Departamento -->
+                <div class="relative">
+                    <form method="GET" action="{% url 'pv_drive_home' %}" id="dep-form">
+                        <select name="dep" onchange="window.location.href='/midia_lgpd/drive/dep/' + this.value + '/'" class="px-4 py-2 bg-gray-900/60 border border-white/10 rounded-lg text-white font-medium focus:outline-none focus:border-brand-500 backdrop-blur-md">
+                            {% for dep in departamentos %}
+                                <option value="{{ dep.id }}" {% if dep_atual and dep_atual.id == dep.id %}selected{% endif %}>
+                                    📁 {{ dep.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                
+                <button @click="openNewFolder = true" class="px-4 py-2 bg-gray-800/80 hover:bg-gray-700 border border-gray-600 text-white rounded-lg font-medium transition-all shadow-sm flex items-center gap-2 backdrop-blur-md">
+                    <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 11h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2z"></path></svg>
+                    Nova Pasta
+                </button>
+                <button @click="openUpload = true" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-medium transition-all shadow-sm flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Upload de Arquivos
+                </button>
+                <a href="{% url 'pv_drive_lixeira' %}" class="px-4 py-2 bg-red-900/40 hover:bg-red-800/60 border border-red-500/30 text-white rounded-lg font-medium transition-all shadow-sm flex items-center gap-2">
+                    Lixeira
+                </a>
+                <a href="{% url 'dashboard' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white hover:text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg backdrop-blur-md">Voltar</a>
+            </div>
+        </div>
+
+        <!-- Drive Container -->
+        <div class="bg-gray-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden min-h-[600px] flex flex-col">
+            
+            <!-- Breadcrumb Navigation -->
+            <div class="p-4 border-b border-white/10 bg-black/20 flex items-center text-sm font-medium text-gray-300 overflow-x-auto">
+                <a href="{% url 'pv_drive_dep' dep_atual.id %}" class="hover:text-brand-400 flex items-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    Raiz ({{ dep_atual.nome }})
+                </a>
+                
+                {% for b in breadcrumbs %}
+                <svg class="w-4 h-4 mx-2 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <a href="{% url 'pv_drive_pasta' dep_atual.id b.id %}" class="hover:text-brand-400 whitespace-nowrap {% if forloop.last %}text-white font-bold{% endif %}">{{ b.nome }}</a>
+                {% endfor %}
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 flex-1 bg-gradient-to-br from-transparent to-black/10">
+                
+                {% if not pastas and not arquivos %}
+                <div class="flex flex-col items-center justify-center h-full text-gray-500 pt-20">
+                    <svg class="w-24 h-24 mb-4 opacity-50" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                    <p class="text-xl font-medium text-white">Esta pasta está vazia</p>
+                    <p class="mt-2 text-sm">Arraste arquivos para cá ou use o botão de Upload.</p>
+                </div>
+                {% else %}
+                
+                <!-- Folders Grid -->
+                {% if pastas %}
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Pastas</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-10">
+                    {% for p in pastas %}
+                    <a href="{% url 'pv_drive_pasta' dep_atual.id p.id %}" class="group bg-gray-800/40 hover:bg-gray-700/60 border border-white/5 hover:border-brand-500/50 rounded-xl p-4 flex items-center gap-3 transition-all cursor-pointer">
+                        <svg class="w-10 h-10 text-brand-500 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-white font-medium truncate text-sm">{{ p.nome }}</h4>
+                            <p class="text-xs text-gray-500">{{ p.arquivos.count|add:p.subpastas.count }} itens</p>
+                        </div>
+                        <a href="{% url 'download_pasta_zip' p.id %}" @click.stop class="p-1.5 bg-gray-900/60 hover:bg-brand-500 rounded-lg text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100" title="Baixar Pasta (ZIP)">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </a>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Files Grid -->
+                {% if arquivos %}
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Arquivos</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                    {% for arq in arquivos %}
+                    <div class="group relative bg-gray-900/40 border border-white/5 hover:border-brand-500/30 rounded-xl overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+                        
+                        <!-- File Icon / Thumbnail -->
+                        <div class="h-32 bg-gray-950/50 flex items-center justify-center p-4 relative">
+                            {% if arq.extensao in 'jpg,jpeg,png,webp,svg' %}
+                                <!-- TODO: Generate actual thumbnail if possible -->
+                                <img src="{{ arq.arquivo.url }}" alt="{{ arq.titulo }}" class="max-h-full object-contain opacity-80 group-hover:opacity-100 transition-opacity">
+                            {% elif arq.extensao == 'pdf' %}
+                                <svg class="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+                            {% elif arq.extensao in 'mp4,avi,mov' %}
+                                <svg class="w-16 h-16 text-purple-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path></svg>
+                            {% else %}
+                                <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path></svg>
+                            {% endif %}
+                            
+                            <!-- Action Overlay -->
+                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
+                                {% if arq.extensao in 'jpg,jpeg,png,webp,svg,pdf' %}
+                                <button type="button" @click="previewUrl = '{{ arq.arquivo.url }}'; previewType = '{{ arq.extensao }}'; previewName = '{{ arq.titulo }}'; openPreview = true" class="p-2 bg-brand-600 hover:bg-brand-500 text-white rounded-full transition-colors" title="Visualizar (Preview)">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </button>
+                                {% endif %}
+                                <a href="{{ arq.arquivo.url }}" download class="p-2 bg-white/10 hover:bg-white/30 text-white rounded-full transition-colors" title="Baixar Arquivo">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- File Info -->
+                        <div class="p-3 bg-gray-900 border-t border-white/5">
+                            <h4 class="text-white text-xs font-bold truncate mb-1" title="{{ arq.titulo }}">{{ arq.titulo }}</h4>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>{{ arq.data_envio|date:"d/m/Y" }}</span>
+                                <span class="uppercase">{{ arq.extensao|default:"FILE" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NOVA PASTA -->
+    <div x-show="openNewFolder" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" @click="openNewFolder = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-gray-900 border border-white/10 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <form method="POST" action="{% url 'criar_pasta' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="departamento_id" value="{{ dep_atual.id }}">
+                    {% if pasta_atual %}
+                    <input type="hidden" name="parent_id" value="{{ pasta_atual.id }}">
+                    {% endif %}
+                    
+                    <div class="px-6 pt-6 pb-4">
+                        <h3 class="text-xl font-bold text-white mb-4">Criar Nova Pasta</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Nome da Pasta</label>
+                            <input type="text" name="nome" required autofocus placeholder="Ex: Projetos 2026" class="w-full px-4 py-3 bg-black/50 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="bg-black/20 px-6 py-4 flex justify-end gap-3 border-t border-white/5">
+                        <button type="button" @click="openNewFolder = false" class="px-4 py-2 bg-transparent text-gray-400 hover:text-white font-medium rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="px-6 py-2 bg-brand-600 text-white font-bold rounded-lg shadow-lg hover:bg-brand-500 transition-colors">Criar Pasta</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: UPLOAD DE ARQUIVOS -->
+    <div x-show="openUpload" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" @click="openUpload = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-gray-900 border border-white/10 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form method="POST" action="{% url 'upload_drive' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="departamento_id" value="{{ dep_atual.id }}">
+                    {% if pasta_atual %}
+                    <input type="hidden" name="pasta_id" value="{{ pasta_atual.id }}">
+                    {% endif %}
+                    
+                    <div class="px-6 pt-6 pb-4">
+                        <h3 class="text-xl font-bold text-white mb-4">Upload para {{ pasta_atual.nome|default:dep_atual.nome }}</h3>
+                        
+                        <!-- Dropzone Visual (Styling only, relies on input multiple for functionality) -->
+                        <div class="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-700 border-dashed rounded-xl bg-black/30 hover:bg-black/50 transition-colors relative cursor-pointer group">
+                            <div class="space-y-2 text-center pointer-events-none">
+                                <svg class="mx-auto h-12 w-12 text-gray-500 group-hover:text-brand-500 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="text-sm text-gray-400">
+                                    <span class="text-brand-500 font-bold">Clique para selecionar</span> ou arraste os arquivos
+                                </div>
+                                <p class="text-xs text-gray-500">Qualquer tipo de arquivo. Múltiplos permitidos.</p>
+                            </div>
+                            <input type="file" name="arquivos" multiple required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        </div>
+                    </div>
+                    
+                    <div class="bg-black/20 px-6 py-4 flex justify-end gap-3 border-t border-white/5">
+                        <button type="button" @click="openUpload = false" class="px-4 py-2 bg-transparent text-gray-400 hover:text-white font-medium rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="px-6 py-2 bg-brand-600 text-white font-bold rounded-lg shadow-lg hover:bg-brand-500 transition-colors">Fazer Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PREVIEW INLINE -->
+    <div x-show="openPreview" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div class="fixed inset-0 bg-black/90 backdrop-blur-md transition-opacity" @click="openPreview = false"></div>
+        <div class="relative w-full max-w-5xl max-h-full flex flex-col bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-[101]">
+            <div class="flex justify-between items-center px-4 py-3 bg-black/40 border-b border-white/10">
+                <h3 class="text-white font-bold truncate" x-text="previewName"></h3>
+                <div class="flex gap-2">
+                    <a :href="previewUrl" download class="p-2 bg-white/10 hover:bg-brand-500 text-white rounded-lg transition-colors" title="Baixar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </a>
+                    <button @click="openPreview = false" class="p-2 bg-white/10 hover:bg-red-500 text-white rounded-lg transition-colors" title="Fechar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-auto bg-black/50 p-4 flex items-center justify-center min-h-[50vh]">
+                <!-- Imagem -->
+                <template x-if="['jpg','jpeg','png','webp','svg'].includes(previewType.toLowerCase())">
+                    <img :src="previewUrl" class="max-w-full max-h-[80vh] object-contain rounded">
+                </template>
+                <!-- PDF -->
+                <template x-if="previewType.toLowerCase() === 'pdf'">
+                    <iframe :src="previewUrl" class="w-full h-[80vh] rounded bg-white"></iframe>
+                </template>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock content %}

@@ -22,6 +22,12 @@ urlpatterns = [
     path('escalas/competencia/deletar-slot/<int:escala_id>/', views.deletar_slot_escala, name='deletar_slot_escala'),
     path('escalas/gerar-automatica/', views.gerar_escala_automatica, name='gerar_escala_automatica'),
     
+    # Gestão de Cultos e Eventos (Super Admin)
+    path('escalas/cultos/', views.gerenciar_cultos, name='gerenciar_cultos'),
+    path('escalas/cultos/criar/', views.criar_culto, name='criar_culto'),
+    path('escalas/cultos/<int:culto_id>/editar/', views.editar_culto, name='editar_culto'),
+    path('escalas/cultos/<int:culto_id>/excluir/', views.excluir_culto, name='excluir_culto'),
+    
     path('escalas/api/alocar-slot/', views.alocar_slot_api, name='alocar_slot_api'),
     path('escalas/api/remover-slot/', views.remover_slot_api, name='remover_slot_api'),
     

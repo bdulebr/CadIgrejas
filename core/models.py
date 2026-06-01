@@ -27,17 +27,53 @@ class Membro(AbstractUser):
         ('membro_voluntario', 'Membro Voluntário'),
     )
     
+    STATUS_CHOICES = (
+        ('ativo', 'Ativo'),
+        ('inativo', 'Inativo'),
+        ('bloqueado', 'Bloqueado'),
+        ('transferido', 'Transferido'),
+        ('falecido', 'Falecido'),
+    )
+    
     cpf = models.CharField(max_length=14, unique=True, null=True, blank=True)
     rg = models.CharField(max_length=20, null=True, blank=True)
     telefone = models.CharField(max_length=20, null=True, blank=True)
     foto_perfil = models.ImageField(upload_to='perfil/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'webp'])])
+    
+    # Dados Pessoais Adicionais
+    sexo = models.CharField(max_length=20, choices=(('Masculino', 'Masculino'), ('Feminino', 'Feminino'), ('Outro', 'Outro')), null=True, blank=True)
+    estado_civil = models.CharField(max_length=50, null=True, blank=True)
+    profissao = models.CharField(max_length=100, null=True, blank=True)
+    escolaridade = models.CharField(max_length=100, null=True, blank=True)
+    
     data_nascimento = models.DateField(null=True, blank=True)
     data_casamento = models.DateField(null=True, blank=True)
     conjuge = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     filhos = models.TextField(blank=True, help_text="Nomes dos filhos separados por vírgula")
     habilidades = models.ManyToManyField('gestao_membros.Habilidade', blank=True, related_name='membros')
     
+    # Endereço
+    cep = models.CharField(max_length=10, null=True, blank=True)
+    endereco = models.CharField(max_length=200, null=True, blank=True)
+    numero = models.CharField(max_length=20, null=True, blank=True)
+    complemento = models.CharField(max_length=100, null=True, blank=True)
+    bairro = models.CharField(max_length=100, null=True, blank=True)
+    cidade = models.CharField(max_length=100, null=True, blank=True)
+    estado = models.CharField(max_length=2, null=True, blank=True)
+    
+    # Histórico Eclesiástico
+    data_batismo = models.DateField(null=True, blank=True)
+    membro_desde = models.DateField(null=True, blank=True)
+    igreja_anterior = models.CharField(max_length=200, null=True, blank=True)
+    
+    # Extras
+    redes_sociais = models.CharField(max_length=200, null=True, blank=True, help_text="Ex: @instagram")
+    tamanho_camisa = models.CharField(max_length=10, choices=(('PP', 'PP'), ('P', 'P'), ('M', 'M'), ('G', 'G'), ('GG', 'GG'), ('XG', 'XG'), ('XXG', 'XXG')), null=True, blank=True)
+    alergias = models.TextField(blank=True, help_text="Alergias ou restrições alimentares/médicas")
+    contato_emergencia = models.CharField(max_length=100, null=True, blank=True, help_text="Nome e telefone para emergências")
+    
     nivel_hierarquico = models.CharField(max_length=20, choices=NIVEL_CHOICES, default='membro_voluntario')
+    status_conta = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
     
     # LGPD
     termos_aceitos = models.BooleanField(default=False)
@@ -53,6 +89,13 @@ class Membro(AbstractUser):
 
     def __str__(self):
         return self.get_full_name() or self.username
+        
+    def save(self, *args, **kwargs):
+        if self.status_conta == 'ativo':
+            self.is_active = True
+        else:
+            self.is_active = False
+        super().save(*args, **kwargs)
 
 
 class DiaIndisponivel(models.DateField):
@@ -186,10 +229,25 @@ class TemplateDocumento(models.Model):
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = 'Template Dinâmico'
         verbose_name_plural = 'Templates Dinâmicos'
         
     def __str__(self):
         return f"{self.nome_acao} ({self.get_tipo_display()})"
+
+class LinkRapido(models.Model):
+    titulo = models.CharField(max_length=50)
+    url = models.CharField(max_length=255)
+    icone_svg = models.TextField(blank=True, help_text="Código SVG do ícone")
+    ordem = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['ordem']
+        verbose_name = 'Link Rápido'
+        verbose_name_plural = 'Links Rápidos'
+
+    def __str__(self):
+        return self.titulo

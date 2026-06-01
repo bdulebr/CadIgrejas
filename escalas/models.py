@@ -13,6 +13,39 @@ from django.db import models
 from core.models import Membro
 from gestao_membros.models import Departamento, Funcao
 
+class CultoEvento(models.Model):
+    TIPO_CHOICES = (
+        ('padrao', 'Padrão (Recorrente)'),
+        ('extra', 'Extraordinário (Único / Data Específica)'),
+    )
+    
+    nome = models.CharField(max_length=150, help_text="Ex: Culto de Oração, Santa Ceia, Atendimento Pastoral")
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='padrao')
+    
+    # Para recorrentes: em qual dia da semana acontece?
+    # 0=Segunda, 1=Terça, 2=Quarta, 3=Quinta, 4=Sexta, 5=Sábado, 6=Domingo
+    dia_semana = models.IntegerField(null=True, blank=True, help_text="0=Seg, 1=Ter, 2=Qua, 3=Qui, 4=Sex, 5=Sáb, 6=Dom")
+    
+    # Para extraordinários: data específica
+    data_evento = models.DateField(null=True, blank=True)
+    
+    # Horário padrão
+    horario_inicio = models.TimeField(default="19:30")
+    horario_fim = models.TimeField(default="21:30")
+    
+    # Chave de slug para mapeamento de registros existentes/estáticos
+    chave_slug = models.CharField(max_length=50, unique=True, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Tipo de Culto / Evento'
+        verbose_name_plural = 'Tipos de Cultos e Eventos'
+        
+    def __str__(self):
+        if self.tipo == 'extra':
+            return f"{self.nome} ({self.data_evento.strftime('%d/%m/%Y')} {self.horario_inicio.strftime('%H:%M')})"
+        dias = {0: 'Segunda', 1: 'Terça', 2: 'Quarta', 3: 'Quinta', 4: 'Sexta', 5: 'Sábado', 6: 'Domingo'}
+        return f"{self.nome} - {dias.get(self.dia_semana, '')} ({self.horario_inicio.strftime('%H:%M')})"
+
 class CompetenciaEscala(models.Model):
     STATUS_CHOICES = (
         ('rascunho', 'Rascunho (Não visível)'),
@@ -34,15 +67,6 @@ class CompetenciaEscala(models.Model):
         return f"{self.departamento.nome} - {self.mes_ano}"
 
 class Escala(models.Model):
-    TIPO_EVENTO_CHOICES = (
-        ('segunda_oracao', 'Segunda: Culto de Oração (20:00 - 21:00)'),
-        ('quarta_profetica', 'Quarta: Quarta Profética (20:00 - 22:00)'),
-        ('quinta_saber', 'Quinta: Quinta do Saber (19:30 - 20:30)'),
-        ('domingo_manha', 'Domingo da Família: Manhã (09:30 - 11:30)'),
-        ('domingo_noite', 'Domingo da Família: Noite (19:30 - 21:30)'),
-        ('eventos', 'Eventos Extraordinários'),
-    )
-
     STATUS_CHOICES = (
         ('confirmado', 'Confirmado'),
         ('substituido', 'Substituído'),
@@ -58,7 +82,7 @@ class Escala(models.Model):
     horario_inicio = models.TimeField()
     horario_fim = models.TimeField()
     
-    tipo_evento = models.CharField(max_length=20, choices=TIPO_EVENTO_CHOICES)
+    tipo_evento = models.CharField(max_length=50)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='confirmado')
     
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -75,6 +99,15 @@ class Escala(models.Model):
                 name='unique_membro_escala_horario_zerotrust'
             )
         ]
+
+    def get_tipo_evento_display(self):
+        if not self.tipo_evento:
+            return ""
+        if self.tipo_evento.isdigit():
+            evento = CultoEvento.objects.filter(id=int(self.tipo_evento)).first()
+        else:
+            evento = CultoEvento.objects.filter(chave_slug=self.tipo_evento).first()
+        return evento.nome if evento else self.tipo_evento
 
     def __str__(self):
         return f"{self.membro_escalado.get_full_name()} em {self.data_escala.strftime('%d/%m/%Y')}"

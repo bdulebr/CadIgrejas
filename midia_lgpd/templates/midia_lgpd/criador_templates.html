@@ -1,87 +1,245 @@
 {% extends 'core/base.html' %}
-{% block title %}Criador de Contratos - PVE{% endblock title %}
+{% load static %}
+{% block title %}Criador Visual de Documentos - PVE{% endblock title %}
+
+{% block extra_head %}
+<!-- GrapesJS -->
+<link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css">
+<script src="https://unpkg.com/grapesjs"></script>
+<!-- Plugin básico de blocos e forms -->
+<script src="https://unpkg.com/grapesjs-blocks-basic"></script>
+
+<style>
+    /* Estilização do Canvas para parecer uma folha A4 branca no centro */
+    .gjs-cv-canvas {
+        background-color: #2a2a2a;
+    }
+    .gjs-frame {
+        background-color: white !important;
+        margin: 20px auto;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    /* Toolbar e painel dark mode */
+    .gjs-pn-panel {
+        background-color: #1a1a1a !important;
+        border-color: #333 !important;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-transparent p-8" x-data="formBuilder()">
-    <div class="max-w-6xl mx-auto space-y-6">
-        
-        <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-sm border-white/10 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-white">Criar Novo Padrão de Contrato/Formulário</h1>
-                <p class="text-gray-400">Escreva o documento e crie as variáveis que a pessoa deverá preencher.</p>
-            </div>
-            <a href="{% url 'painel_documentos' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white hover:text-white hover:text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg backdrop-blur-md">Voltar</a>
+<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="formBuilder()">
+    
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-2">
+                <svg class="w-8 h-8 text-brand-500" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path></svg>
+                Editor de Documentos Visual
+            </h1>
+            <p class="text-gray-400">Desenhe seus contratos e termos no estilo Canva.</p>
         </div>
+        <a href="{% url 'painel_documentos' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg backdrop-blur-md">Voltar</a>
+    </div>
 
-        <form method="POST" action="{% url 'criar_template_documento' %}" class="grid grid-cols-1 lg:grid-cols-2 gap-6" @submit="prepareJson()">
-            {% csrf_token %}
-            <!-- Coluna Esquerda: Documento e Variáveis -->
-            <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-sm border-white/10 space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-gray-300 mb-1">Título do Documento</label>
-                    <input type="text" name="titulo" required placeholder="Ex: Autorização de Hospedagem" class="bg-gray-950/60 border-gray-700/80 text-white w-full p-2 border rounded">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-300 mb-1">Descrição</label>
-                    <input type="text" name="descricao" placeholder="Ex: Para ser usado com visitantes menores de idade." class="bg-gray-950/60 border-gray-700/80 text-white w-full p-2 border rounded">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-300 mb-1">Texto Base (O Contrato)</label>
-                    <p class="text-xs text-blue-600 mb-2">Use tags duplas para as variáveis. Ex: <b>Eu, {% verbatim %}{{NOME_PESSOA}}{% endverbatim %}, inscrito no CPF {% verbatim %}{{CPF_PESSOA}}{% endverbatim %}, autorizo...</b></p>
-                    <textarea name="conteudo_base" rows="15" required class="bg-gray-950/60 border-gray-700/80 text-white w-full p-3 border rounded text-sm font-serif" placeholder="Cole o texto do seu contrato aqui..."></textarea>
+    <form method="POST" action="{% url 'criar_template_documento' %}" @submit="prepareForm(event)" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="html_canva" id="html_canva">
+        <input type="hidden" name="css_canva" id="css_canva">
+        <input type="hidden" name="conteudo_base" id="conteudo_base">
+        <input type="hidden" name="campos_json" id="campos_json_input">
+
+        <!-- METADATA E VARIÁVEIS -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 bg-gray-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
+                <h3 class="font-bold text-white mb-4 border-b border-white/10 pb-2">Informações Base</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Título do Documento</label>
+                        <input type="text" name="titulo" required placeholder="Ex: Contrato de Serviço" class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Descrição</label>
+                        <input type="text" name="descricao" placeholder="Finalidade deste documento" class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
                 </div>
             </div>
 
-            <!-- Coluna Direita: Construtor de Campos -->
-            <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-sm border-white/10">
-                <h3 class="font-bold text-white mb-2 border-b pb-2">Campos para a pessoa preencher (Inputs)</h3>
-                <p class="text-xs text-gray-400 mb-4">Esses serão os campos exigidos na tela do link único. O nome da variável aqui DEVE ser o mesmo usado no texto ao lado.</p>
+            <div class="lg:col-span-2 bg-gray-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
+                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                    <h3 class="font-bold text-white">Variáveis e Campos de Preenchimento</h3>
+                    <button type="button" @click="adicionarCampo()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg">+ Novo Campo</button>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">Crie variáveis (Ex: NOME_COMPLETO). Você pode arrastá-las da aba de blocos no editor para o documento.</p>
                 
-                <div class="space-y-4 mb-4 max-h-96 overflow-y-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto pr-2">
                     <template x-for="(campo, index) in campos" :key="index">
-                        <div class="p-4 border rounded bg-gray-900/40 backdrop-blur-md border-white/10 flex gap-2 items-start">
-                            <div class="flex-grow space-y-2">
+                        <div class="bg-black/40 border border-gray-700 p-3 rounded-xl relative group">
+                            <button type="button" @click="removerCampo(index)" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-gray-800 rounded-full">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                            <div class="space-y-2 pr-6">
                                 <div>
-                                    <label class="text-xs font-bold">Variável no Texto (Ex: NOME_PESSOA)</label>
-                                    <input type="text" x-model="campo.nome" class="bg-gray-950/60 border-gray-700/80 text-white w-full p-1 border rounded text-sm uppercase">
+                                    <label class="text-[10px] uppercase font-bold text-gray-500">Variável (Ex: NOME)</label>
+                                    <input type="text" x-model="campo.nome" @input="updateEditorBlocks()" class="w-full bg-transparent border-b border-gray-600 focus:border-brand-500 text-white text-sm outline-none uppercase font-mono">
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold">Label (Como aparece para o usuário)</label>
-                                    <input type="text" x-model="campo.label" class="bg-gray-950/60 border-gray-700/80 text-white w-full p-1 border rounded text-sm" placeholder="Ex: Digite seu Nome Completo">
+                                    <label class="text-[10px] uppercase font-bold text-gray-500">Label (Ex: Qual seu nome?)</label>
+                                    <input type="text" x-model="campo.label" class="w-full bg-transparent border-b border-gray-600 focus:border-brand-500 text-white text-sm outline-none">
                                 </div>
                             </div>
-                            <button type="button" @click="campos.splice(index, 1)" class="text-red-500 font-bold p-2">X</button>
                         </div>
                     </template>
                 </div>
-                
-                <button type="button" @click="adicionarCampo()" class="w-full py-2 bg-gray-200 text-white font-bold rounded mb-6 text-sm border-dashed border-2 border-gray-400">+ Adicionar Novo Campo</button>
+            </div>
+        </div>
 
-                <input type="hidden" name="campos_json" id="campos_json_input">
-                
-                <div class="pt-4 border-t border-white/10">
-                    <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-lg">Salvar Template</button>
+        <!-- O EDITOR CANVA -->
+        <div class="bg-gray-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[700px]">
+            <div class="p-3 bg-black/40 border-b border-white/10 flex justify-between items-center">
+                <span class="text-sm font-bold text-gray-300">Área de Design (Folha A4)</span>
+                <button type="submit" class="px-6 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-lg shadow-lg flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    Salvar Documento
+                </button>
+            </div>
+            
+            <div id="gjs" class="flex-1">
+                <div style="padding: 20px; font-family: sans-serif;">
+                    <h1 style="text-align: center;">Título do Documento</h1>
+                    <p>Substitua este texto pelo conteúdo do seu documento. Arraste blocos da direita.</p>
                 </div>
             </div>
-        </form>
+        </div>
 
-    </div>
+    </form>
 </div>
 
 <script>
+    let editor;
+
     function formBuilder() {
         return {
             campos: [
-                { nome: 'NOME_PESSOA', label: 'Seu Nome Completo' },
+                { nome: 'NOME_PESSOA', label: 'Nome Completo' },
                 { nome: 'CPF_PESSOA', label: 'CPF' }
             ],
+            init() {
+                // Iniciar o GrapesJS após o Alpine montar
+                setTimeout(() => {
+                    this.initEditor();
+                }, 100);
+            },
             adicionarCampo() {
                 this.campos.push({ nome: '', label: '' });
+                this.updateEditorBlocks();
             },
-            prepareJson() {
+            removerCampo(index) {
+                this.campos.splice(index, 1);
+                this.updateEditorBlocks();
+            },
+            updateEditorBlocks() {
+                if(!editor) return;
+                
+                const blockManager = editor.BlockManager;
+                
+                // Limpar blocos dinâmicos antigos
+                const blocks = blockManager.getAll();
+                blocks.forEach(b => {
+                    if (b.get('id').startsWith('var-')) {
+                        blockManager.remove(b.get('id'));
+                    }
+                });
+
+                // Adicionar as variáveis como blocos arrastáveis
+                this.campos.forEach(c => {
+                    if(c.nome) {
+                        blockManager.add('var-' + c.nome, {
+                            label: `<div class="font-bold text-xs p-1">Variável: ${c.nome}</div>`,
+                            category: 'Variáveis',
+                            content: '<span>{{' + c.nome.toUpperCase() + '}}</span>',
+                            attributes: { class: 'gjs-block-var' }
+                        });
+                    }
+                });
+            },
+            initEditor() {
+                editor = grapesjs.init({
+                    container: '#gjs',
+                    height: '100%',
+                    width: 'auto',
+                    fromElement: true,
+                    storageManager: false,
+                    plugins: ['gjs-blocks-basic'],
+                    pluginsOpts: {
+                        'gjs-blocks-basic': {
+                            blocks: ['text', 'image', 'link', 'column1', 'column2', 'column3']
+                        }
+                    },
+                    canvas: {
+                        styles: [
+                            'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap'
+                        ]
+                    }
+                });
+
+                // Configurar o tamanho do Canvas para parecer uma folha A4
+                editor.Canvas.getBody().style.backgroundColor = '#f4f4f4'; // Fundo fora do papel
+                editor.Canvas.getWrapper().set({
+                    style: {
+                        'background-color': '#ffffff',
+                        'width': '210mm',
+                        'min-height': '297mm',
+                        'margin': '20px auto',
+                        'padding': '20mm',
+                        'box-shadow': '0 5px 15px rgba(0,0,0,0.1)',
+                        'font-family': "'Inter', sans-serif"
+                    }
+                });
+
+                // Bloco Customizado de Assinatura
+                editor.BlockManager.add('signature-block', {
+                    label: `
+                        <svg viewBox="0 0 24 24" class="w-8 h-8 mx-auto text-gray-300" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                        <div class="text-xs mt-1">Bloco de Assinatura</div>
+                    `,
+                    category: 'Documentos',
+                    content: `
+                        <div style="margin-top: 50px; text-align: center; border-top: 1px solid #000; width: 250px; margin-left: auto; margin-right: auto; padding-top: 10px;">
+                            <p style="margin: 0; font-weight: bold;">Assinatura do Responsável</p>
+                            <p style="margin: 0; font-size: 12px; color: #666;">Data: ___/___/20__</p>
+                        </div>
+                    `
+                });
+
+                this.updateEditorBlocks();
+            },
+            prepareForm(e) {
+                if(!editor) return;
+                
+                // Extrai o HTML gerado e o CSS gerado
+                const html = editor.getHtml();
+                const css = editor.getCss();
+                
+                document.getElementById('html_canva').value = html;
+                document.getElementById('css_canva').value = css;
+                document.getElementById('conteudo_base').value = html; // Retro-compatibilidade com PDF Generator antigo se precisar
                 document.getElementById('campos_json_input').value = JSON.stringify(this.campos);
             }
         }
     }
 </script>
+
+<style>
+    /* Ajustes pontuais na UI do GrapesJS para encaixar no Dark Mode */
+    .gjs-block {
+        box-shadow: none !important;
+        border: 1px solid #444 !important;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    .gjs-block:hover {
+        border-color: #6366f1 !important;
+        color: white !important;
+    }
+</style>
 {% endblock content %}

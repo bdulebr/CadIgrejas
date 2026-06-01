@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse, FileResponse
-from .models import Escala, CompetenciaEscala
+from .models import Escala, CompetenciaEscala, CultoEvento
 from gestao_membros.models import Departamento, Indisponibilidade, Funcao
 from core.models import Membro, ConfiguracaoSistema
 from datetime import datetime, date, timedelta
@@ -181,11 +181,14 @@ def editor_escala_manual(request, comp_id):
     from gestao_membros.models import ConfiguracaoSlotEscala
     configuracoes = ConfiguracaoSlotEscala.objects.filter(departamento=comp.departamento)
     
-    weekday_map = {
-        0: [('segunda_oracao', 'Segunda: Oração')],
-        2: [('quarta_profetica', 'Quarta: Profética')],
-        3: [('quinta_saber', 'Quinta: Saber')],
-        6: [('domingo_manha', 'Domingo Manhã'), ('domingo_noite', 'Domingo Noite')]
+    DIAS_SEMANA_PT = {
+        0: 'SEG',
+        1: 'TER',
+        2: 'QUA',
+        3: 'QUI',
+        4: 'SEX',
+        5: 'SÁB',
+        6: 'DOM'
     }
     
     dias_kanban = []
@@ -207,33 +210,47 @@ def editor_escala_manual(request, comp_id):
         d = date(ano, mes, day)
         dia_semana = d.weekday()
         
-        if dia_semana in weekday_map:
-            for evento_id, evento_nome in weekday_map[dia_semana]:
-                # Pega as configs desse evento
-                configs_evento = configuracoes.filter(tipo_evento=evento_id)
-                if configs_evento.exists():
-                    data_str = d.strftime('%Y-%m-%d')
+        # Buscar eventos recorrentes e extraordinários para este dia
+        eventos_hoje = []
+        
+        # 1. Recorrentes
+        recorrentes = CultoEvento.objects.filter(tipo='padrao', dia_semana=dia_semana)
+        for ev in recorrentes:
+            key_ev = ev.chave_slug if ev.chave_slug else str(ev.id)
+            eventos_hoje.append((key_ev, ev.nome))
+            
+        # 2. Extraordinários
+        extras = CultoEvento.objects.filter(tipo='extra', data_evento=d)
+        for ev in extras:
+            key_ev = ev.chave_slug if ev.chave_slug else str(ev.id)
+            eventos_hoje.append((key_ev, ev.nome))
+            
+        for evento_id, evento_nome in eventos_hoje:
+            # Pega as configs desse evento
+            configs_evento = configuracoes.filter(tipo_evento=evento_id)
+            if configs_evento.exists():
+                data_str = d.strftime('%Y-%m-%d')
+                
+                funcoes_dia = []
+                for config in configs_evento:
+                    key = (data_str, evento_id, config.funcao.id)
+                    alocados = alocacoes_map.get(key, [])
                     
-                    funcoes_dia = []
-                    for config in configs_evento:
-                        key = (data_str, evento_id, config.funcao.id)
-                        alocados = alocacoes_map.get(key, [])
-                        
-                        funcoes_dia.append({
-                            'funcao_id': config.funcao.id,
-                            'funcao_nome': config.funcao.nome,
-                            'vagas': config.quantidade,
-                            'alocados': alocados
-                        })
-                    
-                    dias_kanban.append({
-                        'data_str': data_str,
-                        'data_br': d.strftime('%d/%m'),
-                        'dia_semana_nome': d.strftime('%A')[:3],
-                        'evento_id': evento_id,
-                        'evento_nome': evento_nome,
-                        'funcoes': funcoes_dia
+                    funcoes_dia.append({
+                        'funcao_id': config.funcao.id,
+                        'funcao_nome': config.funcao.nome,
+                        'vagas': config.quantidade,
+                        'alocados': alocados
                     })
+                
+                dias_kanban.append({
+                    'data_str': data_str,
+                    'data_br': d.strftime('%d/%m'),
+                    'dia_semana_nome': DIAS_SEMANA_PT.get(dia_semana, ''),
+                    'evento_id': evento_id,
+                    'evento_nome': evento_nome,
+                    'funcoes': funcoes_dia
+                })
 
     return render(request, 'escalas/editor_manual.html', {
         'competencia': comp,
@@ -490,22 +507,6 @@ def gerar_escala_automatica(request):
         mes, ano = map(int, comp.mes_ano.split('/'))
         num_days = calendar.monthrange(ano, mes)[1]
         
-        # Mapa de dias da semana para as constantes do banco de dados
-        weekday_map = {
-            0: ['segunda_oracao'],
-            2: ['quarta_profetica'],
-            3: ['quinta_saber'],
-            6: ['domingo_manha', 'domingo_noite']
-        }
-        
-        horarios_padroes = {
-            'segunda_oracao': ('20:00', '21:00'),
-            'quarta_profetica': ('20:00', '22:00'),
-            'quinta_saber': ('19:30', '20:30'),
-            'domingo_manha': ('09:30', '11:30'),
-            'domingo_noite': ('19:30', '21:30')
-        }
-
         # Busca todos os membros elegíveis do departamento
         membros_elegiveis = Membro.objects.filter(
             Q(is_active=True) & (
@@ -522,61 +523,71 @@ def gerar_escala_automatica(request):
             data_atual = date(ano, mes, day)
             dia_semana = data_atual.weekday()
             
-            if dia_semana in weekday_map:
-                eventos_hoje = weekday_map[dia_semana]
+            # Buscar eventos recorrentes e extraordinários para este dia
+            eventos_hoje = []
+            
+            # 1. Recorrentes
+            recorrentes = CultoEvento.objects.filter(tipo='padrao', dia_semana=dia_semana)
+            for ev in recorrentes:
+                key_ev = ev.chave_slug if ev.chave_slug else str(ev.id)
+                eventos_hoje.append((key_ev, ev.horario_inicio.strftime('%H:%M'), ev.horario_fim.strftime('%H:%M')))
                 
-                for evento in eventos_hoje:
-                    configs_evento = configuracoes.filter(tipo_evento=evento)
-                    
-                    for config in configs_evento:
-                        # Se a função não tiver requisitos (habilidades configuradas), ignoramos para não alocar pessoas erradas
-                        if not config.funcao.requisitos.exists():
-                            continue
+            # 2. Extraordinários
+            extras = CultoEvento.objects.filter(tipo='extra', data_evento=data_atual)
+            for ev in extras:
+                key_ev = ev.chave_slug if ev.chave_slug else str(ev.id)
+                eventos_hoje.append((key_ev, ev.horario_inicio.strftime('%H:%M'), ev.horario_fim.strftime('%H:%M')))
+                
+            for evento, start_time, end_time in eventos_hoje:
+                configs_evento = configuracoes.filter(tipo_evento=evento)
+                
+                for config in configs_evento:
+                    # Se a função não tiver requisitos (habilidades configuradas), ignoramos para não alocar pessoas erradas
+                    if not config.funcao.requisitos.exists():
+                        continue
+                        
+                    for _ in range(config.quantidade):
+                        # Filtra membros que tem a habilidade exigida
+                        membros_funcao = membros_elegiveis.filter(habilidades__in=config.funcao.requisitos.all()).distinct()
                             
-                        for _ in range(config.quantidade):
-                            # Filtra membros que tem a habilidade exigida
-                            membros_funcao = membros_elegiveis.filter(habilidades__in=config.funcao.requisitos.all()).distinct()
+                        membros_disponiveis = []
+                        for m in membros_funcao:
+                            is_indisponivel = Indisponibilidade.objects.filter(
+                                membro=m, data_inicio__lte=data_atual, data_fim__gte=data_atual
+                            ).exists()
+                            
+                            count_mes = Escala.objects.filter(
+                                membro_escalado=m,
+                                data_escala__year=ano,
+                                data_escala__month=mes
+                            ).count()
+                            
+                            # Trava Global de Dia Único: Previne burnout impedindo 2 cultos no MESMO DIA, em qualquer departamento
+                            ja_escalado_hoje = Escala.objects.filter(
+                                membro_escalado=m,
+                                data_escala=data_atual
+                            ).exists()
+                            
+                            is_trabalho = is_trabalhando(m, data_atual, start_time, end_time)
+                            
+                            if not is_indisponivel and count_mes < 4 and not ja_escalado_hoje and not is_trabalho:
+                                membros_disponiveis.append(m)
                                 
-                            membros_disponiveis = []
-                            for m in membros_funcao:
-                                is_indisponivel = Indisponibilidade.objects.filter(
-                                    membro=m, data_inicio__lte=data_atual, data_fim__gte=data_atual
-                                ).exists()
-                                
-                                count_mes = Escala.objects.filter(
-                                    membro_escalado=m,
-                                    data_escala__year=ano,
-                                    data_escala__month=mes
-                                ).count()
-                                
-                                # Trava Global de Dia Único: Previne burnout impedindo 2 cultos no MESMO DIA, em qualquer departamento
-                                ja_escalado_hoje = Escala.objects.filter(
-                                    membro_escalado=m,
-                                    data_escala=data_atual
-                                ).exists()
-                                
-                                start_time, end_time = horarios_padroes.get(evento, ('00:00', '00:00'))
-                                
-                                is_trabalho = is_trabalhando(m, data_atual, start_time, end_time)
-                                
-                                if not is_indisponivel and count_mes < 4 and not ja_escalado_hoje and not is_trabalho:
-                                    membros_disponiveis.append(m)
-                                    
-                            if membros_disponiveis:
-                                escolhido = random.choice(membros_disponiveis)
-                                
-                                Escala.objects.create(
-                                    competencia=comp,
-                                    membro_escalado=escolhido,
-                                    departamento_alocado=comp.departamento,
-                                    funcao_alocada=config.funcao,
-                                    data_escala=data_atual,
-                                    horario_inicio=start_time,
-                                    horario_fim=end_time,
-                                    tipo_evento=evento,
-                                    status='rascunho'
-                                )
-                                slots_criados += 1
+                        if membros_disponiveis:
+                            escolhido = random.choice(membros_disponiveis)
+                            
+                            Escala.objects.create(
+                                competencia=comp,
+                                membro_escalado=escolhido,
+                                departamento_alocado=comp.departamento,
+                                funcao_alocada=config.funcao,
+                                data_escala=data_atual,
+                                horario_inicio=start_time,
+                                horario_fim=end_time,
+                                tipo_evento=evento,
+                                status='rascunho'
+                            )
+                            slots_criados += 1
                                 
         messages.success(request, f'Motor Automático finalizado! {slots_criados} voluntários alocados inteligentemente. Funções sem requisitos não foram preenchidas.')
         return redirect('editor_escala_manual', comp_id=comp.id)
@@ -613,15 +624,16 @@ def alocar_slot_api(request):
         if ja_escalado:
             return JsonResponse({'success': False, 'error': 'Voluntário já está escalado neste mesmo dia (Trava Anti-Burnout).'})
             
-        horarios_padroes = {
-            'segunda_oracao': ('20:00', '21:00'),
-            'quarta_profetica': ('20:00', '22:00'),
-            'quinta_saber': ('19:30', '20:30'),
-            'domingo_manha': ('09:30', '11:30'),
-            'domingo_noite': ('19:30', '21:30'),
-            'eventos': ('00:00', '00:00')
-        }
-        start, end = horarios_padroes.get(tipo_evento, ('00:00', '00:00'))
+        if tipo_evento.isdigit():
+            evento_obj = CultoEvento.objects.filter(id=int(tipo_evento)).first()
+        else:
+            evento_obj = CultoEvento.objects.filter(chave_slug=tipo_evento).first()
+            
+        if evento_obj:
+            start = evento_obj.horario_inicio.strftime('%H:%M')
+            end = evento_obj.horario_fim.strftime('%H:%M')
+        else:
+            start, end = ('19:30', '21:30')
         
         data_obj = datetime.strptime(data_escala, '%Y-%m-%d')
         if is_trabalhando(membro, data_obj, start, end):
@@ -696,3 +708,87 @@ def remover_slot_api(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+def is_super_admin_escala(user):
+    return user.nivel_hierarquico == 'super_admin'
+
+@login_required
+@user_passes_test(is_super_admin_escala)
+def gerenciar_cultos(request):
+    cultos = CultoEvento.objects.all().order_by('tipo', 'dia_semana', 'data_evento')
+    dias_map = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'}
+    dias_semana = [
+        (0, 'Segunda-feira'),
+        (1, 'Terça-feira'),
+        (2, 'Quarta-feira'),
+        (3, 'Quinta-feira'),
+        (4, 'Sexta-feira'),
+        (5, 'Sábado'),
+        (6, 'Domingo')
+    ]
+    return render(request, 'escalas/gerenciar_cultos.html', {
+        'cultos': cultos,
+        'dias_map': dias_map,
+        'dias_semana': dias_semana
+    })
+
+@login_required
+@user_passes_test(is_super_admin_escala)
+def criar_culto(request):
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        tipo = request.POST.get('tipo', 'padrao')
+        horario_inicio = request.POST.get('horario_inicio')
+        horario_fim = request.POST.get('horario_fim')
+        
+        try:
+            novo = CultoEvento(nome=nome, tipo=tipo, horario_inicio=horario_inicio, horario_fim=horario_fim)
+            if tipo == 'padrao':
+                dia = request.POST.get('dia_semana')
+                if dia != '':
+                    novo.dia_semana = int(dia)
+            else:
+                data_ev = request.POST.get('data_evento')
+                if data_ev:
+                    novo.data_evento = datetime.strptime(data_ev, '%Y-%m-%d').date()
+            novo.save()
+            messages.success(request, f'Culto/Evento "{nome}" criado com sucesso!')
+        except Exception as e:
+            messages.error(request, f'Erro ao criar Culto/Evento: {str(e)}')
+            
+    return redirect('gerenciar_cultos')
+
+@login_required
+@user_passes_test(is_super_admin_escala)
+def editar_culto(request, culto_id):
+    culto = get_object_or_404(CultoEvento, id=culto_id)
+    if request.method == 'POST':
+        culto.nome = request.POST.get('nome')
+        culto.horario_inicio = request.POST.get('horario_inicio')
+        culto.horario_fim = request.POST.get('horario_fim')
+        if culto.tipo == 'padrao':
+            dia = request.POST.get('dia_semana')
+            if dia != '':
+                culto.dia_semana = int(dia)
+        else:
+            data_ev = request.POST.get('data_evento')
+            if data_ev:
+                culto.data_evento = datetime.strptime(data_ev, '%Y-%m-%d').date()
+        try:
+            culto.save()
+            messages.success(request, 'Culto/Evento atualizado!')
+        except Exception as e:
+            messages.error(request, f'Erro ao atualizar: {str(e)}')
+            
+    return redirect('gerenciar_cultos')
+
+@login_required
+@user_passes_test(is_super_admin_escala)
+def excluir_culto(request, culto_id):
+    if request.method == 'POST':
+        culto = get_object_or_404(CultoEvento, id=culto_id)
+        nome = culto.nome
+        culto.delete()
+        messages.success(request, f'Culto/Evento "{nome}" excluído.')
+    return redirect('gerenciar_cultos')

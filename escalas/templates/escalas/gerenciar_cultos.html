@@ -1,0 +1,252 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block bg_image %}{% static 'img/bg_escalas.png' %}{% endblock %}
+
+{% block title %}Configurar Cultos e Eventos - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg flex items-center gap-3">
+                    <a href="{% url 'painel_escalas' %}" class="text-gray-400 hover:text-white transition-colors" title="Voltar"><i data-lucide="arrow-left-circle" class="w-8 h-8"></i></a>
+                    Configurar Cultos & Eventos
+                </h1>
+                <p class="text-gray-300 font-medium">Cadastre e gerencie a programação de cultos padrão e eventos extraordinários para escalas.</p>
+            </div>
+            <a href="{% url 'painel_escalas' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg backdrop-blur-md border border-gray-600">Voltar às Escalas</a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- FORMULÁRIO DE CADASTRO -->
+            <div class="bg-gray-900/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] border border-gray-700/50 h-fit relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-600 to-blue-500"></div>
+                
+                <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400"></i>
+                    Novo Culto ou Evento
+                </h3>
+                
+                <form method="POST" action="{% url 'criar_culto' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nome do Culto/Evento</label>
+                        <input type="text" name="nome" placeholder="Ex: Atendimento Pastoral, Santa Ceia" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tipo de Evento</label>
+                        <select name="tipo" id="tipoSelect" onchange="toggleTipoCampos()" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                            <option value="padrao">Padrão (Recorrente Semanal)</option>
+                            <option value="extra">Extraordinário (Data Única)</option>
+                        </select>
+                    </div>
+
+                    <!-- Campos para Padrão (Dia da Semana) -->
+                    <div id="campoDiaSemana">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Dia da Semana</label>
+                        <select name="dia_semana" class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                            {% for val, nome in dias_semana %}
+                            <option value="{{ val }}">{{ nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Campos para Extraordinário (Data Específica) -->
+                    <div id="campoDataEvento" class="hidden">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Data do Evento</label>
+                        <input type="date" name="data_evento" class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Horário de Início</label>
+                            <input type="time" name="horario_inicio" value="19:30" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Horário de Fim</label>
+                            <input type="time" name="horario_fim" value="21:30" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 mt-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(79,70,229,0.4)]">
+                        CADASTRAR CULTO/EVENTO
+                    </button>
+                </form>
+            </div>
+
+            <!-- LISTAGEM DE CULTOS CADASTRADOS -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
+                    <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-5 h-5 text-indigo-400"></i>
+                            Programação Ativa
+                        </h3>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-950/50 text-gray-400 text-xs uppercase tracking-wider">
+                                    <th class="px-6 py-4 font-bold">Nome</th>
+                                    <th class="px-6 py-4 font-bold">Tipo</th>
+                                    <th class="px-6 py-4 font-bold">Dia/Data</th>
+                                    <th class="px-6 py-4 font-bold">Horário</th>
+                                    <th class="px-6 py-4 font-bold text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800 text-sm text-gray-200">
+                                {% for culto in cultos %}
+                                <tr class="hover:bg-gray-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white">{{ culto.nome }}</td>
+                                    <td class="px-6 py-4">
+                                        {% if culto.tipo == 'padrao' %}
+                                        <span class="px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded text-xs font-bold">PADRÃO</span>
+                                        {% else %}
+                                        <span class="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/30 text-purple-300 rounded text-xs font-bold">EXTRAORDINÁRIO</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-300 font-medium">
+                                        {% if culto.tipo == 'padrao' %}
+                                            {{ culto.dia_semana|yesno:"domingo,domingo" }}
+                                            <script>
+                                                document.write((function() {
+                                                    const dias = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'};
+                                                    return dias[{{ culto.dia_semana }}] || 'N/A';
+                                                })());
+                                            </script>
+                                        {% else %}
+                                            <span class="font-mono text-xs">{{ culto.data_evento|date:"d/m/Y" }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 font-mono text-xs text-gray-400">
+                                        {{ culto.horario_inicio|time:"H:i" }} - {{ culto.horario_fim|time:"H:i" }}
+                                    </td>
+                                    <td class="px-6 py-4 text-right flex justify-end gap-2">
+                                        <!-- Botão Editar -->
+                                        <button onclick="abrirModalEdicao('{{ culto.id }}', '{{ culto.nome }}', '{{ culto.tipo }}', '{{ culto.dia_semana|default:'' }}', '{{ culto.data_evento|date:'Y-m-d' }}', '{{ culto.horario_inicio|time:'H:i' }}', '{{ culto.horario_fim|time:'H:i' }}')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-bold border border-gray-600 transition-colors">
+                                            Editar
+                                        </button>
+                                        
+                                        <!-- Form Excluir -->
+                                        {% if not culto.chave_slug %}
+                                        <form method="POST" action="{% url 'excluir_culto' culto.id %}" onsubmit="return confirm('Deseja excluir este culto permanentemente?')" class="inline m-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="px-2 py-1.5 bg-red-900/20 hover:bg-red-900 border border-red-500/30 text-red-400 hover:text-white rounded-lg text-xs font-bold transition-all">
+                                                Excluir
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <span class="px-2 py-1.5 bg-gray-950 text-gray-600 border border-gray-800 rounded-lg text-xs font-bold" title="Culto do sistema imutável">Fixo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 font-medium">Nenhum culto ou evento foi agendado ainda.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDICAO -->
+<div id="modalEdicao" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-gray-900 border border-gray-700/80 w-full max-w-md p-6 rounded-3xl shadow-2xl relative">
+        <button onclick="fecharModalEdicao()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <h3 class="text-xl font-bold mb-4 text-white">Editar Culto/Evento</h3>
+        
+        <form method="POST" id="formEditar" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nome do Culto/Evento</label>
+                <input type="text" name="nome" id="editNome" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+            </div>
+
+            <!-- Campos para Padrão (Dia da Semana) -->
+            <div id="editCampoDiaSemana">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Dia da Semana</label>
+                <select name="dia_semana" id="editDiaSemana" class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                    {% for val, nome in dias_semana %}
+                    <option value="{{ val }}">{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Campos para Extraordinário (Data Específica) -->
+            <div id="editCampoDataEvento" class="hidden">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Data do Evento</label>
+                <input type="date" name="data_evento" id="editDataEvento" class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Horário de Início</label>
+                    <input type="time" name="horario_inicio" id="editHorarioInicio" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Horário de Fim</label>
+                    <input type="time" name="horario_fim" id="editHorarioFim" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-950/60 text-white">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full py-4 mt-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(79,70,229,0.4)]">
+                SALVAR ALTERAÇÕES
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleTipoCampos() {
+    const tipo = document.getElementById('tipoSelect').value;
+    if (tipo === 'padrao') {
+        document.getElementById('campoDiaSemana').classList.remove('hidden');
+        document.getElementById('campoDataEvento').classList.add('hidden');
+    } else {
+        document.getElementById('campoDiaSemana').classList.add('hidden');
+        document.getElementById('campoDataEvento').classList.remove('hidden');
+    }
+}
+
+function abrirModalEdicao(id, nome, tipo, diaSemana, dataEvento, inicio, fim) {
+    document.getElementById('formEditar').action = `/escalas/cultos/${id}/editar/`;
+    document.getElementById('editNome').value = nome;
+    document.getElementById('editHorarioInicio').value = inicio;
+    document.getElementById('editHorarioFim').value = fim;
+    
+    if (tipo === 'padrao') {
+        document.getElementById('editCampoDiaSemana').classList.remove('hidden');
+        document.getElementById('editCampoDataEvento').classList.add('hidden');
+        document.getElementById('editDiaSemana').value = diaSemana;
+    } else {
+        document.getElementById('editCampoDiaSemana').classList.add('hidden');
+        document.getElementById('editCampoDataEvento').classList.remove('hidden');
+        document.getElementById('editDataEvento').value = dataEvento;
+    }
+    
+    document.getElementById('modalEdicao').classList.remove('hidden');
+}
+
+function fecharModalEdicao() {
+    document.getElementById('modalEdicao').classList.add('hidden');
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    lucide.createIcons();
+});
+</script>
+{% endblock content %}

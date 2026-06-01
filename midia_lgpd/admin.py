@@ -18,3 +18,26 @@ class ArquivoMidiaAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'departamento', 'data_envio', 'enviado_por')
     list_filter = ('departamento', 'data_envio', 'is_publico_para_membros')
     search_fields = ('titulo', 'enviado_por__first_name')
+
+from .models import PastaVirtual, CompartilhamentoPasta, DocumentoTemplate, DocumentoGerado
+
+@admin.register(PastaVirtual)
+class PastaVirtualAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'dono', 'parent_folder', 'criado_em')
+    search_fields = ('nome', 'dono__first_name')
+    list_filter = ('criado_em',)
+
+@admin.register(CompartilhamentoPasta)
+class CompartilhamentoPastaAdmin(admin.ModelAdmin):
+    list_display = ('pasta', 'membro', 'permissao', 'compartilhado_por')
+    list_filter = ('permissao',)
+
+@admin.register(DocumentoTemplate)
+class DocumentoTemplateAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'criado_por', 'criado_em')
+    search_fields = ('titulo',)
+
+@admin.register(DocumentoGerado)
+class DocumentoGeradoAdmin(admin.ModelAdmin):
+    list_display = ('template', 'membro_alvo', 'gerado_por', 'data_geracao')
+    list_filter = ('data_geracao', 'template')

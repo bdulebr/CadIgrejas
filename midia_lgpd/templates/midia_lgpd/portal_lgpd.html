@@ -1,0 +1,87 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block bg_image %}{% static 'img/bg_midia.png' %}{% endblock %}
+
+{% block title %}Portal da Privacidade - LGPD{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                    <svg class="w-8 h-8 text-[#22c55e]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    Portal da Privacidade (LGPD)
+                </h1>
+                <p class="text-gray-400 mt-1">Gerencie seus dados pessoais e preferências de privacidade.</p>
+            </div>
+            <a href="{% url 'editar_perfil' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold border border-gray-600 rounded-xl transition-all shadow-lg backdrop-blur-md">Voltar</a>
+        </div>
+
+        <div class="grid gap-6">
+            
+            <!-- Meus Dados (Exportação) -->
+            <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl flex flex-col md:flex-row gap-6 items-start">
+                <div class="p-4 bg-brand-900/50 rounded-xl text-brand-400">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-white mb-2">Exportar Meus Dados</h2>
+                    <p class="text-gray-300 text-sm leading-relaxed mb-4">Em conformidade com a LGPD (Art. 18), você tem o direito de solicitar uma cópia completa de todos os dados pessoais que mantemos sobre você. O arquivo será gerado instantaneamente em formato ZIP.</p>
+                    <a href="{% url 'exportar_dados_pessoais' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg transition-colors shadow-lg shadow-brand-500/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Baixar Meus Dados (ZIP)
+                    </a>
+                </div>
+            </div>
+
+            <!-- Termos Assinados -->
+            <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl flex flex-col md:flex-row gap-6 items-start">
+                <div class="p-4 bg-green-900/50 rounded-xl text-green-400">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-white mb-2">Termos de Privacidade e Imagem</h2>
+                    {% if assinatura %}
+                        <div class="bg-green-900/20 border border-green-500/30 p-4 rounded-lg mb-4">
+                            <p class="text-green-300 font-bold mb-1">Status: ACEITO</p>
+                            <p class="text-sm text-gray-300">Você assinou o <b>{{ assinatura.termo.titulo }}</b> em {{ assinatura.data_assinatura|date:"d/m/Y \à\s H:i" }}.</p>
+                            <p class="text-xs text-gray-500 mt-2">IP Registrado: {{ assinatura.ip_assinatura }}</p>
+                        </div>
+                    {% else %}
+                        <div class="bg-yellow-900/20 border border-yellow-500/30 p-4 rounded-lg mb-4">
+                            <p class="text-yellow-300 font-bold mb-1">Status: PENDENTE</p>
+                            <p class="text-sm text-gray-300">Você ainda não assinou o termo atual de uso de imagem e privacidade.</p>
+                        </div>
+                        <a href="{% url 'ler_assinar_termo' %}" class="inline-flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors">
+                            Ler e Assinar Agora
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Direito ao Esquecimento -->
+            <div class="bg-gray-900/40 backdrop-blur-md border border-red-500/30 p-6 rounded-2xl shadow-xl flex flex-col md:flex-row gap-6 items-start">
+                <div class="p-4 bg-red-900/50 rounded-xl text-red-400">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-white mb-2">Direito ao Esquecimento</h2>
+                    <p class="text-gray-300 text-sm leading-relaxed mb-4">Você tem o direito de solicitar a deleção definitiva de seus dados de nossa base. Atenção: Esta ação resultará na perda de acesso à Intranet PVE, histórico de escalas e outros registros vinculados ao seu perfil.</p>
+                    
+                    <form method="POST" action="{% url 'solicitar_esquecimento' %}" onsubmit="return confirm('ATENÇÃO: Você tem certeza que deseja solicitar a DELEÇÃO DEFINITIVA dos seus dados? Você perderá acesso a todo o sistema.');">
+                        {% csrf_token %}
+                        <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-900/50 hover:bg-red-600 border border-red-500/50 text-white font-bold rounded-lg transition-colors shadow-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Solicitar Exclusão de Conta e Dados
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock content %}

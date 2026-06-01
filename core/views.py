@@ -144,13 +144,17 @@ def dashboard_view(request):
     # Verifica se é líder dos setores específicos
     is_lider_lgpd = request.user.departamentos_liderados.filter(nome__icontains='LGPD').exists() or request.user.nivel_hierarquico == 'super_admin'
     is_lider_almoxarifado = request.user.departamentos_liderados.filter(nome__icontains='Almoxarifado').exists() or request.user.nivel_hierarquico == 'super_admin'
+    
+    from .models import LinkRapido
+    links_rapidos = LinkRapido.objects.filter(is_active=True).order_by('ordem')
         
     return render(request, 'core/pages/dashboard.html', {
         'assinou_lgpd': assinou_lgpd,
         'avisos': avisos,
         'departamentos_do_usuario': departamentos_do_usuario,
         'is_lider_lgpd': is_lider_lgpd,
-        'is_lider_almoxarifado': is_lider_almoxarifado
+        'is_lider_almoxarifado': is_lider_almoxarifado,
+        'links_rapidos': links_rapidos
     })
     
 from gestao_membros.models import Habilidade
@@ -172,11 +176,46 @@ def editar_perfil(request):
         user.telefone = request.POST.get('telefone', user.telefone)
         user.email = request.POST.get('email', user.email)
         
+        user.sexo = request.POST.get('sexo', user.sexo)
+        user.estado_civil = request.POST.get('estado_civil', user.estado_civil)
+        user.profissao = request.POST.get('profissao', user.profissao)
+        user.escolaridade = request.POST.get('escolaridade', user.escolaridade)
+        
         data_nascimento = request.POST.get('data_nascimento')
         if data_nascimento: user.data_nascimento = data_nascimento
             
         data_casamento = request.POST.get('data_casamento')
         if data_casamento: user.data_casamento = data_casamento
+        
+        conjuge_id = request.POST.get('conjuge_id')
+        if conjuge_id:
+            user.conjuge_id = conjuge_id
+        else:
+            user.conjuge = None
+            
+        user.filhos = request.POST.get('filhos', user.filhos)
+        
+        # Endereço
+        user.cep = request.POST.get('cep', user.cep)
+        user.endereco = request.POST.get('endereco', user.endereco)
+        user.numero = request.POST.get('numero', user.numero)
+        user.complemento = request.POST.get('complemento', user.complemento)
+        user.bairro = request.POST.get('bairro', user.bairro)
+        user.cidade = request.POST.get('cidade', user.cidade)
+        user.estado = request.POST.get('estado', user.estado)
+        
+        # Eclesiástico
+        dbatismo = request.POST.get('data_batismo')
+        if dbatismo: user.data_batismo = dbatismo
+        dmembro = request.POST.get('membro_desde')
+        if dmembro: user.membro_desde = dmembro
+        user.igreja_anterior = request.POST.get('igreja_anterior', user.igreja_anterior)
+        
+        # Extras
+        user.redes_sociais = request.POST.get('redes_sociais', user.redes_sociais)
+        user.tamanho_camisa = request.POST.get('tamanho_camisa', user.tamanho_camisa)
+        user.alergias = request.POST.get('alergias', user.alergias)
+        user.contato_emergencia = request.POST.get('contato_emergencia', user.contato_emergencia)
         
         habilidades_ids = request.POST.getlist('habilidades')
         user.habilidades.set(habilidades_ids)
@@ -196,12 +235,14 @@ def editar_perfil(request):
     dias_semana = [(str(i), nome) for i, nome in enumerate(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'])]
     dias_trabalho_list = request.user.dias_trabalho.split(',') if request.user.dias_trabalho else []
     habilidades_membro = request.user.habilidades.all()
+    todos_membros = Membro.objects.filter(is_active=True).exclude(id=request.user.id).order_by('first_name')
 
     return render(request, 'core/pages/perfil.html', {
         'todas_habilidades': todas_habilidades,
         'dias_semana': dias_semana,
         'dias_trabalho_list': dias_trabalho_list,
-        'habilidades_membro': habilidades_membro
+        'habilidades_membro': habilidades_membro,
+        'todos_membros': todos_membros
     })
 
 def logout_view(request):
@@ -251,6 +292,7 @@ def sysadmin_dashboard(request):
         
     # Templates
     templates = TemplateDocumento.objects.all()
+    links_rapidos = LinkRapido.objects.all()
         
     context = {
         'config': config,
@@ -265,9 +307,35 @@ def sysadmin_dashboard(request):
         'tentativas_bloqueadas': tentativas_bloqueadas,
         'is_debug_active': is_debug_active,
         'env_data': env_data,
-        'templates': templates
+        'templates': templates,
+        'links_rapidos': links_rapidos
     }
     return render(request, 'core/pages/sysadmin_dashboard.html', context)
+
+@login_required
+@user_passes_test(is_super_admin)
+def sysadmin_link_salvar(request):
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo')
+        url = request.POST.get('url')
+        ordem = request.POST.get('ordem', 0)
+        
+        LinkRapido.objects.create(
+            titulo=titulo,
+            url=url,
+            ordem=ordem
+        )
+        messages.success(request, 'Link Rápido criado com sucesso!')
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@user_passes_test(is_super_admin)
+def sysadmin_link_deletar(request, link_id):
+    if request.method == 'POST':
+        link = get_object_or_404(LinkRapido, id=link_id)
+        link.delete()
+        messages.success(request, 'Link Rápido deletado.')
+    return redirect('sysadmin_dashboard')
 
 @login_required
 @csrf_exempt
@@ -344,10 +412,18 @@ def sysadmin_toggle_debug(request):
             f.writelines(new_lines)
             
         import os
+        import threading
+        import time
         # Toque no arquivo wsgi para recarregar (gunicorn/uwsgi)
         wsgi_file = Path(settings.BASE_DIR) / 'intranet' / 'wsgi.py'
         if wsgi_file.exists():
             os.utime(wsgi_file, None)
+            
+        def restart_server():
+            time.sleep(1.5)
+            os._exit(0)
+            
+        threading.Thread(target=restart_server).start()
             
         status = "LIGADO (Vazamento de logs ativo - Risco)" if new_debug_state else "DESLIGADO (Seguro)"
         messages.warning(request, f"Modo DEBUG {status}. O servidor será reiniciado em instantes para aplicar.")
@@ -387,9 +463,18 @@ def sysadmin_salvar_env(request):
                 
         # Toque no arquivo wsgi para recarregar
         import os
+        import threading
+        import time
+        
         wsgi_file = Path(settings.BASE_DIR) / 'intranet' / 'wsgi.py'
         if wsgi_file.exists():
             os.utime(wsgi_file, None)
+            
+        def restart_server():
+            time.sleep(1.5)
+            os._exit(0)
+            
+        threading.Thread(target=restart_server).start()
             
         messages.success(request, "Configurações de E-mail e IA salvas com sucesso! O servidor está reiniciando.")
         
@@ -418,6 +503,8 @@ def sysadmin_salvar_igreja(request):
         messages.success(request, "Informações da Igreja atualizadas com sucesso!")
         
     return redirect('sysadmin_dashboard')
+
+from .models import LinkRapido
 
 @login_required
 @user_passes_test(is_super_admin)
@@ -758,7 +845,12 @@ def bi_dashboard_geral(request):
         .annotate(total=Count('id')) \
         .order_by('mes')
 
-    meses_dict = {m['mes'].strftime('%b'): m['total'] for m in evolucao if m['mes']}
+    MESES_BR = {
+        1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+        7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
+    }
+
+    meses_dict = {MESES_BR[m['mes'].month]: m['total'] for m in evolucao if m['mes']}
     
     # Gera os últimos 6 meses para o gráfico
     labels = []
@@ -766,7 +858,7 @@ def bi_dashboard_geral(request):
     hoje = datetime.date.today()
     for i in range(5, -1, -1):
         d = hoje.replace(day=1) - datetime.timedelta(days=30 * i)
-        mes_nome = d.strftime('%b')
+        mes_nome = MESES_BR[d.month]
         labels.append(mes_nome)
         data.append(meses_dict.get(mes_nome, 0))
     

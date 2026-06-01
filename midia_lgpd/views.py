@@ -14,7 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
-from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, DocumentoTemplate, DocumentoGerado
+from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, DocumentoTemplate, DocumentoGerado, PastaVirtual, CompartilhamentoPasta
 from gestao_membros.models import Departamento
 import json
 
@@ -84,6 +84,68 @@ def ler_assinar_termo(request):
         'termo': termo_ativo,
         'ja_assinou': ja_assinou
     })
+
+import json
+
+@login_required
+def portal_lgpd(request):
+    # Encontrar a assinatura atual
+    assinatura = AssinaturaLGPD.objects.filter(membro=request.user).order_by('-data_assinatura').first()
+    return render(request, 'midia_lgpd/portal_lgpd.html', {
+        'assinatura': assinatura
+    })
+
+@login_required
+def exportar_dados_pessoais(request):
+    import io
+    import zipfile
+    from django.http import HttpResponse
+    
+    # Montar JSON com dados pessoais
+    user = request.user
+    dados = {
+        'id': user.id,
+        'username': user.username,
+        'nome_completo': user.get_full_name(),
+        'email': user.email,
+        'cpf': user.cpf,
+        'rg': user.rg,
+        'data_nascimento': str(user.data_nascimento) if user.data_nascimento else None,
+        'telefone': user.telefone,
+        'cep': user.cep,
+        'endereco': user.endereco,
+        'bairro': user.bairro,
+        'cidade': user.cidade,
+        'estado': user.estado,
+        'estado_civil': user.estado_civil,
+        'habilidades': user.habilidades,
+        'data_cadastro': str(user.data_cadastro),
+    }
+    json_data = json.dumps(dados, indent=4, ensure_ascii=False)
+    
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr('meus_dados.json', json_data.encode('utf-8'))
+        
+    response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="MeusDados_PVEnseada.zip"'
+    return response
+
+@login_required
+def solicitar_esquecimento(request):
+    if request.method == 'POST':
+        # Enviar e-mail para o DPO/Admin
+        enviar_email_html(
+            destinatario=settings.DEFAULT_FROM_EMAIL, # E-mail do DPO
+            assunto="LGPD: Solicitação de Esquecimento de Dados",
+            template_name="generico.html",
+            context={
+                'content': f"<h2 style='color:#b91c1c;'>Solicitação LGPD (Deleção)</h2><p>O usuário <b>{request.user.get_full_name()}</b> (CPF: {request.user.cpf}, Email: {request.user.email}) solicitou a deleção definitiva de seus dados conforme a LGPD.</p><p>Ação manual necessária pelo DPO.</p>"
+            }
+        )
+        messages.success(request, "Sua solicitação de esquecimento foi registrada e encaminhada ao DPO. Entraremos em contato em breve.")
+        return redirect('portal_lgpd')
+    return redirect('portal_lgpd')
 
 @login_required
 @user_passes_test(is_super_admin)
@@ -158,6 +220,9 @@ def criar_template_documento(request):
         conteudo = request.POST.get('conteudo_base', '')
         campos_raw = request.POST.get('campos_json')
         
+        html_canva = request.POST.get('html_canva', '')
+        css_canva = request.POST.get('css_canva', '')
+        
         try:
             campos_json = json.loads(campos_raw) if campos_raw else []
         except:
@@ -168,9 +233,11 @@ def criar_template_documento(request):
             descricao=descricao,
             conteudo_base=conteudo,
             campos_json=campos_json,
+            html_canva=html_canva,
+            css_canva=css_canva,
             criado_por=request.user
         )
-        messages.success(request, 'Template criado com sucesso!')
+        messages.success(request, 'Template Visual criado com sucesso!')
         return redirect('painel_documentos')
         
     return render(request, 'midia_lgpd/criador_templates.html')
@@ -218,6 +285,10 @@ def assinar_documento_externo(request, token):
         for campo in doc.template.campos_json:
             dados[campo['nome']] = request.POST.get(campo['nome'], '')
             
+        assinatura_base64 = request.POST.get('assinatura_base64', '')
+        if assinatura_base64:
+            dados['assinatura_base64'] = assinatura_base64
+            
         doc.dados_preenchidos = dados
         doc.nome_destino = request.POST.get('assinatura_nome_completo', doc.nome_destino)
         
@@ -259,4 +330,175 @@ def assinar_documento_externo(request, token):
             
         return render(request, 'midia_lgpd/sucesso_assinatura.html', {'doc': doc})
         
-    return render(request, 'midia_lgpd/assinatura_externa.html', {'doc': doc})
+
+@login_required
+def pv_drive(request, departamento_id=None, pasta_id=None):
+    if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor', 'lider']):
+        messages.error(request, 'Acesso restrito ao PV Drive para liderança.')
+        return redirect('dashboard')
+        
+    if request.user.nivel_hierarquico in ['super_admin', 'pastor_regente']:
+        departamentos = Departamento.objects.all()
+    else:
+        departamentos = (request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()).distinct()
+        
+    if not departamentos.exists():
+        messages.warning(request, 'Você não possui departamentos vinculados para acessar o Drive.')
+        return redirect('dashboard')
+        
+    dep_atual = None
+    pasta_atual = None
+    
+    q = request.GET.get('q', '').strip()
+    
+    if q:
+        # Modo Busca Global no PV Drive (dentro dos departamentos permitidos)
+        pastas = PastaVirtual.objects.filter(departamento__in=departamentos, nome__icontains=q, is_excluida=False).order_by('nome')
+        arquivos = ArquivoMidia.objects.filter(departamento__in=departamentos, titulo__icontains=q, is_excluido=False).order_by('-data_envio')
+        breadcrumbs = []
+    else:
+        if departamento_id:
+            dep_atual = get_object_or_404(departamentos, id=departamento_id)
+        else:
+            dep_atual = departamentos.first()
+            
+        if pasta_id:
+            pasta_atual = get_object_or_404(PastaVirtual, id=pasta_id, departamento=dep_atual, is_excluida=False)
+            
+        pastas = PastaVirtual.objects.filter(departamento=dep_atual, parent=pasta_atual, is_excluida=False).order_by('nome')
+        arquivos = ArquivoMidia.objects.filter(departamento=dep_atual, pasta=pasta_atual, is_excluido=False).order_by('-data_envio')
+        
+        # Breadcrumbs
+        breadcrumbs = []
+        if pasta_atual:
+            p = pasta_atual
+            while p:
+                breadcrumbs.insert(0, p)
+                p = p.parent
+                
+    return render(request, 'midia_lgpd/pv_drive.html', {
+        'departamentos': departamentos,
+        'dep_atual': dep_atual,
+        'pasta_atual': pasta_atual,
+        'pastas': pastas,
+        'arquivos': arquivos,
+        'breadcrumbs': breadcrumbs,
+        'search_query': q,
+    })
+
+@login_required
+def criar_pasta(request):
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        dep_id = request.POST.get('departamento_id')
+        parent_id = request.POST.get('parent_id') or None
+        
+        if nome and dep_id:
+            dep = get_object_or_404(Departamento, id=dep_id)
+            PastaVirtual.objects.create(
+                nome=nome,
+                departamento=dep,
+                parent_id=parent_id,
+                criado_por=request.user
+            )
+            messages.success(request, 'Pasta criada com sucesso.')
+        
+        if parent_id:
+            return redirect('pv_drive_pasta', departamento_id=dep_id, pasta_id=parent_id)
+        return redirect('pv_drive_dep', departamento_id=dep_id)
+    return redirect('pv_drive_home')
+
+@login_required
+def upload_drive(request):
+    if request.method == 'POST':
+        dep_id = request.POST.get('departamento_id')
+        pasta_id = request.POST.get('pasta_id') or None
+        arquivos = request.FILES.getlist('arquivos')
+        
+        dep = get_object_or_404(Departamento, id=dep_id)
+        
+        for arquivo in arquivos:
+            import hashlib
+            hasher = hashlib.sha256()
+            for chunk in arquivo.chunks():
+                hasher.update(chunk)
+            
+            ext = arquivo.name.split('.')[-1] if '.' in arquivo.name else ''
+                
+            ArquivoMidia.objects.create(
+                titulo=arquivo.name,
+                arquivo=arquivo,
+                departamento=dep,
+                pasta_id=pasta_id,
+                enviado_por=request.user,
+                tamanho_bytes=arquivo.size,
+                extensao=ext.lower(),
+                hash_sha256=hasher.hexdigest()
+            )
+            
+        messages.success(request, f'{len(arquivos)} arquivo(s) enviado(s) para o PV Drive.')
+        
+        if pasta_id:
+            return redirect('pv_drive_pasta', departamento_id=dep_id, pasta_id=pasta_id)
+        return redirect('pv_drive_dep', departamento_id=dep_id)
+    return redirect('pv_drive_home')
+
+import zipfile
+import io
+from django.http import HttpResponse
+
+@login_required
+def download_pasta_zip(request, pasta_id):
+    if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor', 'lider']):
+        messages.error(request, 'Acesso restrito.')
+        return redirect('dashboard')
+        
+    pasta = get_object_or_404(PastaVirtual, id=pasta_id, is_excluida=False)
+    
+    # Validar se o usuário tem acesso ao departamento da pasta
+    if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente']:
+        deps_permitidos = (request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()).distinct()
+        if pasta.departamento not in deps_permitidos:
+            messages.error(request, 'Você não tem acesso a esta pasta.')
+            return redirect('dashboard')
+            
+    # Criar um arquivo zip em memória
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        arquivos = ArquivoMidia.objects.filter(pasta=pasta, is_excluido=False)
+        for arq in arquivos:
+            if arq.arquivo and hasattr(arq.arquivo, 'path'):
+                import os
+                if os.path.exists(arq.arquivo.path):
+                    zip_file.write(arq.arquivo.path, arcname=arq.arquivo.name.split('/')[-1])
+                    
+    response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{pasta.nome}_backup.zip"'
+    return response
+
+@login_required
+def pv_drive_lixeira(request):
+    if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor', 'lider']):
+        return redirect('dashboard')
+        
+    if request.user.nivel_hierarquico in ['super_admin', 'pastor_regente']:
+        departamentos = Departamento.objects.all()
+    else:
+        departamentos = (request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()).distinct()
+        
+    arquivos = ArquivoMidia.objects.filter(departamento__in=departamentos, is_excluido=True).order_by('-data_exclusao')
+    
+    return render(request, 'midia_lgpd/pv_drive_lixeira.html', {
+        'arquivos': arquivos
+    })
+
+@login_required
+def restaurar_arquivo(request, arquivo_id):
+    if request.method == 'POST':
+        arq = get_object_or_404(ArquivoMidia, id=arquivo_id)
+        arq.is_excluido = False
+        arq.data_exclusao = None
+        arq.save()
+        messages.success(request, 'Arquivo restaurado.')
+    return redirect('pv_drive_lixeira')
+

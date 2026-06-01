@@ -1,0 +1,79 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block bg_image %}{% static 'img/bg_midia.png' %}{% endblock %}
+
+{% block title %}Lixeira PV Drive{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Lixeira do Drive
+                </h1>
+                <p class="text-gray-400 mt-1">Arquivos excluídos. Eles permanecem aqui antes da deleção definitiva.</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'pv_drive_home' %}" class="px-5 py-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg font-medium transition-all shadow-sm border border-gray-600 backdrop-blur-md flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Voltar ao Drive
+                </a>
+            </div>
+        </div>
+
+        <!-- Trash Container -->
+        <div class="bg-gray-900/60 backdrop-blur-xl border border-red-500/30 rounded-2xl shadow-2xl overflow-hidden min-h-[600px] flex flex-col p-6">
+            
+            {% if not arquivos %}
+            <div class="flex flex-col items-center justify-center h-full text-gray-500 pt-20">
+                <svg class="w-24 h-24 mb-4 opacity-50" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                <p class="text-xl font-medium text-white">A lixeira está vazia</p>
+                <p class="mt-2 text-sm">Arquivos excluídos aparecerão aqui.</p>
+            </div>
+            {% else %}
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-gray-400 text-sm uppercase tracking-wider">
+                            <th class="px-4 py-3 font-medium">Arquivo</th>
+                            <th class="px-4 py-3 font-medium">Departamento</th>
+                            <th class="px-4 py-3 font-medium">Data de Exclusão</th>
+                            <th class="px-4 py-3 font-medium text-right">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm text-gray-300">
+                        {% for arq in arquivos %}
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="px-4 py-4 font-bold text-white flex items-center gap-3">
+                                <svg class="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path></svg>
+                                {{ arq.titulo }}
+                            </td>
+                            <td class="px-4 py-4 uppercase text-xs">{{ arq.departamento.nome }}</td>
+                            <td class="px-4 py-4">{{ arq.data_exclusao|date:"d/m/Y H:i" }}</td>
+                            <td class="px-4 py-4 text-right">
+                                <form method="POST" action="{% url 'restaurar_arquivo' arq.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-3 py-1.5 bg-green-900/40 hover:bg-green-800/60 text-green-400 border border-green-500/30 rounded font-medium transition-colors text-xs">
+                                        Restaurar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+{% endblock content %}

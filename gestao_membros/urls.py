@@ -18,7 +18,6 @@ urlpatterns = [
     path('painel-lider/aprovar/<int:membro_id>/', views.aprovar_membro, name='aprovar_membro'),
     path('painel-lider/rejeitar/<int:membro_id>/', views.rejeitar_membro, name='rejeitar_membro'),
     path('painel-lider/evoluir/<int:membro_id>/', views.evoluir_membro, name='evoluir_membro'),
-    path('departamentos/<int:dep_id>/habilidades/atualizar/', views.atualizar_habilidades, name='atualizar_habilidades'),
     path('departamentos/<int:dep_id>/habilidades/criar/', views.criar_habilidade, name='criar_habilidade'),
     path('departamentos/<int:dep_id>/funcoes/criar/', views.criar_funcao, name='criar_funcao'),
     path('departamento/funcao/excluir/<int:funcao_id>/', views.excluir_funcao, name='excluir_funcao'),

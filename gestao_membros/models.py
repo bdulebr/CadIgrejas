@@ -57,22 +57,23 @@ class Departamento(models.Model):
         super().save(*args, **kwargs)
 
 class ConfiguracaoSlotEscala(models.Model):
-    TIPO_EVENTO_CHOICES = [
-        ('segunda_oracao', 'Segunda: Culto de Oração (20:00 - 21:00)'),
-        ('quarta_profetica', 'Quarta: Quarta Profética (20:00 - 22:00)'),
-        ('quinta_saber', 'Quinta: Quinta do Saber (19:30 - 20:30)'),
-        ('domingo_manha', 'Domingo da Família: Manhã (09:30 - 11:30)'),
-        ('domingo_noite', 'Domingo da Família: Noite (19:30 - 21:30)'),
-        ('eventos', 'Eventos Extraordinários'),
-    ]
-    
     departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='configuracao_slots')
-    tipo_evento = models.CharField(max_length=50, choices=TIPO_EVENTO_CHOICES)
+    tipo_evento = models.CharField(max_length=50)
     funcao = models.ForeignKey('Funcao', on_delete=models.CASCADE)
     quantidade = models.PositiveIntegerField(default=1)
     
     class Meta:
         unique_together = ('departamento', 'tipo_evento', 'funcao')
+
+    def get_tipo_evento_display(self):
+        from escalas.models import CultoEvento
+        if not self.tipo_evento:
+            return ""
+        if self.tipo_evento.isdigit():
+            evento = CultoEvento.objects.filter(id=int(self.tipo_evento)).first()
+        else:
+            evento = CultoEvento.objects.filter(chave_slug=self.tipo_evento).first()
+        return evento.nome if evento else self.tipo_evento
 
     def __str__(self):
         return f"{self.quantidade}x {self.funcao.nome} em {self.get_tipo_evento_display()}"

@@ -54,6 +54,22 @@
                     </div>
                 </div>
 
+                <!-- Canvas de Assinatura -->
+                <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 p-6 rounded-lg">
+                    <h3 class="font-bold text-white border-b pb-2 mb-4">Assinatura Manual (Desenhe abaixo)</h3>
+                    <div class="space-y-4">
+                        <p class="text-sm text-gray-300">Por favor, desenhe sua assinatura no quadro abaixo. Ela será anexada ao documento oficial.</p>
+                        <div class="border-2 border-dashed border-gray-600 rounded-xl bg-white overflow-hidden relative" style="height: 200px;">
+                            <canvas id="signature-pad" class="w-full h-full cursor-crosshair"></canvas>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <button type="button" id="clear-signature" class="text-sm text-red-400 hover:text-red-300 font-bold transition-colors">Limpar Assinatura</button>
+                            <span class="text-xs text-gray-500">Desenhe com o mouse ou o dedo.</span>
+                        </div>
+                        <input type="hidden" name="assinatura_base64" id="assinatura_base64" required>
+                    </div>
+                </div>
+
                 <!-- Termos -->
                 <div class="bg-blue-50 p-4 rounded text-sm text-blue-900 border border-blue-200">
                     <p>Ao clicar no botão abaixo, você concorda que o IP <b>(Registro de Rede)</b> e data/hora serão gravados no documento PDF congelado final, gerando prova de aceite jurídico nos termos da Legislação vigente.</p>
@@ -67,6 +83,119 @@
             </form>
         </div>
     </div>
+
+    <!-- Script do Canvas de Assinatura -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const canvas = document.getElementById('signature-pad');
+            const ctx = canvas.getContext('2d');
+            const clearButton = document.getElementById('clear-signature');
+            const hiddenInput = document.getElementById('assinatura_base64');
+            const form = document.querySelector('form');
+            
+            // Ajusta resolução do canvas
+            function resizeCanvas() {
+                const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                ctx.scale(ratio, ratio);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#000000';
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            function getMousePos(evt) {
+                const rect = canvas.getBoundingClientRect();
+                if (evt.touches) {
+                    return {
+                        x: evt.touches[0].clientX - rect.left,
+                        y: evt.touches[0].clientY - rect.top
+                    };
+                }
+                return {
+                    x: evt.clientX - rect.left,
+                    y: evt.clientY - rect.top
+                };
+            }
+
+            function startDrawing(e) {
+                e.preventDefault();
+                isDrawing = true;
+                const pos = getMousePos(e);
+                lastX = pos.x;
+                lastY = pos.y;
+                
+                // Draw a dot on click
+                ctx.beginPath();
+                ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.fill();
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const pos = getMousePos(e);
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                
+                lastX = pos.x;
+                lastY = pos.y;
+            }
+
+            function stopDrawing(e) {
+                if (!isDrawing) return;
+                isDrawing = false;
+                updateHiddenInput();
+            }
+
+            function updateHiddenInput() {
+                // Remove blank space to check if empty
+                const blankCanvas = document.createElement('canvas');
+                blankCanvas.width = canvas.width;
+                blankCanvas.height = canvas.height;
+                
+                if (canvas.toDataURL() === blankCanvas.toDataURL()) {
+                    hiddenInput.value = '';
+                } else {
+                    hiddenInput.value = canvas.toDataURL('image/png');
+                }
+            }
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            canvas.addEventListener('touchstart', startDrawing, {passive: false});
+            canvas.addEventListener('touchmove', draw, {passive: false});
+            canvas.addEventListener('touchend', stopDrawing);
+
+            clearButton.addEventListener('click', () => {
+                ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+                hiddenInput.value = '';
+            });
+
+            form.addEventListener('submit', function(e) {
+                updateHiddenInput();
+                if (!hiddenInput.value) {
+                    e.preventDefault();
+                    alert('Por favor, desenhe sua assinatura no quadro antes de continuar.');
+                    document.getElementById('loading').style.display='none';
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
