@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'midia_lgpd',
     'escalas',
     'almoxarifado',
+    'pdv',
 ]
 
 MIDDLEWARE = [

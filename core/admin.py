@@ -8,9 +8,22 @@ class MembroAdmin(UserAdmin):
     list_filter = ('nivel_hierarquico', 'is_active', 'is_staff')
     search_fields = ('username', 'email', 'first_name', 'last_name', 'cpf')
     readonly_fields = ('hash_aceite_lgpd',)
-    
+
     fieldsets = UserAdmin.fieldsets + (
-        ('PV Enseada Dados', {'fields': ('cpf', 'rg', 'telefone', 'foto_perfil', 'data_nascimento', 'data_casamento', 'conjuge', 'filhos', 'habilidades', 'nivel_hierarquico')}),
+        ('PV Enseada Dados', {'fields': (
+            'cpf', 'rg', 'telefone', 'foto_perfil', 'data_nascimento', 'data_casamento',
+            'conjuge', 'filhos', 'sexo', 'estado_civil', 'profissao', 'escolaridade',
+            'habilidades', 'nivel_hierarquico', 'status_conta', 'anotacoes_lideranca'
+        )}),
+        ('Endereço', {'fields': (
+            'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado'
+        )}),
+        ('Eclesiástico', {'fields': (
+            'data_batismo', 'membro_desde', 'igreja_anterior'
+        )}),
+        ('Extras', {'fields': (
+            'redes_sociais', 'tamanho_camisa', 'alergias', 'contato_emergencia'
+        )}),
         ('LGPD', {'fields': ('termos_aceitos', 'hash_aceite_lgpd', 'data_aceite')}),
     )
 
@@ -20,7 +33,7 @@ class LogAuditoriaAdmin(admin.ModelAdmin):
     list_filter = ('acao_realizada', 'tabela_afetada', 'data_hora')
     search_fields = ('usuario_acao__first_name', 'hash_atual', 'hash_anterior', 'ip_origem')
     readonly_fields = ('usuario_acao', 'acao_realizada', 'tabela_afetada', 'ip_origem', 'cidade_origem', 'isp_origem', 'user_agent', 'data_hora', 'diferenca_json', 'hash_anterior', 'hash_atual')
-    
+
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False

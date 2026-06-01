@@ -19,6 +19,7 @@ import psutil
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Membro
+from gestao_membros.models import Habilidade
 from axes.models import AccessAttempt
 from axes.utils import reset
 from django.conf import settings
@@ -125,6 +126,45 @@ from midia_lgpd.models import TermoLGPD, AssinaturaLGPD
 
 from gestao_membros.models import AvisoMural
 
+import random
+from django.core.cache import cache
+
+def gerar_insight_ia(user):
+    cache_key = f"insight_ia_{user.id}"
+    insight_data = cache.get(cache_key)
+
+    if not insight_data:
+        versiculos = [
+            'O Senhor é o meu pastor; de nada terei falta. (Salmos 23:1)',
+            'Tudo posso naquele que me fortalece. (Filipenses 4:13)',
+            'O choro pode durar uma noite, mas a alegria vem pela manhã. (Salmos 30:5)',
+            'Entrega o teu caminho ao Senhor; confia nele, e ele o fará. (Salmos 37:5)'
+        ]
+
+        try:
+            from intranet.services.groq_ai import obter_client_groq
+            client = obter_client_groq()
+            response = client.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[
+                    {"role": "system", "content": "Gere uma frase curta motivacional para o membro da igreja."},
+                    {"role": "user", "content": f"Gere um insight rápido para {user.first_name}"}
+                ],
+                max_tokens=60,
+                temperature=0.7
+            )
+            insight_text = response.choices[0].message.content.replace('"', '').strip()
+        except Exception:
+            insight_text = f"Você é muito importante para nós, {user.first_name}."
+
+        insight_data = {
+            'versiculo': random.choice(versiculos),
+            'insight': insight_text
+        }
+        cache.set(cache_key, insight_data, timeout=3600 * 12)
+
+    return insight_data
+
 @login_required
 def dashboard_view(request):
     termo_ativo = TermoLGPD.objects.filter(is_ativo=True).first()
@@ -139,14 +179,33 @@ def dashboard_view(request):
         departamento__in=departamentos_do_usuario
     ).filter(
         Q(data_expiracao__isnull=True) | Q(data_expiracao__gte=timezone.now())
-    ).order_by('-fixado', '-data_postagem')[:10]
+    ).order_by('-fixado', '-data_postagem')[:5]
 
-    # Verifica se é líder dos setores específicos
+    # Verifica permissões específicas
     is_lider_lgpd = request.user.departamentos_liderados.filter(nome__icontains='LGPD').exists() or request.user.nivel_hierarquico == 'super_admin'
     is_lider_almoxarifado = request.user.departamentos_liderados.filter(nome__icontains='Almoxarifado').exists() or request.user.nivel_hierarquico == 'super_admin'
 
-    from .models import LinkRapido
-    links_rapidos = LinkRapido.objects.filter(is_active=True).order_by('ordem')
+    # Próxima escala do usuário
+    from datetime import date
+    try:
+        from escalas.models import Escala
+        minha_proxima_escala = Escala.objects.filter(membro_escalado=request.user, data_escala__gte=date.today()).order_by('data_escala').first()
+    except ImportError:
+        minha_proxima_escala = None
+
+    # Próximos 4 cultos gerais (mesmo sem estar escalado)
+    from escalas.models import CultoEvento
+    try:
+        proximos_cultos = CultoEvento.objects.order_by('dia_semana', 'data_evento')[:4]
+    except Exception:
+        proximos_cultos = []
+
+    # Notícias Ticker Globais
+    from .models import NoticiaTicker
+    noticias_ticker = NoticiaTicker.objects.filter(ativo=True).order_by('ordem')[:5]
+
+    # IA Insight
+    insight_ia = gerar_insight_ia(request.user)
 
     return render(request, 'core/pages/dashboard.html', {
         'assinou_lgpd': assinou_lgpd,
@@ -154,15 +213,19 @@ def dashboard_view(request):
         'departamentos_do_usuario': departamentos_do_usuario,
         'is_lider_lgpd': is_lider_lgpd,
         'is_lider_almoxarifado': is_lider_almoxarifado,
-        'links_rapidos': links_rapidos
+        'is_lider_pdv': True, # Hardcoded cause they use config now
+        'minha_proxima_escala': minha_proxima_escala,
+        'proximos_cultos': proximos_cultos,
+        'noticias_ticker': noticias_ticker,
+        'insight_ia': insight_ia
     })
 
-from gestao_membros.models import Habilidade
-
+# ==========================================
+# PWA VIEWS (RECOVERED)
+# ==========================================
 @login_required
 def editar_perfil(request):
-    deps = request.user.departamentos_ativos.all() | request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
-    todas_habilidades = Habilidade.objects.filter(departamento__in=deps.distinct()).distinct()
+    todas_habilidades = Habilidade.objects.select_related('departamento').order_by('departamento__nome', 'nome')
 
     if request.method == 'POST':
         user = request.user

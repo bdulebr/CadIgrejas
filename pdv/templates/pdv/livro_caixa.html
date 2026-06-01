@@ -1,0 +1,54 @@
+{% extends 'core/base.html' %}
+{% block title %}Livro Caixa - Gestão do Caixa{% endblock title %}
+{% block content %}
+<div class="min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-black text-white"><i data-lucide="book-open" class="w-8 h-8 inline text-yellow-500"></i> Livro Caixa</h1>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-gray-900/50 backdrop-blur-md rounded-xl p-6 border border-white/10">
+                <h3 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Últimos Caixas Abertos</h3>
+                <ul class="space-y-3 text-sm">
+                    {% for cx in caixas|slice:":10" %}
+                    <li class="flex justify-between items-center p-3 bg-gray-800/40 rounded">
+                        <div>
+                            <p class="text-gray-300 font-bold">Caixa {{ cx.id }} - {{ cx.operador.username }}</p>
+                            <p class="text-gray-500 text-xs">{{ cx.data_abertura|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <span class="px-2 py-1 rounded text-xs font-bold {% if cx.status == 'aberto' %}bg-green-500/20 text-green-400{% else %}bg-gray-600/20 text-gray-400{% endif %}">
+                            {{ cx.get_status_display }}
+                        </span>
+                    </li>
+                    {% empty %}
+                    <li class="text-gray-500">Nenhum caixa registrado.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="bg-gray-900/50 backdrop-blur-md rounded-xl p-6 border border-white/10">
+                <h3 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Movimentações Recentes</h3>
+                <ul class="space-y-3 text-sm">
+                    {% for mov in movimentos %}
+                    <li class="flex justify-between items-center p-3 bg-gray-800/40 rounded">
+                        <div>
+                            <p class="text-gray-300">{{ mov.descricao }}</p>
+                            <p class="text-gray-500 text-xs">{{ mov.data_movimento|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <span class="font-bold {% if mov.tipo == 'entrada' %}text-green-400{% else %}text-red-400{% endif %}">
+                            {% if mov.tipo == 'entrada' %}+{% else %}-{% endif %} R$ {{ mov.valor }}
+                        </span>
+                    </li>
+                    {% empty %}
+                    <li class="text-gray-500">Nenhuma movimentação registrada.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="mt-6">
+            <a href="{% url 'pdv_dashboard' %}" class="text-gray-400 hover:text-white">&larr; Voltar para a Gestão do Caixa</a>
+        </div>
+    </div>
+</div>
+{% endblock content %}

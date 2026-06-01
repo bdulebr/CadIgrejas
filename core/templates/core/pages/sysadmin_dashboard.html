@@ -328,6 +328,9 @@
                             <td class="px-6 py-4 font-bold text-white">{{ link.titulo }}</td>
                             <td class="px-6 py-4 text-gray-400 truncate max-w-[200px]">{{ link.url }}</td>
                             <td class="px-6 py-4 text-right flex justify-end gap-3">
+                                <a href="{% url 'admin:core_linkrapido_change' link.id %}" target="_blank" class="text-blue-400 hover:text-blue-300" title="Editar no Admin">
+                                    <i data-lucide="edit-3"></i>
+                                </a>
                                 <form method="POST" action="{% url 'sysadmin_link_deletar' link.id %}" onsubmit="return confirm('Excluir este link?')" class="inline">
                                     {% csrf_token %}
                                     <button type="submit" class="text-red-400 hover:text-red-300" title="Deletar">

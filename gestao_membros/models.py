@@ -35,16 +35,16 @@ class Departamento(models.Model):
     nome = models.CharField(max_length=100)
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES)
     logo = models.ImageField(upload_to='departamentos/logos/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'svg', 'webp'])])
-    
+
     lideres = models.ManyToManyField(Membro, related_name='departamentos_liderados', blank=True)
     sub_lideres = models.ManyToManyField(Membro, related_name='departamentos_subliderados', blank=True)
     membros_ativos = models.ManyToManyField(Membro, related_name='departamentos_ativos', blank=True)
-    
+
     membros_ativos = models.ManyToManyField(Membro, related_name='departamentos_ativos', blank=True)
 
     def __str__(self):
         return f"{self.nome} ({self.id_unico_fixo})"
-        
+
     def save(self, *args, **kwargs):
         import random
         if not self.id_unico_fixo:
@@ -61,7 +61,7 @@ class ConfiguracaoSlotEscala(models.Model):
     tipo_evento = models.CharField(max_length=50)
     funcao = models.ForeignKey('Funcao', on_delete=models.CASCADE)
     quantidade = models.PositiveIntegerField(default=1)
-    
+
     class Meta:
         unique_together = ('departamento', 'tipo_evento', 'funcao')
 
@@ -114,11 +114,51 @@ class AvisoAnexo(models.Model):
     aviso = models.ForeignKey(AvisoMural, on_delete=models.CASCADE, related_name='anexos')
     arquivo = models.FileField(upload_to='avisos_anexos/')
     nome_original = models.CharField(max_length=255, blank=True)
-    
+
     def save(self, *args, **kwargs):
         if self.arquivo and not self.nome_original:
             self.nome_original = self.arquivo.name.split('/')[-1]
         super().save(*args, **kwargs)
-        
+
     def __str__(self):
         return f"Anexo de: {self.aviso.titulo}"
+
+class AvaliacaoMembro(models.Model):
+    membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='avaliacoes_recebidas')
+    avaliador = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='avaliacoes_feitas')
+    nota = models.IntegerField(choices=[(1,'1'), (2,'2'), (3,'3'), (4,'4'), (5,'5')])
+    comentarios = models.TextField()
+    data = models.DateTimeField(auto_now_add=True)
+    enviado_ao_membro = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Avaliação de {self.membro.first_name} por {self.avaliador.first_name}"
+
+class Ocorrencia(models.Model):
+    titulo = models.CharField(max_length=200)
+    descricao = models.TextField()
+    data_ocorrencia = models.DateField()
+    data_registro = models.DateTimeField(auto_now_add=True)
+    autor = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='ocorrencias_registradas')
+    envolvidos = models.ManyToManyField(Membro, related_name='ocorrencias_envolvido')
+    anexo = models.FileField(upload_to='ocorrencias/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
+
+    def __str__(self):
+        return f"Ocorrência: {self.titulo} - {self.data_ocorrencia}"
+
+class AcaoDisciplinar(models.Model):
+    TIPO_CHOICES = (
+        ('advertencia', 'Advertência Formal'),
+        ('suspensao', 'Suspensão'),
+        ('expulsao', 'Desligamento / Expulsão'),
+    )
+    membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='acoes_disciplinares')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    motivo = models.TextField()
+    data_aplicacao = models.DateTimeField(auto_now_add=True)
+    data_fim_suspensao = models.DateField(null=True, blank=True)
+    autor = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='acoes_disciplinares_aplicadas')
+    enviado_email = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.membro.first_name}"

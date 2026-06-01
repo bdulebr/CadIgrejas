@@ -29,6 +29,7 @@ urlpatterns = [
     path('', include('gestao_membros.urls')),
     path('', include('escalas.urls')),
     path('', include('almoxarifado.urls')),
+    path('pdv/', include('pdv.urls')),
     path('', include('midia_lgpd.urls')),
     path('api/', include('api.urls')),
     path('sw.js', pwa_service_worker, name='sw.js'),

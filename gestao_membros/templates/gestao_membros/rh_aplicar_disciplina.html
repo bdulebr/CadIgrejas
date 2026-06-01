@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Ação Disciplinar - PVE{% endblock %}
+{% block content %}
+<div class="min-h-screen p-8 flex items-center justify-center">
+    <div class="w-full max-w-xl bg-gray-900 border border-red-900/50 rounded-xl p-8 shadow-[0_0_50px_rgba(220,38,38,0.1)]">
+        <h2 class="text-2xl font-black text-white mb-2 flex items-center gap-3">
+            <i data-lucide="gavel" class="text-red-500 w-6 h-6"></i> Aplicar Disciplina
+        </h2>
+        <p class="text-gray-400 text-sm mb-6">Membro alvo: <strong class="text-white">{{ membro.get_full_name }}</strong></p>
+
+        <form method="POST" class="space-y-5" x-data="{ tipo: 'advertencia' }">
+            {% csrf_token %}
+            <div>
+                <label class="block text-gray-400 text-sm font-bold mb-2">Tipo de Sanção</label>
+                <select name="tipo" x-model="tipo" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 font-bold text-lg outline-none focus:border-red-500">
+                    <option value="advertencia">Advertência Formal</option>
+                    <option value="suspensao">Suspensão</option>
+                    <option value="expulsao">Desligamento / Expulsão</option>
+                </select>
+            </div>
+
+            <div x-show="tipo === 'suspensao'">
+                <label class="block text-gray-400 text-sm font-bold mb-2 text-red-400">Data Final da Suspensão</label>
+                <input type="date" name="data_fim_suspensao" class="w-full bg-gray-800 border border-red-900 text-white rounded-lg p-3 outline-none focus:border-red-500" :required="tipo === 'suspensao'">
+            </div>
+
+            <div>
+                <label class="block text-gray-400 text-sm font-bold mb-2">Motivo Detalhado (Irá para a carta de notificação)</label>
+                <textarea name="motivo" rows="4" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-red-500" required></textarea>
+            </div>
+
+            <div class="flex items-center gap-3 bg-gray-800 p-4 rounded-lg">
+                <input type="checkbox" name="enviar_email" checked class="w-5 h-5 accent-red-500">
+                <span class="text-gray-300 font-bold">Enviar notificação por e-mail automaticamente (com PDF anexo)</span>
+            </div>
+
+            <div class="pt-4 flex justify-end gap-3 border-t border-gray-800">
+                <a href="{% url 'rh_dossie_membro' membro.id %}" class="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-700">Cancelar</a>
+                <button type="submit" class="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-lg shadow-lg flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i> APLICAR MEDIDA
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

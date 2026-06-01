@@ -1,0 +1,121 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Dossiê: {{ membro.first_name }} - PVE{% endblock %}
+{% block content %}
+<div class="min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'rh_painel' %}" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-white"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+                <div>
+                    <h1 class="text-3xl font-black text-white">{{ membro.get_full_name|default:membro.username }}</h1>
+                    <p class="text-gray-400 text-sm">Dossiê e Histórico de Voluntariado</p>
+                </div>
+            </div>
+            <a href="{% url 'rh_aplicar_disciplina' membro.id %}" class="px-4 py-2 bg-red-900/50 border border-red-500 hover:bg-red-600 text-white font-bold rounded flex items-center gap-2 transition">
+                <i data-lucide="gavel" class="w-5 h-5"></i> Aplicar Disciplina
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Coluna Esquerda: Avaliar -->
+            <div class="lg:col-span-1 space-y-6">
+
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+                    <h3 class="text-white font-bold mb-4 flex items-center gap-2"><i data-lucide="star" class="w-5 h-5 text-yellow-500"></i> Registrar Avaliação</h3>
+                    <form action="{% url 'rh_avaliar_membro' membro.id %}" method="POST" class="space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-gray-400 text-xs uppercase mb-1">Nota (1 a 5)</label>
+                            <select name="nota" class="w-full bg-gray-800 text-white rounded border border-gray-700 p-2" required>
+                                <option value="5">5 - Excelente</option>
+                                <option value="4">4 - Muito Bom</option>
+                                <option value="3">3 - Regular</option>
+                                <option value="2">2 - Ruim</option>
+                                <option value="1">1 - Crítico</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-xs uppercase mb-1">Observações do Líder</label>
+                            <textarea name="comentarios" rows="3" class="w-full bg-gray-800 text-white rounded border border-gray-700 p-2 text-sm" placeholder="Escreva o parecer..." required></textarea>
+                        </div>
+                        <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">Salvar Avaliação</button>
+                    </form>
+                </div>
+
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+                    <h3 class="text-white font-bold mb-4">Ações Disciplinares</h3>
+                    <div class="space-y-3">
+                        {% for acao in acoes %}
+                        <div class="bg-gray-950 p-3 rounded border border-red-900/50">
+                            <div class="flex justify-between items-start">
+                                <span class="text-red-400 font-bold text-sm">{{ acao.get_tipo_display }}</span>
+                                <span class="text-gray-500 text-xs">{{ acao.data_aplicacao|date:"d/m/Y" }}</span>
+                            </div>
+                            <p class="text-gray-400 text-xs mt-1 line-clamp-2">"{{ acao.motivo }}"</p>
+                            <a href="{% url 'rh_gerar_pdf_disciplina' acao.id %}" target="_blank" class="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                                <i data-lucide="file-text" class="w-3 h-3"></i> Imprimir PDF
+                            </a>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-sm">Nenhuma punição registrada.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Timeline -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+                    <h3 class="text-white font-bold mb-4 flex items-center gap-2 border-b border-gray-800 pb-2">
+                        <i data-lucide="history" class="w-5 h-5 text-blue-500"></i> Ocorrências no Livro
+                    </h3>
+                    <div class="space-y-4">
+                        {% for o in ocorrencias %}
+                        <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-white font-bold">{{ o.titulo }}</h4>
+                                <span class="bg-gray-900 text-gray-400 text-xs px-2 py-1 rounded">{{ o.data_ocorrencia|date:"d/m/Y" }}</span>
+                            </div>
+                            <p class="text-gray-300 text-sm mb-3">{{ o.descricao }}</p>
+                            <div class="flex justify-between items-center text-xs text-gray-500">
+                                <span>Registrado por: {{ o.autor.first_name }}</span>
+                                {% if o.anexo %}
+                                <a href="{{ o.anexo.url }}" target="_blank" class="text-blue-400 hover:text-blue-300 flex items-center gap-1"><i data-lucide="paperclip" class="w-3 h-3"></i> Anexo</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-sm">Membro com ficha limpa (sem ocorrências).</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+                    <h3 class="text-white font-bold mb-4 flex items-center gap-2 border-b border-gray-800 pb-2">
+                        <i data-lucide="bar-chart" class="w-5 h-5 text-green-500"></i> Histórico de Avaliações
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for av in avaliacoes %}
+                        <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                            <div class="flex items-center gap-1 mb-2">
+                                {% for i in "12345"|make_list %}
+                                    <i data-lucide="star" class="w-4 h-4 {% if forloop.counter <= av.nota %}text-yellow-500 fill-yellow-500{% else %}text-gray-600{% endif %}"></i>
+                                {% endfor %}
+                                <span class="ml-2 text-xs text-gray-400">{{ av.data|date:"d/m/y" }} por {{ av.avaliador.first_name }}</span>
+                            </div>
+                            <p class="text-gray-300 text-sm italic">"{{ av.comentarios }}"</p>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-sm">Nenhuma avaliação realizada ainda.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

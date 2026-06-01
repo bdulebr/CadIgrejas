@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}
+{% block title %}{% if produto %}Editar{% else %}Novo{% endif %} Produto{% endblock title %}
+{% block content %}
+<div class="min-h-screen p-8">
+    <div class="max-w-3xl mx-auto">
+        <h1 class="text-3xl font-black text-white mb-6">{% if produto %}Editar Produto{% else %}Novo Produto{% endif %}</h1>
+        <div class="bg-gray-900/50 backdrop-blur-md rounded-xl p-8 border border-white/10">
+            <form method="POST" class="space-y-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="col-span-2">
+                        <label class="block text-gray-400 text-sm mb-2">Nome do Produto</label>
+                        <input type="text" name="nome" value="{{ produto.nome }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">Código de Barras (EAN)</label>
+                        <input type="text" name="codigo_barras" value="{{ produto.codigo_barras|default:'' }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">Estoque Atual</label>
+                        <input type="number" name="estoque_atual" value="{{ produto.estoque_atual|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">Preço de Custo (R$)</label>
+                        <input type="number" step="0.01" name="preco_custo" value="{{ produto.preco_custo|default:0 }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">Preço de Venda (R$)</label>
+                        <input type="number" step="0.01" name="preco_venda" value="{{ produto.preco_venda|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-gray-700 flex justify-end gap-3">
+                    <a href="{% url 'pdv_lista_produtos' %}" class="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold">Cancelar</a>
+                    <button type="submit" class="px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold">Salvar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -38,6 +38,14 @@ urlpatterns = [
     path('membros/adicionar/', views.adicionar_membro, name='adicionar_membro'),
     path('membros/editar/<int:membro_id>/', views.editar_membro, name='editar_membro'),
     path('membros/excluir/<int:membro_id>/', views.excluir_membro, name='excluir_membro'),
-    
+
     path('membro/gerir-lider/<int:membro_id>/', views.gerir_membro_lider, name='gerir_membro_lider'),
+
+    # Módulo de Gestão de Voluntários (RH)
+    path('painel-lider/rh/', views.rh_painel, name='rh_painel'),
+    path('painel-lider/rh/dossie/<int:membro_id>/', views.rh_dossie_membro, name='rh_dossie_membro'),
+    path('painel-lider/rh/avaliar/<int:membro_id>/', views.rh_avaliar_membro, name='rh_avaliar_membro'),
+    path('painel-lider/rh/ocorrencia/nova/', views.rh_nova_ocorrencia, name='rh_nova_ocorrencia'),
+    path('painel-lider/rh/disciplina/<int:membro_id>/', views.rh_aplicar_disciplina, name='rh_aplicar_disciplina'),
+    path('painel-lider/rh/disciplina/pdf/<int:acao_id>/', views.rh_gerar_pdf_disciplina, name='rh_gerar_pdf_disciplina'),
 ]

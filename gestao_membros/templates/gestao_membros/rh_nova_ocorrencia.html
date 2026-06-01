@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Registrar Ocorrência - PVE{% endblock %}
+{% block content %}
+<div class="min-h-screen p-8 flex items-center justify-center">
+    <div class="w-full max-w-2xl bg-gray-900 border border-gray-800 rounded-xl p-8 shadow-2xl">
+        <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3">
+            <i data-lucide="book-open" class="text-blue-500 w-6 h-6"></i> Registrar Ocorrência Geral
+        </h2>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+            <div>
+                <label class="block text-gray-400 text-sm font-bold mb-2">Título Breve</label>
+                <input type="text" name="titulo" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-blue-500" placeholder="Ex: Atraso coletivo no ensaio" required>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-400 text-sm font-bold mb-2">Data do Fato</label>
+                    <input type="date" name="data_ocorrencia" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-gray-400 text-sm font-bold mb-2">Anexo (Foto/Print/PDF)</label>
+                    <input type="file" name="anexo" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-gray-400 text-sm font-bold mb-2">Membros Envolvidos (Segure CTRL para múltiplos)</label>
+                <select name="envolvidos" multiple class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none h-32 focus:border-blue-500" required>
+                    {% for m in membros %}
+                    <option value="{{ m.id }}">{{ m.first_name|default:m.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-gray-400 text-sm font-bold mb-2">Relato / Descrição Completa</label>
+                <textarea name="descricao" rows="4" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-blue-500" required></textarea>
+            </div>
+
+            <div class="pt-4 flex justify-end gap-3 border-t border-gray-800">
+                <a href="{% url 'rh_painel' %}" class="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-700">Cancelar</a>
+                <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg">Salvar Ocorrência</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
