@@ -1,0 +1,18 @@
+[Unit]
+Description=gunicorn daemon for intranet
+Requires=intranet.socket
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/intranet
+ExecStart=/var/www/intranet/venv/bin/gunicorn \
+          --access-logfile /var/www/intranet/logs/gunicorn-access.log \
+          --error-logfile /var/www/intranet/logs/gunicorn-error.log \
+          --workers 3 \
+          --bind unix:/run/intranet.sock \
+          intranet.wsgi:application
+
+[Install]
+WantedBy=multi-user.target

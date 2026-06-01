@@ -1,0 +1,8 @@
+[Unit]
+Description=gunicorn socket for intranet
+
+[Socket]
+ListenStream=/run/intranet.sock
+
+[Install]
+WantedBy=sockets.target
