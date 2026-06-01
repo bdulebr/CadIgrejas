@@ -55,6 +55,7 @@
                     <i data-lucide="users" class="w-4 h-4 text-blue-400"></i> Voluntários
                 </h3>
                 <input type="text" id="busca_voluntario" placeholder="Buscar por nome..." class="w-full mt-3 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-xs outline-none focus:border-blue-500 transition-colors">
+                <p class="text-[10px] text-gray-400 mt-2"><i data-lucide="info" class="w-3 h-3 inline"></i> Para escalar: Arraste o voluntário, ou <b>clique nele</b> e depois clique na vaga.</p>
             </div>
             
             <div class="flex-1 overflow-y-auto p-3 space-y-2" id="lista_voluntarios">
@@ -106,7 +107,7 @@
                         </div>
                         
                         <!-- DROPZONE -->
-                        <div class="p-2 min-h-[60px] dropzone transition-all flex flex-col gap-2" 
+                        <div class="p-2 min-h-[60px] dropzone transition-all flex flex-col gap-2 cursor-pointer hover:bg-white/5 rounded-xl" 
                              data-data="{{ dia.data_str }}" 
                              data-evento="{{ dia.evento_id }}" 
                              data-funcao="{{ funcao.funcao_id }}">
@@ -140,8 +141,8 @@
             <div class="w-full flex items-center justify-center border-2 border-dashed border-gray-700 rounded-2xl">
                 <div class="text-center">
                     <i data-lucide="calendar-off" class="w-12 h-12 text-gray-400 mx-auto mb-2"></i>
-                    <p class="text-gray-400 font-bold">Nenhum slot configurado para os dias deste mês.</p>
-                    <p class="text-xs text-gray-500 mt-1">Configure os slots no painel do departamento primeiro.</p>
+                    <p class="text-gray-400 font-bold">Nenhuma vaga (função) configurada para os dias deste mês.</p>
+                    <p class="text-xs text-gray-500 mt-1">Configure as vagas no painel do departamento primeiro.</p>
                 </div>
             </div>
             {% endfor %}
@@ -186,6 +187,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     let draggedItem = null;
+    let selectedItem = null;
 
     cards.forEach(card => {
         card.addEventListener('dragstart', function(e) {
@@ -199,6 +201,14 @@ document.addEventListener("DOMContentLoaded", function() {
             this.classList.remove('is-dragging');
             draggedItem = null;
         });
+        
+        // CLICK SELECTION FOR ELDERLY / MOBILE
+        card.addEventListener('click', function(e) {
+            if(status_comp !== 'rascunho') return;
+            cards.forEach(c => c.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-900/40'));
+            this.classList.add('ring-2', 'ring-blue-500', 'bg-blue-900/40');
+            selectedItem = this;
+        });
     });
 
     const dropzones = document.querySelectorAll('.dropzone');
@@ -210,6 +220,81 @@ document.addEventListener("DOMContentLoaded", function() {
         
         zone.addEventListener('dragleave', function() {
             this.classList.remove('dropzone-hover');
+        });
+        
+        // CLICK TO ADD FOR ELDERLY / MOBILE
+        zone.addEventListener('click', async function(e) {
+            if(status_comp !== 'rascunho') return;
+            if(e.target.closest('.btn-remover')) return;
+            
+            if(!selectedItem) {
+                // Ignore empty click if no one selected
+                return;
+            }
+            
+            const membro_id = selectedItem.getAttribute('data-id');
+            const data_escala = this.getAttribute('data-data');
+            const tipo_evento = this.getAttribute('data-evento');
+            const funcao_id = this.getAttribute('data-funcao');
+            
+            const zoneEl = this;
+            zoneEl.style.opacity = '0.5';
+            
+            try {
+                const response = await fetch("{% url 'alocar_slot_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        comp_id: comp_id,
+                        membro_id: membro_id,
+                        data_escala: data_escala,
+                        tipo_evento: tipo_evento,
+                        funcao_id: funcao_id
+                    })
+                });
+                
+                const result = await response.json();
+                if(result.success) {
+                    const fotoHtml = result.foto_url 
+                        ? `<img src="${result.foto_url}" class="w-6 h-6 rounded-full object-cover">`
+                        : `<div class="w-6 h-6 rounded-full bg-blue-800 flex items-center justify-center text-xs font-bold text-white"><i data-lucide="user" class="w-3 h-3"></i></div>`;
+                        
+                    const alocadoHtml = `
+                        <div class="bg-blue-900/30 border border-blue-500/40 p-2 rounded-lg flex justify-between items-center shadow-sm group">
+                            <div class="flex items-center gap-2">
+                                ${fotoHtml}
+                                <span class="text-xs font-bold text-blue-100 truncate w-32">${result.membro_nome}</span>
+                            </div>
+                            <button type="button" class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity btn-remover" data-escala-id="${result.escala_id}">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    zoneEl.insertAdjacentHTML('beforeend', alocadoHtml);
+                    lucide.createIcons();
+                    attachRemoverEvents();
+                    
+                    const badge = zoneEl.previousElementSibling.querySelector('span:last-child');
+                    if(badge) {
+                        const parts = badge.innerText.split('/');
+                        badge.innerText = (parseInt(parts[0]) + 1) + '/' + parts[1];
+                    }
+                    
+                    // CLEAR SELECTION AFTER ADD
+                    cards.forEach(c => c.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-900/40'));
+                    selectedItem = null;
+                    
+                } else {
+                    alert('Erro: ' + result.error);
+                }
+            } catch(err) {
+                alert('Falha na comunicação com o servidor.');
+            } finally {
+                zoneEl.style.opacity = '1';
+            }
         });
         
         zone.addEventListener('drop', async function(e) {
