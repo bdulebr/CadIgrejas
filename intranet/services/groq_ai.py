@@ -62,28 +62,41 @@ def analisar_planilha_escalas_groq(file_obj):
 
         prompt = f"""
         Você é um Assistente de IA de OCR Avançado focado em Escalas de Voluntários de Igreja.
-        Vou te passar o texto cru extraído de um PDF contendo uma escala.
-        As tabelas podem estar em formatos variados (com colunas como "NOITE", "COLABORADORES", "Tema", "INTERCESSORES").
+        Vou te passar o texto cru extraído de um PDF. Como o PDF usa tabelas, o texto pode vir 'encavalado' (juntando colunas na mesma linha).
 
-        Você DEVE extrair as informações e retornar ESTRITAMENTE o seguinte formato JSON:
+        Você DEVE analisar o texto e retornar ESTRITAMENTE um objeto JSON válido neste formato:
         {{
-          "departamento": "Nome do Departamento (Ex: Adolescentes, Audiovisual, Intercessão, Live)",
-          "mes": "Mês por extenso ou número (Ex: Junho ou 06)",
-          "ano": "Ano (deduza ser o ano atual se não houver)",
+          "departamento": "Nome (Ex: Adolescentes, Audiovisual, Intercessão, Live, Quinta do Saber)",
+          "mes": "Mês por extenso ou número (Ex: Junho)",
+          "ano": "Ano (Ex: 2026)",
           "escalas": [
             {{
-              "dia": "DD/MM/YYYY (converta o que achar, ex: Domingo 07/06 para 07/06/2026)",
-              "turno": "Manhã ou Noite (se especificado)",
-              "funcao": "Papel/Função específica (Ex: Câmera, Geral, Sonoplastia, Projeção). Deixe vazio se não houver.",
-              "membros_nomes": ["Lista", "De", "Nomes", "Separados"],
-              "observacao": "Qualquer tema, versículo ou nota daquele dia"
+              "dia": "DD/MM/YYYY (Ex: 07/06/2026)",
+              "turno": "Manhã ou Noite (ou deixe vazio se não houver)",
+              "funcao": "Função (Ex: Câmera, Sonoplastia, Projeção). Se não especificado, mande 'Geral'",
+              "membros_nomes": ["Lista", "Limpa", "De", "Nomes"],
+              "observacao": "Qualquer tema, versículo ou nota"
             }}
           ]
         }}
 
-        - SE houver divisões claras de papel no mesmo dia (Ex: CÂMERA: ARTHUR / GERAL: PEDRO), você DEVE criar objetos JSON separados para cada Função.
-        - SE houver divisões de turnos (Ex: Manhã: João / Noite: Maria), crie objetos separados.
-        - Limpe e separe os nomes perfeitamente na lista 'membros_nomes' (tire "Miss", "Pr", etc, ou mantenha se não tiver certeza).
+        REGRAS DE LIMPEZA E LÓGICA (MUITO IMPORTANTE):
+        1. TEXTO ENCAVALADO: O PDF junta data, nome e tema na mesma linha de leitura.
+           *Exemplo Cru:* "Domingo 07/06 Não Deixe Ninguém Roubar IRACI os Teus Sonhos Gênesis 37: 19"
+           *Ação Correta:* Separe! dia: 07/06, membros_nomes: ["Iraci"], observacao: "Não Deixe Ninguém Roubar os Teus Sonhos - Gênesis 37: 19".
+           *Exemplo Cru 2:* "Domingo14/06 Busque a aprovação de RAMON Deus." -> membros_nomes: ["Ramon"], observacao: "Busque a aprovação de Deus".
+
+        2. VÁRIAS FUNÇÕES NO MESMO DIA:
+           *Exemplo Cru:* "Quarta-feira Sonoplastia - Ricardo 03/06 Projeção - Matheus"
+           *Ação Correta:* GERE 2 OBJETOS JSON SEPARADOS PARA O DIA 03/06.
+           Objeto 1 -> funcao: "Sonoplastia", membros_nomes: ["Ricardo"].
+           Objeto 2 -> funcao: "Projeção", membros_nomes: ["Matheus"].
+
+        3. TÍTULOS E APELIDOS:
+           *Exemplo Cru:* "Pr. Geziel", "Miss. Claudenice", "Ev. Douglas", "Kauzão"
+           *Ação Correta:* Remova os títulos eclesiásticos. Retorne apenas os nomes ou apelidos limpos: ["Geziel"], ["Claudenice"], ["Douglas"], ["Kauzão"]. O sistema backend possui um motor inteligente de OCR que casará apelidos com os nomes reais.
+
+        4. PROTEÇÃO DO JSON: Seu retorno DEVE ser EXCLUSIVAMENTE o JSON final. Não coloque crases (```json) nem texto antes ou depois. Nenhuma palavra a mais. Só a estrutura de chaves.
 
         Conteúdo lido:
         ========================================
@@ -109,7 +122,7 @@ def analisar_planilha_escalas_groq(file_obj):
         if tmp_path and os.path.exists(tmp_path):
             try:
                 os.remove(tmp_path)
-            except:
+            except OSError:
                 pass
 
 def gerar_escala_inteligente_groq(departamento_nome, mes, ano, membros, eventos, regras):

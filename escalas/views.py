@@ -62,7 +62,7 @@ def is_trabalhando(membro, data_atual, start_time_str, end_time_str):
 
         if es < we and ee > ws:
             return True
-    except:
+    except ValueError:
         pass
 
     return False
@@ -191,7 +191,7 @@ def editor_escala_manual(request, comp_id):
         6: 'DOM'
     }
 
-    dias_kanban = []
+    dias_escala = []
 
     # Prepara o mapa de alocações atuais: {(data, tipo_evento, funcao_id): [escala1, escala2]}
     alocacoes_map = {}
@@ -228,10 +228,10 @@ def editor_escala_manual(request, comp_id):
         for evento_id, evento_nome in eventos_hoje:
             # Pega as configs desse evento
             configs_evento = configuracoes.filter(tipo_evento=evento_id)
-            if configs_evento.exists():
-                data_str = d.strftime('%Y-%m-%d')
+            data_str = d.strftime('%Y-%m-%d')
+            funcoes_dia = []
 
-                funcoes_dia = []
+            if configs_evento.exists():
                 for config in configs_evento:
                     key = (data_str, evento_id, config.funcao.id)
                     alocados = alocacoes_map.get(key, [])
@@ -243,21 +243,22 @@ def editor_escala_manual(request, comp_id):
                         'alocados': alocados
                     })
 
-                dias_kanban.append({
-                    'data_str': data_str,
-                    'data_br': d.strftime('%d/%m'),
-                    'dia_semana_nome': DIAS_SEMANA_PT.get(dia_semana, ''),
-                    'evento_id': evento_id,
-                    'evento_nome': evento_nome,
-                    'funcoes': funcoes_dia
-                })
+            dias_escala.append({
+                'data_str': data_str,
+                'data_br': d.strftime('%d/%m'),
+                'dia_semana_nome': DIAS_SEMANA_PT.get(dia_semana, ''),
+                'evento_id': evento_id,
+                'evento_nome': evento_nome,
+                'funcoes': funcoes_dia,
+                'sem_config': not configs_evento.exists()
+            })
 
     return render(request, 'escalas/editor_manual.html', {
         'competencia': comp,
         'escalas': escalas,
         'funcoes': funcoes,
         'membros': membros,
-        'dias_kanban': dias_kanban,
+        'dias_escala': dias_escala,
     })
 
 @login_required
@@ -280,6 +281,12 @@ def salvar_slot_escala(request, comp_id):
         if is_indisponivel:
             messages.error(request, 'Membro está marcado como indisponível nesta data.')
             return redirect('editor_escala_manual', comp_id=comp.id)
+
+        escalas_mesmo_dia = Escala.objects.filter(membro_escalado_id=membro_id, data_escala=data_escala)
+        for esc in escalas_mesmo_dia:
+            if esc.departamento_alocado != comp.departamento:
+                messages.error(request, f'Conflito! O voluntário já está escalado neste dia no departamento: {esc.departamento_alocado.nome}.')
+                return redirect('editor_escala_manual', comp_id=comp.id)
 
         membro_obj = get_object_or_404(Membro, id=membro_id)
         data_obj = datetime.strptime(data_escala, '%Y-%m-%d')
@@ -506,8 +513,8 @@ def gerar_escala_automatica(request):
         num_days = calendar.monthrange(ano, mes)[1]
 
         from core.models import Membro
-        from escalas.models import CultoEvento, Escala, Indisponibilidade
-        from gestao_membros.models import Funcao
+        from escalas.models import CultoEvento, Escala
+        from gestao_membros.models import Indisponibilidade, Funcao
 
         membros_elegiveis = Membro.objects.filter(
             Q(is_active=True) &
@@ -581,6 +588,10 @@ def gerar_escala_automatica(request):
                     funcao_obj = Funcao.objects.get(id=int(aloc.get('funcao_id')))
                     membro_obj = Membro.objects.get(id=membro_id)
 
+                    # Trava Anti-Hallucination: Se a IA errar e tentar escalar duas vezes no mesmo dia
+                    if Escala.objects.filter(membro_escalado=membro_obj, data_escala=data_obj).exists():
+                        continue
+
                     Escala.objects.create(
                         competencia=comp,
                         membro_escalado=membro_obj,
@@ -599,11 +610,13 @@ def gerar_escala_automatica(request):
             messages.success(request, f'✨ Motor LPU Groq finalizado! A IA analisou as restrições e alocou {slots_criados} voluntários com precisão matemática.')
 
         except Exception as e:
-            messages.error(request, f'Erro no processamento da Inteligência Artificial (Groq): {str(e)}')
+            messages.warning(request, f'Motor Groq AI falhou ({str(e)}). Acionando Motor Offline de emergência...')
+            return gerar_escala_automatica_fallback(request)
 
         return redirect('editor_escala_manual', comp_id=comp.id)
     return redirect('painel_escalas')
-def gerar_escala_automatica(request):
+
+def gerar_escala_automatica_fallback(request):
     if request.method == 'POST':
         comp_id = request.POST.get('comp_id')
         comp = get_object_or_404(CompetenciaEscala, id=comp_id)
@@ -741,9 +754,10 @@ def alocar_slot_api(request):
         if is_indisp:
             return JsonResponse({'success': False, 'error': 'Voluntário está indisponível nesta data (Período de ausência).'})
 
-        ja_escalado = Escala.objects.filter(membro_escalado=membro, data_escala=data_escala).exists()
-        if ja_escalado:
-            return JsonResponse({'success': False, 'error': 'Voluntário já está escalado neste mesmo dia (Trava Anti-Burnout).'})
+        escalas_mesmo_dia = Escala.objects.filter(membro_escalado=membro, data_escala=data_escala)
+        for esc in escalas_mesmo_dia:
+            if esc.departamento_alocado != comp.departamento:
+                return JsonResponse({'success': False, 'error': f'Conflito de Departamento! O voluntário já está escalado neste dia no departamento: {esc.departamento_alocado.nome}.'})
 
         if tipo_evento.isdigit():
             evento_obj = CultoEvento.objects.filter(id=int(tipo_evento)).first()
@@ -973,8 +987,8 @@ def importar_escala_ocr(request):
             # Fuzzy match setup for Members
             from core.models import Membro
             membros_dept = Membro.objects.filter(is_active=True)
-            # Para aumentar a precisão, priorizamos membros do sistema, mas permitimos busca geral
-            membros_dict = {m.id: f"{m.first_name} {m.last_name}" for m in membros_dept}
+            # Para aumentar a precisão, priorizamos membros do sistema com o Apelido
+            membros_dict = {m.id: f"{m.first_name} {m.last_name} {m.apelido or ''}" for m in membros_dept}
 
             escalas_lidas = dados.get('escalas', [])
             count_sucesso = 0
@@ -988,7 +1002,7 @@ def importar_escala_ocr(request):
                 try:
                     # try to parse DD/MM/YYYY
                     data_obj = datetime.strptime(data_str, '%d/%m/%Y').date()
-                except:
+                except ValueError:
                     continue
 
                 turno = esc.get('turno', '').lower()
@@ -1016,19 +1030,34 @@ def importar_escala_ocr(request):
                             best_match_id = match[2]
                             membro_escalado = Membro.objects.get(id=best_match_id)
 
+                    # Fuzzy match para Funcao
+                    funcao_str = esc.get('funcao', '').strip()
+                    funcao_obj = None
+                    if funcao_str and funcao_str.lower() != 'geral':
+                        from gestao_membros.models import Funcao
+                        funcoes_dept = Funcao.objects.filter(departamento=departamento)
+                        if funcoes_dept.exists():
+                            funcoes_dict = {f.id: f.nome for f in funcoes_dept}
+                            match_func = process.extractOne(funcao_str, funcoes_dict)
+                            if match_func and match_func[1] >= 65:
+                                funcao_obj = Funcao.objects.get(id=match_func[2])
+
                     if membro_escalado:
                         try:
+                            # Previne crash cortando para 200 caracteres caso ainda venha algo enorme
+                            obs_text = str(esc.get('observacao', '') or esc.get('funcao', ''))[:199]
                             Escala.objects.create(
                                 competencia=competencia,
                                 membro_escalado=membro_escalado,
                                 departamento_alocado=departamento,
+                                funcao_alocada=funcao_obj,
                                 data_escala=data_obj,
                                 horario_inicio=horario_inicio,
                                 horario_fim=horario_fim,
-                                tipo_evento=esc.get('observacao', '') or esc.get('funcao', '')
+                                tipo_evento=obs_text
                             )
                             count_sucesso += 1
-                        except:
+                        except IntegrityError:
                             # Ignora erro de constraint única no BD
                             pass
                     else:

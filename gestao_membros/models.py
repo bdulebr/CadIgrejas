@@ -106,6 +106,14 @@ class AvisoMural(models.Model):
     fixado = models.BooleanField(default=False)
     data_expiracao = models.DateTimeField(null=True, blank=True)
     link_externo = models.URLField(max_length=500, blank=True, null=True)
+    @property
+    def status(self):
+        if not self.data_expiracao:
+            return 'ativo'
+        from django.utils import timezone
+        if timezone.now() > self.data_expiracao:
+            return 'expirado'
+        return 'ativo'
 
     def __str__(self):
         return f"Aviso: {self.titulo} - {self.departamento.nome}"

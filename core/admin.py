@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker, TemplateDocumento
+from .models import Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker
 
 @admin.register(Membro)
 class MembroAdmin(UserAdmin):
@@ -11,7 +11,7 @@ class MembroAdmin(UserAdmin):
 
     fieldsets = UserAdmin.fieldsets + (
         ('PV Enseada Dados', {'fields': (
-            'cpf', 'rg', 'telefone', 'foto_perfil', 'data_nascimento', 'data_casamento',
+            'apelido', 'cpf', 'rg', 'telefone', 'foto_perfil', 'data_nascimento', 'data_casamento',
             'conjuge', 'filhos', 'sexo', 'estado_civil', 'profissao', 'escolaridade',
             'habilidades', 'nivel_hierarquico', 'status_conta', 'anotacoes_lideranca'
         )}),
@@ -48,12 +48,6 @@ class NoticiaTickerAdmin(admin.ModelAdmin):
     list_filter = ('ativo',)
     list_editable = ('ativo', 'ordem')
     search_fields = ('texto',)
-
-@admin.register(TemplateDocumento)
-class TemplateDocumentoAdmin(admin.ModelAdmin):
-    list_display = ('nome_acao', 'tipo', 'ativo', 'atualizado_em')
-    list_filter = ('tipo', 'ativo')
-    search_fields = ('nome_acao', 'assunto_padrao')
 
 from .models import LinkRapido
 

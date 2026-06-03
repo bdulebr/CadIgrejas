@@ -15,17 +15,17 @@ def gerar_laudo_pericial_pdf(log):
     Retorna os bytes do PDF gerado.
     """
     buffer = io.BytesIO()
-    
+
     # Configura documento PDF
     doc = SimpleDocTemplate(
-        buffer, 
+        buffer,
         pagesize=A4,
         rightMargin=40, leftMargin=40,
         topMargin=40, bottomMargin=40
     )
-    
+
     styles = getSampleStyleSheet()
-    
+
     # Custom Styles
     style_title = ParagraphStyle(
         name='TitleStyle',
@@ -35,7 +35,7 @@ def gerar_laudo_pericial_pdf(log):
         spaceAfter=15,
         textColor=colors.HexColor('#1E293B')
     )
-    
+
     style_normal = ParagraphStyle(
         name='NormalStyle',
         parent=styles['Normal'],
@@ -43,7 +43,7 @@ def gerar_laudo_pericial_pdf(log):
         spaceAfter=8,
         leading=14
     )
-    
+
     style_mono = ParagraphStyle(
         name='MonoStyle',
         parent=styles['Code'],
@@ -63,11 +63,11 @@ def gerar_laudo_pericial_pdf(log):
     # Identificação do Documento
     story.append(Paragraph(f"<b>ID do Registro (DB):</b> #{log.id}", style_normal))
     story.append(Paragraph(f"<b>Data e Hora da Geração:</b> {timezone.localtime(log.data_hora).strftime('%d/%m/%Y %H:%M:%S')} (Hora de Brasília)", style_normal))
-    
+
     # Informações do Usuário (Ator)
     story.append(Spacer(1, 0.2 * inch))
     story.append(Paragraph("1. DADOS DO AUTOR (ATOR)", styles['Heading3']))
-    
+
     if log.usuario_acao:
         u = log.usuario_acao
         story.append(Paragraph(f"<b>Nome Registrado:</b> {u.get_full_name()} ({u.username})", style_normal))
@@ -90,15 +90,15 @@ def gerar_laudo_pericial_pdf(log):
     story.append(Paragraph("3. DESCRIÇÃO DA AÇÃO REALIZADA", styles['Heading3']))
     story.append(Paragraph(f"<b>Módulo/Tabela Interceptada:</b> {log.tabela_afetada}", style_normal))
     story.append(Paragraph(f"<b>Tipo de Operação:</b> {log.acao_realizada}", style_normal))
-    
+
     # JSON Parsing para leitura legível
     diferenca = log.diferenca_json
     if isinstance(diferenca, str):
         try:
             diferenca = json.loads(diferenca)
-        except:
+        except json.JSONDecodeError:
             pass
-            
+
     diff_formatado = json.dumps(diferenca, indent=4, ensure_ascii=False)
     story.append(Paragraph("<b>Payload Completo / Intenção de UX:</b>", style_normal))
     story.append(Paragraph(diff_formatado.replace('\n', '<br/>').replace(' ', '&nbsp;'), style_mono))
@@ -119,7 +119,7 @@ def gerar_laudo_pericial_pdf(log):
     story.append(Paragraph(termo, ParagraphStyle(name='Small', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#64748B'), alignment=TA_JUSTIFY)))
 
     doc.build(story)
-    
+
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes

@@ -41,6 +41,7 @@ class Membro(AbstractUser):
     foto_perfil = models.ImageField(upload_to='perfil/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'webp'])])
 
     # Dados Pessoais Adicionais
+    apelido = models.CharField(max_length=50, null=True, blank=True, help_text="Apelido ou nome comum pelo qual é conhecido (ajuda a Inteligência Artificial)")
     sexo = models.CharField(max_length=20, choices=(('Masculino', 'Masculino'), ('Feminino', 'Feminino'), ('Outro', 'Outro')), null=True, blank=True)
     estado_civil = models.CharField(max_length=50, null=True, blank=True)
     profissao = models.CharField(max_length=100, null=True, blank=True)
@@ -89,7 +90,10 @@ class Membro(AbstractUser):
     anotacoes_lideranca = models.TextField(blank=True, help_text="Anotações privadas da liderança sobre o membro")
 
     def __str__(self):
-        return self.get_full_name() or self.username
+        nome_base = self.get_full_name() or self.username
+        if self.apelido:
+            return f"{nome_base} ({self.apelido})"
+        return nome_base
 
     def save(self, *args, **kwargs):
         if self.status_conta == 'ativo':
@@ -209,41 +213,20 @@ class NoticiaTicker(models.Model):
         return self.texto
 
 
-class TemplateDocumento(models.Model):
-    TIPO_CHOICES = (
-        ('email', 'E-mail'),
-        ('pdf', 'PDF / Relatório'),
+class LinkRapido(models.Model):
+    VISIBILIDADE_CHOICES = (
+        ('geral', 'Todos os Usuários'),
+        ('membros', 'Apenas Membros e Acima'),
+        ('lideres', 'Líderes e Acima'),
+        ('admin', 'Somente Administradores'),
     )
 
-    nome_acao = models.CharField(max_length=100, unique=True, help_text="Ex: escala_publicada, bem_vindo, termo_emprestimo")
-    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='email')
-    assunto_padrao = models.CharField(max_length=255, null=True, blank=True, help_text="Usado apenas se for E-mail")
-
-    # Armazena o código gerado pelo GrapesJS
-    html_content = models.TextField(blank=True)
-    css_content = models.TextField(blank=True)
-    components_json = models.JSONField(null=True, blank=True, help_text="Estrutura de blocos do GrapesJS")
-
-    # Dicas pro admin
-    variaveis_disponiveis = models.TextField(blank=True, help_text="Ex: {{ nome }}, {{ departamento.logo.url }}")
-
-    ativo = models.BooleanField(default=True)
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Template Dinâmico'
-        verbose_name_plural = 'Templates Dinâmicos'
-
-    def __str__(self):
-        return f"{self.nome_acao} ({self.get_tipo_display()})"
-
-class LinkRapido(models.Model):
     titulo = models.CharField(max_length=50)
     url = models.CharField(max_length=255)
     icone_svg = models.TextField(blank=True, help_text="Código SVG do ícone")
     ordem = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    visibilidade = models.CharField(max_length=20, choices=VISIBILIDADE_CHOICES, default='geral')
 
     class Meta:
         ordering = ['ordem']

@@ -218,22 +218,23 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/10">
-                        {% for t in templates %}
-                        <tr class="hover:bg-white/5 transition-colors">
-                            <td class="px-6 py-4 font-medium text-white">{{ t.nome_acao }}</td>
-                            <td class="px-6 py-4">
-                                {% if t.tipo == 'email' %}
-                                <span class="bg-blue-900/50 text-blue-300 px-2 py-1 rounded text-xs"><i data-lucide="mail" class="w-3 h-3 inline"></i> E-mail</span>
-                                {% else %}
-                                <span class="bg-red-900/50 text-red-300 px-2 py-1 rounded text-xs"><i data-lucide="file-text" class="w-3 h-3 inline"></i> PDF</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4">{{ t.atualizado_em|date:"d/m/Y H:i" }}</td>
+                        {% for template in templates %}
+                                <tr class="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors">
+                                    <td class="px-4 py-3 text-sm text-gray-300 font-bold">{{ template.identificador_sistema }}</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        {% if template.tipo_documento == 'email' %}
+                                        <span class="bg-blue-900/50 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-500/30 flex items-center gap-1 w-max"><i data-lucide="mail" class="w-3 h-3"></i> E-mail</span>
+                                        {% else %}
+                                        <span class="bg-orange-900/50 text-orange-400 px-2 py-1 rounded text-xs font-bold border border-orange-500/30 flex items-center gap-1 w-max"><i data-lucide="file-text" class="w-3 h-3"></i> PDF</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-400 truncate max-w-xs">{{ template.descricao|default:"-" }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-400">{{ template.data_criacao|date:"d/m/Y H:i" }}</td>
                             <td class="px-6 py-4 text-right flex justify-end gap-3">
-                                <a href="{% url 'sysadmin_template_editar' t.id %}" class="text-blue-400 hover:text-blue-300" title="Editar Canvas">
+                                <a href="{% url 'sysadmin_template_editar' template.id %}" class="text-blue-400 hover:text-blue-300" title="Editar Canvas">
                                     <i data-lucide="edit-3"></i>
                                 </a>
-                                <form method="POST" action="{% url 'sysadmin_template_deletar' t.id %}" onsubmit="return confirm('Excluir este template fará o sistema voltar a usar o layout hardcoded original. Deseja continuar?')" class="inline">
+                                <form method="POST" action="{% url 'sysadmin_template_deletar' template.id %}" onsubmit="return confirm('Excluir este template fará o sistema voltar a usar o layout hardcoded original. Deseja continuar?')" class="inline">
                                     {% csrf_token %}
                                     <button type="submit" class="text-red-400 hover:text-red-300" title="Deletar">
                                         <i data-lucide="trash-2"></i>
@@ -291,7 +292,7 @@
             </div>
 
             <div class="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl mb-8">
-                <form method="POST" action="{% url 'sysadmin_link_salvar' %}" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <form method="POST" action="{% url 'sysadmin_link_salvar' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     {% csrf_token %}
                     <div>
                         <label class="block text-sm font-bold text-gray-300 mb-1">Título</label>
@@ -300,6 +301,15 @@
                     <div>
                         <label class="block text-sm font-bold text-gray-300 mb-1">URL (Link)</label>
                         <input type="url" name="url" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" placeholder="https://" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Visibilidade</label>
+                        <select name="visibilidade" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" required>
+                            <option value="geral">Geral (Todos)</option>
+                            <option value="membros">Apenas Membros</option>
+                            <option value="lideres">Líderes e Acima</option>
+                            <option value="admin">Somente Administradores</option>
+                        </select>
                     </div>
                     <div>
                         <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center justify-center gap-2">

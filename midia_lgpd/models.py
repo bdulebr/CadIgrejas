@@ -41,34 +41,81 @@ class AssinaturaLGPD(models.Model):
         return f"{self.membro.first_name} aceitou {self.termo.titulo}"
 
 class PastaVirtual(models.Model):
+    TIPO_CHOICES = [
+        ('raiz', 'Raiz do Sistema'),
+        ('raiz_deptos', 'Raiz de Departamentos'),
+        ('raiz_usuarios', 'Raiz de Usuários'),
+        ('departamento', 'Pasta de Departamento'),
+        ('usuario', 'Pasta Pessoal de Usuário'),
+        ('compartilhados', 'Compartilhados Comigo'),
+        ('normal', 'Pasta Normal')
+    ]
+
     nome = models.CharField(max_length=100)
-    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='pastas')
+    tipo_pasta = models.CharField(max_length=30, choices=TIPO_CHOICES, default='normal')
+    is_sistema = models.BooleanField(default=False, help_text="Se marcado, a pasta não pode ser excluída ou renomeada")
+
+    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='pastas', null=True, blank=True)
+    dono_membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='pastas_pessoais', null=True, blank=True)
+
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subpastas')
-    criado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
+    criado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True, related_name='pastas_criadas')
     data_criacao = models.DateTimeField(auto_now_add=True)
     is_excluida = models.BooleanField(default=False)
     data_exclusao = models.DateTimeField(null=True, blank=True)
 
+    # Integração Google Drive
+    gdrive_folder_id = models.CharField(max_length=255, blank=True, null=True)
+    gdrive_url = models.URLField(max_length=500, blank=True, null=True)
+
     def __str__(self):
+        dono = self.departamento.nome if self.departamento else (self.dono_membro.get_full_name() if self.dono_membro else 'Sistema')
         if self.parent:
-            return f"{self.parent.nome} / {self.nome} ({self.departamento.nome})"
-        return f"{self.nome} ({self.departamento.nome})"
+            return f"{self.parent.nome} / {self.nome} ({dono})"
+        return f"{self.nome} ({dono})"
+
+class PermissaoPVDrive(models.Model):
+    NIVEL_CHOICES = [
+        ('leitor', 'Pode Visualizar e Baixar'),
+        ('editor', 'Pode Fazer Upload e Editar'),
+        ('admin', 'Administrador (Pode Excluir)')
+    ]
+
+    pasta = models.ForeignKey(PastaVirtual, on_delete=models.CASCADE, related_name='permissoes', null=True, blank=True)
+    # Se aplicável apenas a um arquivo:
+    # arquivo = models.ForeignKey('ArquivoMidia', on_delete=models.CASCADE, related_name='permissoes', null=True, blank=True)
+
+    alvo_departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, null=True, blank=True, related_name='permissoes_recebidas')
+    alvo_membro = models.ForeignKey(Membro, on_delete=models.CASCADE, null=True, blank=True, related_name='permissoes_recebidas')
+
+    nivel = models.CharField(max_length=20, choices=NIVEL_CHOICES, default='leitor')
+    concedido_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True, related_name='permissoes_concedidas')
+    data_concessao = models.DateTimeField(auto_now_add=True)
+    validade = models.DateTimeField(null=True, blank=True, help_text="Se preenchido, o acesso expira nesta data.")
+    is_ativo = models.BooleanField(default=True)
+
+    def __str__(self):
+        alvo = self.alvo_departamento.nome if self.alvo_departamento else self.alvo_membro.get_full_name()
+        return f"{self.get_nivel_display()} para {alvo} na pasta {self.pasta.nome if self.pasta else 'Desconhecida'}"
 
 class CompartilhamentoPasta(models.Model):
+    # OBSOLETO: Mantido apenas por compatibilidade até migrar para PermissaoPVDrive
     pasta = models.ForeignKey(PastaVirtual, on_delete=models.CASCADE, related_name='compartilhamentos')
     departamento_destino = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='pastas_compartilhadas')
     criado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
     validade = models.DateTimeField(null=True, blank=True)
     is_ativo = models.BooleanField(default=True)
-    
+
     def __str__(self):
         return f"{self.pasta.nome} -> {self.departamento_destino.nome}"
 
 class ArquivoMidia(models.Model):
     titulo = models.CharField(max_length=200)
-    arquivo = models.FileField(upload_to='arquivos/%Y/%m/')
-    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='arquivos_midia')
+    arquivo = models.FileField(upload_to='arquivos/%Y/%m/', null=True, blank=True, help_text="Arquivo local (Legado ou Temporário)")
+    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='arquivos_midia', null=True, blank=True)
+    dono_membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='arquivos_pessoais', null=True, blank=True)
+
     pasta = models.ForeignKey(PastaVirtual, on_delete=models.CASCADE, related_name='arquivos', null=True, blank=True)
     enviado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
     data_envio = models.DateTimeField(auto_now_add=True)
@@ -78,6 +125,10 @@ class ArquivoMidia(models.Model):
     is_publico_para_membros = models.BooleanField(default=False, help_text="Se marcado, voluntários comuns do setor poderão baixar o arquivo")
     is_excluido = models.BooleanField(default=False)
     data_exclusao = models.DateTimeField(null=True, blank=True)
+
+    # Integração Google Drive
+    gdrive_file_id = models.CharField(max_length=255, blank=True, null=True)
+    gdrive_url = models.URLField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return self.titulo
@@ -110,24 +161,23 @@ class DocumentoGerado(models.Model):
         ('assinado', 'Assinado/Concluído'),
         ('cancelado', 'Cancelado')
     ]
-    
+
     template = models.ForeignKey(DocumentoTemplate, on_delete=models.RESTRICT, related_name='documentos_gerados')
     token_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     email_destino = models.EmailField(help_text="E-mail que receberá o link para assinatura")
     nome_destino = models.CharField(max_length=200, blank=True, null=True)
     solicitado_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True, related_name='documentos_solicitados')
     departamento = models.ForeignKey(Departamento, on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
     dados_preenchidos = models.JSONField(default=dict, blank=True, null=True)
-    
+
     arquivo_pdf_final = models.FileField(upload_to='documentos_assinados/%Y/%m/', null=True, blank=True)
     anexo_fisico_escaneado = models.FileField(upload_to='documentos_escaneados/%Y/%m/', null=True, blank=True)
-    
+
     data_solicitacao = models.DateTimeField(auto_now_add=True)
     data_assinatura = models.DateTimeField(null=True, blank=True)
     ip_assinatura = models.GenericIPAddressField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.template.titulo} para {self.email_destino} - {self.get_status_display()}"
-

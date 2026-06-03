@@ -1,17 +1,17 @@
 {% extends 'core/base.html' %}
 {% load static %}
-{% block title %}Painel Kanban de Documentos - PVE{% endblock title %}
+{% block title %}Painel de Documentos - PVE{% endblock title %}
 
 {% block content %}
 <div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ openDisparar: false }">
     <div class="max-w-7xl mx-auto space-y-6">
-        
-        <!-- Header Kanban -->
+
+        <!-- Header Painel -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <div>
                 <h1 class="text-3xl font-bold text-white flex items-center gap-2">
                     <svg class="w-8 h-8 text-brand-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
-                    Gestão de Assinaturas (Kanban)
+                    Gestão de Assinaturas
                 </h1>
                 <p class="text-gray-400 mt-1">Gere, dispare e acompanhe contratos e formulários externos.</p>
             </div>
@@ -28,9 +28,9 @@
             </div>
         </div>
 
-        <!-- Kanban Board -->
+        <!-- Board de Documentos -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
+
             <!-- Coluna 1: Pendentes -->
             <div class="bg-gray-900/40 backdrop-blur-md rounded-2xl border border-white/10 p-4 min-h-[600px] flex flex-col">
                 <div class="flex justify-between items-center mb-4 border-b border-yellow-500/30 pb-2">
@@ -42,7 +42,7 @@
                         {{ documentos|length }} <!-- Pode-se fazer um filtro específico no view depois -->
                     </span>
                 </div>
-                
+
                 <div class="space-y-4 overflow-y-auto flex-1 pr-2">
                     {% for doc in documentos %}
                         {% if doc.status != 'assinado' %}
@@ -53,7 +53,7 @@
                             </div>
                             <h3 class="font-bold text-white text-sm mb-1">{{ doc.template.titulo }}</h3>
                             <p class="text-xs text-gray-400 mb-3">Para: <span class="text-gray-300 font-medium">{{ doc.nome_destino|default:doc.email_destino }}</span></p>
-                            
+
                             <div class="flex gap-2">
                                 <button class="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 text-xs text-white font-medium rounded transition-colors text-center" onclick="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}/midia_lgpd/documentos/assinar/{{ doc.token_acesso }}/'); alert('Link copiado!')">
                                     Copiar Link
@@ -75,7 +75,7 @@
                         Concluídos (Assinados)
                     </h2>
                 </div>
-                
+
                 <div class="space-y-4 overflow-y-auto flex-1 pr-2">
                     {% for doc in documentos %}
                         {% if doc.status == 'assinado' %}
@@ -89,7 +89,7 @@
                             </div>
                             <h3 class="font-bold text-white text-sm mb-1">{{ doc.template.titulo }}</h3>
                             <p class="text-xs text-gray-400 mb-3">Por: <span class="text-gray-300 font-medium">{{ doc.nome_destino|default:doc.email_destino }}</span></p>
-                            
+
                             <div class="flex gap-2 mt-2">
                                 {% if doc.arquivo_pdf_final %}
                                 <a href="{{ doc.arquivo_pdf_final.url }}" target="_blank" class="flex-1 py-1.5 bg-brand-900/40 hover:bg-brand-800/60 text-brand-300 border border-brand-500/30 text-xs font-bold rounded transition-colors text-center">
@@ -111,7 +111,7 @@
                         Biblioteca de Templates
                     </h2>
                 </div>
-                
+
                 <div class="space-y-4 overflow-y-auto flex-1 pr-2">
                     {% for t in templates %}
                     <div class="bg-gray-800/40 border border-white/5 rounded-xl p-4 hover:border-blue-500/30 transition-colors group">
@@ -153,10 +153,10 @@
             <div class="inline-block align-bottom bg-gray-900 border border-white/10 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
                 <form method="POST" action="{% url 'enviar_documento' %}">
                     {% csrf_token %}
-                    
+
                     <div class="px-6 pt-6 pb-4">
                         <h3 class="text-xl font-bold text-white mb-4">Disparar Documento para Assinatura</h3>
-                        
+
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">Selecione o Template</label>
@@ -176,7 +176,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="bg-black/20 px-6 py-4 flex justify-end gap-3 border-t border-white/5">
                         <button type="button" @click="openDisparar = false" class="px-4 py-2 bg-transparent text-gray-400 hover:text-white font-medium rounded-lg transition-colors">Cancelar</button>
                         <button type="submit" class="px-6 py-2 bg-brand-600 text-white font-bold rounded-lg shadow-lg hover:bg-brand-500 transition-colors">Disparar Link</button>

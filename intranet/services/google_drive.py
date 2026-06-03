@@ -10,14 +10,14 @@ SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirn
 def get_drive_service():
     if not os.path.exists(SERVICE_ACCOUNT_FILE):
         return None
-        
+
     creds = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-        
+
     # Usa o e-mail do admin para impersonar via Domain-Wide Delegation no Workspace
-    if hasattr(settings, 'EMAIL_HOST_USER') and settings.EMAIL_HOST_USER:
-        creds = creds.with_subject(settings.EMAIL_HOST_USER)
-        
+    # Se der erro de unauthorized_client, é porque o Workspace não autorizou essa delegação.
+    # if hasattr(settings, 'EMAIL_HOST_USER') and settings.EMAIL_HOST_USER:
+    #     creds = creds.with_subject(settings.EMAIL_HOST_USER)
     service = build('drive', 'v3', credentials=creds)
     return service
 
@@ -33,16 +33,19 @@ def upload_arquivo_drive(file_path, titulo):
 
     try:
         file_metadata = {'name': titulo}
-        if settings.GDRIVE_FOLDER_ID:
-            file_metadata['parents'] = [settings.GDRIVE_FOLDER_ID]
-            
+        if not settings.GDRIVE_FOLDER_ID:
+            print("Erro: 'GDRIVE_FOLDER_ID' não está configurado. O Google Workspace exige o ID de uma pasta em um 'Drive Compartilhado'.")
+            return None
+
+        file_metadata['parents'] = [settings.GDRIVE_FOLDER_ID]
+
         # Em produção, detectar mimeType adequadamente
         media = MediaFileUpload(file_path, resumable=True)
-        file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
-        
+        file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink', supportsAllDrives=True).execute()
+
         print(f"Arquivo sincronizado no Google Drive com sucesso: {file.get('webViewLink')}")
         return file.get('webViewLink')
-        
+
     except Exception as e:
         print(f"Erro no backup para o Google Drive: {str(e)}")
         return None

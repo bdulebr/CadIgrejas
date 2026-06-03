@@ -213,76 +213,6 @@ def painel_documentos(request):
 
 @login_required
 @user_passes_test(is_super_admin)
-def criar_template_documento(request):
-    if request.method == 'POST':
-        titulo = request.POST.get('titulo')
-        descricao = request.POST.get('descricao', '')
-        tipo_documento = request.POST.get('tipo_documento', 'pdf_lgpd')
-        identificador = request.POST.get('identificador_sistema', '')
-        conteudo = request.POST.get('conteudo_base', '')
-        campos_raw = request.POST.get('campos_json')
-
-        html_canva = request.POST.get('html_canva', '')
-        css_canva = request.POST.get('css_canva', '')
-
-        try:
-            campos_json = json.loads(campos_raw) if campos_raw else []
-        except:
-            campos_json = []
-
-        DocumentoTemplate.objects.create(
-            titulo=titulo,
-            descricao=descricao,
-            tipo_documento=tipo_documento,
-            identificador_sistema=identificador,
-            conteudo_base=conteudo,
-            campos_json=campos_json,
-            html_canva=html_canva,
-            css_canva=css_canva,
-            criado_por=request.user
-        )
-        messages.success(request, 'Template Visual criado com sucesso!')
-        return redirect('painel_documentos')
-
-    return render(request, 'midia_lgpd/criador_templates.html', {'is_edit': False})
-
-@login_required
-@user_passes_test(is_super_admin)
-def editar_template_documento(request, id):
-    template = get_object_or_404(DocumentoTemplate, id=id)
-    if request.method == 'POST':
-        template.titulo = request.POST.get('titulo')
-        template.descricao = request.POST.get('descricao', '')
-        template.tipo_documento = request.POST.get('tipo_documento', 'pdf_lgpd')
-        template.identificador_sistema = request.POST.get('identificador_sistema', '')
-        template.conteudo_base = request.POST.get('conteudo_base', '')
-
-        template.html_canva = request.POST.get('html_canva', '')
-        template.css_canva = request.POST.get('css_canva', '')
-
-        campos_raw = request.POST.get('campos_json')
-        try:
-            template.campos_json = json.loads(campos_raw) if campos_raw else []
-        except:
-            pass
-
-        template.save()
-        messages.success(request, 'Template Visual atualizado com sucesso!')
-        return redirect('painel_documentos')
-
-    return render(request, 'midia_lgpd/criador_templates.html', {'template': template, 'is_edit': True})
-
-@login_required
-@user_passes_test(is_super_admin)
-def excluir_template_documento(request, id):
-    template = get_object_or_404(DocumentoTemplate, id=id)
-    template.ativo = False
-    template.save()
-    messages.success(request, 'Template arquivado/excluído com sucesso!')
-    return redirect('painel_documentos')
-
-@login_required
-@user_passes_test(is_super_admin)
 def enviar_documento(request):
     if request.method == 'POST':
         template_id = request.POST.get('template_id')
@@ -371,52 +301,89 @@ def assinar_documento_externo(request, token):
 
 
 @login_required
-def pv_drive(request, departamento_id=None, pasta_id=None):
-    if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor', 'lider']):
-        messages.error(request, 'Acesso restrito ao PV Drive para liderança.')
-        return redirect('dashboard')
-
+def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
+    # Lógica de Permissões Básicas
+    # Qualquer membro logado tem acesso.
+    departamentos = []
     if request.user.nivel_hierarquico in ['super_admin', 'pastor_regente']:
         departamentos = Departamento.objects.all()
     else:
         departamentos = (request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()).distinct()
-
-    if not departamentos.exists():
-        messages.warning(request, 'Você não possui departamentos vinculados para acessar o Drive.')
-        return redirect('dashboard')
 
     dep_atual = None
     pasta_atual = None
 
     q = request.GET.get('q', '').strip()
 
+    # 1. Determinar a pasta_atual raiz do contexto
+    if modo == 'departamento' and alvo_id:
+        dep_atual = get_object_or_404(Departamento, id=alvo_id)
+        if dep_atual not in departamentos:
+            messages.error(request, 'Você não tem permissão para gerenciar o Drive deste departamento.')
+            return redirect('pv_drive_pessoal')
+
+        pasta_raiz = PastaVirtual.objects.filter(tipo_pasta='departamento', departamento=dep_atual).first()
+    else:
+        # Pessoal
+        modo = 'pessoal'
+        pasta_raiz = PastaVirtual.objects.filter(tipo_pasta='usuario', dono_membro=request.user).first()
+        if not pasta_raiz:
+            messages.error(request, 'Seu Drive Pessoal ainda não foi gerado pelo sistema.')
+            return redirect('dashboard')
+
+    if pasta_id:
+        pasta_atual = get_object_or_404(PastaVirtual, id=pasta_id, is_excluida=False)
+        # Garantir que a pasta_atual pertence à raiz (evita ID forjado)
+        # Uma verificação real exigiria subir todos os parents.
+        # Como o departamento e dono_membro limitam, podemos checar:
+        if modo == 'departamento' and pasta_atual.departamento != dep_atual:
+            return redirect('pv_drive_home')
+        if modo == 'pessoal' and pasta_atual.dono_membro != request.user:
+            return redirect('pv_drive_home')
+    else:
+        pasta_atual = pasta_raiz
+
+    # 2. Resolução de Busca ou Listagem
     if q:
-        # Modo Busca Global no PV Drive (dentro dos departamentos permitidos)
-        pastas = PastaVirtual.objects.filter(departamento__in=departamentos, nome__icontains=q, is_excluida=False).order_by('nome')
-        arquivos = ArquivoMidia.objects.filter(departamento__in=departamentos, titulo__icontains=q, is_excluido=False).order_by('-data_envio')
+        if modo == 'departamento':
+            pastas = PastaVirtual.objects.filter(departamento=dep_atual, nome__icontains=q, is_excluida=False).order_by('nome')
+            arquivos = ArquivoMidia.objects.filter(departamento=dep_atual, titulo__icontains=q, is_excluido=False).order_by('-data_envio')
+        else:
+            pastas = PastaVirtual.objects.filter(dono_membro=request.user, nome__icontains=q, is_excluida=False).order_by('nome')
+            arquivos = ArquivoMidia.objects.filter(dono_membro=request.user, titulo__icontains=q, is_excluido=False).order_by('-data_envio')
         breadcrumbs = []
     else:
-        if departamento_id:
-            dep_atual = get_object_or_404(departamentos, id=departamento_id)
+        # Se for a pasta Compartilhados Comigo, a lógica muda (Mostra os shortcuts ou permissoes)
+        if pasta_atual.tipo_pasta == 'compartilhados':
+            pastas = PastaVirtual.objects.none() # Atalhos de pastas poderiam ser mostrados aqui, mas por agora arquivos:
+            # Buscar arquivos onde eu tenho Permissao
+            if modo == 'departamento':
+                # Arquivos compartilhados com meu departamento
+                permissoes = PermissaoPVDrive.objects.filter(alvo_departamento=dep_atual, is_ativo=True)
+            else:
+                # Arquivos compartilhados comigo
+                permissoes = PermissaoPVDrive.objects.filter(alvo_membro=request.user, is_ativo=True)
+
+            pastas_ids = permissoes.values_list('pasta_id', flat=True)
+            pastas = PastaVirtual.objects.filter(id__in=pastas_ids, is_excluida=False)
+            arquivos = ArquivoMidia.objects.none()
         else:
-            dep_atual = departamentos.first()
-
-        if pasta_id:
-            pasta_atual = get_object_or_404(PastaVirtual, id=pasta_id, departamento=dep_atual, is_excluida=False)
-
-        pastas = PastaVirtual.objects.filter(departamento=dep_atual, parent=pasta_atual, is_excluida=False).order_by('nome')
-        arquivos = ArquivoMidia.objects.filter(departamento=dep_atual, pasta=pasta_atual, is_excluido=False).order_by('-data_envio')
+            pastas = PastaVirtual.objects.filter(parent=pasta_atual, is_excluida=False).order_by('nome')
+            arquivos = ArquivoMidia.objects.filter(pasta=pasta_atual, is_excluido=False).order_by('-data_envio')
 
         # Breadcrumbs
         breadcrumbs = []
-        if pasta_atual:
-            p = pasta_atual
-            while p:
+        p = pasta_atual
+        while p:
+            # Não mostrar as raízes ocultas do sistema (PV Drive, Departamentos)
+            if p.tipo_pasta not in ['raiz', 'raiz_deptos', 'raiz_usuarios']:
                 breadcrumbs.insert(0, p)
-                p = p.parent
+            p = p.parent
 
+    # Contexto final
     return render(request, 'midia_lgpd/pv_drive.html', {
-        'departamentos': departamentos,
+        'departamentos_menu': departamentos,
+        'modo_atual': modo,
         'dep_atual': dep_atual,
         'pasta_atual': pasta_atual,
         'pastas': pastas,
@@ -425,36 +392,81 @@ def pv_drive(request, departamento_id=None, pasta_id=None):
         'search_query': q,
     })
 
+from intranet.services.google_drive import get_drive_service
+from googleapiclient.http import MediaIoBaseUpload
+from django.http import HttpResponse
+import mimetypes
+
 @login_required
 def criar_pasta(request):
     if request.method == 'POST':
         nome = request.POST.get('nome')
-        dep_id = request.POST.get('departamento_id')
-        parent_id = request.POST.get('parent_id') or None
+        modo_atual = request.POST.get('modo_atual')
+        parent_id = request.POST.get('parent_id')
 
-        if nome and dep_id:
-            dep = get_object_or_404(Departamento, id=dep_id)
-            PastaVirtual.objects.create(
-                nome=nome,
-                departamento=dep,
-                parent_id=parent_id,
-                criado_por=request.user
-            )
-            messages.success(request, 'Pasta criada com sucesso.')
+        if not parent_id:
+            messages.error(request, 'Erro: Pasta de destino não identificada.')
+            return redirect('pv_drive_home')
 
-        if parent_id:
-            return redirect('pv_drive_pasta', departamento_id=dep_id, pasta_id=parent_id)
-        return redirect('pv_drive_dep', departamento_id=dep_id)
+        pasta_mae = get_object_or_404(PastaVirtual, id=parent_id)
+
+        if pasta_mae.tipo_pasta == 'compartilhados':
+            messages.error(request, 'Você não pode criar pastas aqui.')
+            return redirect('pv_drive_home')
+
+        service = get_drive_service()
+        gdrive_folder_id = None
+        gdrive_url = None
+
+        if service and pasta_mae.gdrive_folder_id:
+            try:
+                file_metadata = {
+                    'name': nome,
+                    'mimeType': 'application/vnd.google-apps.folder',
+                    'parents': [pasta_mae.gdrive_folder_id]
+                }
+                file = service.files().create(body=file_metadata, fields='id, webViewLink', supportsAllDrives=True).execute()
+                gdrive_folder_id = file.get('id')
+                gdrive_url = file.get('webViewLink')
+            except Exception as e:
+                messages.error(request, f'Aviso GDrive: {e}')
+
+        PastaVirtual.objects.create(
+            nome=nome,
+            tipo_pasta='normal',
+            departamento=pasta_mae.departamento,
+            dono_membro=pasta_mae.dono_membro,
+            parent=pasta_mae,
+            criado_por=request.user,
+            gdrive_folder_id=gdrive_folder_id,
+            gdrive_url=gdrive_url
+        )
+        messages.success(request, 'Pasta criada com sucesso.')
+
+        if modo_atual == 'departamento':
+            return redirect('pv_drive_pasta', alvo_id=pasta_mae.departamento.id, pasta_id=pasta_mae.id)
+        else:
+            return redirect('pv_drive_pessoal_pasta', pasta_id=pasta_mae.id)
+
     return redirect('pv_drive_home')
 
 @login_required
 def upload_drive(request):
     if request.method == 'POST':
-        dep_id = request.POST.get('departamento_id')
-        pasta_id = request.POST.get('pasta_id') or None
+        modo_atual = request.POST.get('modo_atual')
+        pasta_id = request.POST.get('parent_id')
         arquivos = request.FILES.getlist('arquivos')
 
-        dep = get_object_or_404(Departamento, id=dep_id)
+        if not pasta_id:
+            messages.error(request, 'Erro: Pasta de destino não identificada.')
+            return redirect('pv_drive_home')
+
+        pasta_mae = get_object_or_404(PastaVirtual, id=pasta_id)
+        if pasta_mae.tipo_pasta == 'compartilhados':
+            messages.error(request, 'Você não pode fazer upload aqui.')
+            return redirect('pv_drive_home')
+
+        service = get_drive_service()
 
         for arquivo in arquivos:
             import hashlib
@@ -463,24 +475,93 @@ def upload_drive(request):
                 hasher.update(chunk)
 
             ext = arquivo.name.split('.')[-1] if '.' in arquivo.name else ''
+            gdrive_file_id = None
+            gdrive_url = None
+
+            if service and pasta_mae.gdrive_folder_id:
+                try:
+                    file_metadata = {
+                        'name': arquivo.name,
+                        'parents': [pasta_mae.gdrive_folder_id]
+                    }
+                    mime_type, _ = mimetypes.guess_type(arquivo.name)
+                    media = MediaIoBaseUpload(arquivo.file, mimetype=mime_type or 'application/octet-stream', resumable=True)
+                    file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink', supportsAllDrives=True).execute()
+
+                    gdrive_file_id = file.get('id')
+                    gdrive_url = file.get('webViewLink')
+                except Exception as e:
+                    messages.error(request, f'Falha GDrive ({arquivo.name}): {e}')
 
             ArquivoMidia.objects.create(
                 titulo=arquivo.name,
-                arquivo=arquivo,
-                departamento=dep,
-                pasta_id=pasta_id,
+                departamento=pasta_mae.departamento,
+                dono_membro=pasta_mae.dono_membro,
+                pasta=pasta_mae,
                 enviado_por=request.user,
                 tamanho_bytes=arquivo.size,
                 extensao=ext.lower(),
-                hash_sha256=hasher.hexdigest()
+                hash_sha256=hasher.hexdigest(),
+                gdrive_file_id=gdrive_file_id,
+                gdrive_url=gdrive_url
             )
 
-        messages.success(request, f'{len(arquivos)} arquivo(s) enviado(s) para o PV Drive.')
+        messages.success(request, f'{len(arquivos)} arquivo(s) enviado(s).')
 
-        if pasta_id:
-            return redirect('pv_drive_pasta', departamento_id=dep_id, pasta_id=pasta_id)
-        return redirect('pv_drive_dep', departamento_id=dep_id)
+        if modo_atual == 'departamento':
+            return redirect('pv_drive_pasta', alvo_id=pasta_mae.departamento.id, pasta_id=pasta_mae.id)
+        else:
+            return redirect('pv_drive_pessoal_pasta', pasta_id=pasta_mae.id)
+
     return redirect('pv_drive_home')
+
+@login_required
+def visualizar_arquivo(request, arquivo_id):
+    arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
+
+    if not arquivo.gdrive_file_id:
+        if arquivo.arquivo:
+            return redirect(arquivo.arquivo.url)
+        messages.error(request, "Arquivo não encontrado no Google Drive.")
+        return redirect('pv_drive_home')
+
+    service = get_drive_service()
+    try:
+        req = service.files().get_media(fileId=arquivo.gdrive_file_id, supportsAllDrives=True)
+        file_content = req.execute()
+
+        mime_type, _ = mimetypes.guess_type(arquivo.titulo)
+        response = HttpResponse(file_content, content_type=mime_type or 'application/octet-stream')
+        response['Content-Disposition'] = f'inline; filename="{arquivo.titulo}"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Erro ao acessar arquivo: {e}")
+        return redirect('pv_drive_home')
+
+@login_required
+def baixar_arquivo(request, arquivo_id):
+    arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
+
+    if not arquivo.gdrive_file_id:
+        if arquivo.arquivo:
+            response = HttpResponse(arquivo.arquivo.read(), content_type='application/octet-stream')
+            response['Content-Disposition'] = f'attachment; filename="{arquivo.titulo}"'
+            return response
+        messages.error(request, "Arquivo não encontrado.")
+        return redirect('pv_drive_home')
+
+    service = get_drive_service()
+    try:
+        req = service.files().get_media(fileId=arquivo.gdrive_file_id, supportsAllDrives=True)
+        file_content = req.execute()
+
+        mime_type, _ = mimetypes.guess_type(arquivo.titulo)
+        response = HttpResponse(file_content, content_type=mime_type or 'application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{arquivo.titulo}"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Erro ao baixar arquivo: {e}")
+        return redirect('pv_drive_home')
 
 import zipfile
 import io
@@ -540,3 +621,65 @@ def restaurar_arquivo(request, arquivo_id):
         arq.save()
         messages.success(request, 'Arquivo restaurado.')
     return redirect('pv_drive_lixeira')
+
+from .models import PermissaoPVDrive
+from django.utils.dateparse import parse_datetime
+
+@login_required
+def compartilhar_pasta(request, pasta_id):
+    if request.method == 'POST':
+        pasta = get_object_or_404(PastaVirtual, id=pasta_id, is_excluida=False)
+
+        if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente'] and pasta.dono_membro != request.user and pasta.criado_por != request.user:
+            messages.error(request, "Você não tem permissão para compartilhar esta pasta.")
+            return redirect('pv_drive_home')
+
+        tipo_alvo = request.POST.get('tipo_alvo')
+        alvo_id = request.POST.get('alvo_id')
+        nivel = request.POST.get('nivel', 'leitor')
+        validade_str = request.POST.get('validade')
+
+        validade = None
+        if validade_str:
+            validade = parse_datetime(validade_str)
+
+        service = get_drive_service()
+        pasta_compartilhados = None
+
+        if tipo_alvo == 'departamento':
+            alvo = get_object_or_404(Departamento, id=alvo_id)
+            PermissaoPVDrive.objects.create(
+                pasta=pasta, alvo_departamento=alvo, nivel=nivel,
+                concedido_por=request.user, validade=validade
+            )
+            pasta_compartilhados = PastaVirtual.objects.filter(tipo_pasta='compartilhados', departamento=alvo).first()
+            msg = f"Pasta compartilhada com o departamento {alvo.nome}."
+        elif tipo_alvo == 'membro':
+            from core.models import Membro
+            alvo = get_object_or_404(Membro, id=alvo_id)
+            PermissaoPVDrive.objects.create(
+                pasta=pasta, alvo_membro=alvo, nivel=nivel,
+                concedido_por=request.user, validade=validade
+            )
+            pasta_compartilhados = PastaVirtual.objects.filter(tipo_pasta='compartilhados', dono_membro=alvo).first()
+            msg = f"Pasta compartilhada com {alvo.get_full_name()}."
+
+        # Cria atalho no GDrive dentro de Compartilhados Comigo
+        if pasta_compartilhados and pasta_compartilhados.gdrive_folder_id and pasta.gdrive_folder_id:
+            try:
+                shortcut_metadata = {
+                    'name': pasta.nome,
+                    'mimeType': 'application/vnd.google-apps.shortcut',
+                    'shortcutDetails': {
+                        'targetId': pasta.gdrive_folder_id
+                    },
+                    'parents': [pasta_compartilhados.gdrive_folder_id]
+                }
+                service.files().create(body=shortcut_metadata, fields='id', supportsAllDrives=True).execute()
+            except Exception as e:
+                print(f"Erro ao criar atalho no gdrive: {e}")
+
+        messages.success(request, msg)
+        return redirect('pv_drive_home')
+
+    return redirect('pv_drive_home')

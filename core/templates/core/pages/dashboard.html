@@ -95,21 +95,21 @@
                     {% if minha_proxima_escala %}
                     <div class="bg-black/30 rounded-xl p-4 border border-white/5">
                         <div class="text-center mb-4">
-                            <span class="block text-4xl font-black text-white">{{ minha_proxima_escala.data|date:"d" }}</span>
-                            <span class="block text-sm text-blue-300 font-bold uppercase tracking-widest">{{ minha_proxima_escala.data|date:"M Y" }}</span>
+                            <span class="block text-4xl font-black text-white">{{ minha_proxima_escala.data_escala|date:"d" }}</span>
+                            <span class="block text-sm text-blue-300 font-bold uppercase tracking-widest">{{ minha_proxima_escala.data_escala|date:"M Y" }}</span>
                         </div>
                         <div class="space-y-2 text-sm">
                             <div class="flex items-center gap-2 text-gray-300">
                                 <i data-lucide="clock" class="w-4 h-4 text-gray-500"></i>
-                                <span>{{ minha_proxima_escala.hora_inicio|time:"H:i" }} - {{ minha_proxima_escala.hora_fim|time:"H:i" }}</span>
+                                <span>{{ minha_proxima_escala.horario_inicio|time:"H:i" }} - {{ minha_proxima_escala.horario_fim|time:"H:i" }}</span>
                             </div>
                             <div class="flex items-center gap-2 text-gray-300">
                                 <i data-lucide="users" class="w-4 h-4 text-gray-500"></i>
-                                <span>{{ minha_proxima_escala.departamento.nome }}</span>
+                                <span>{{ minha_proxima_escala.departamento_alocado.nome }}</span>
                             </div>
                             <div class="flex items-center gap-2 text-gray-300">
                                 <i data-lucide="briefcase" class="w-4 h-4 text-gray-500"></i>
-                                <span class="font-bold text-blue-400">{{ minha_proxima_escala.funcao.nome }}</span>
+                                <span class="font-bold text-blue-400">{{ minha_proxima_escala.funcao_alocada.nome|default:"-" }}</span>
                             </div>
                         </div>
                     </div>
@@ -178,7 +178,7 @@
                                     <h4 class="font-bold text-white">{{ aviso.titulo }}</h4>
                                     <span class="text-xs px-2 py-0.5 bg-gray-700 text-gray-300 rounded">{{ aviso.departamento.nome }}</span>
                                 </div>
-                                <p class="text-gray-300 text-sm mb-2">{{ aviso.conteudo|truncatechars:150 }}</p>
+                                <p class="text-gray-300 text-sm mb-2">{{ aviso.mensagem|truncatechars:150 }}</p>
                                 <span class="text-xs text-gray-500">{{ aviso.data_postagem|date:"d M Y - H:i" }} por {{ aviso.autor.first_name }}</span>
                             </div>
                         </div>

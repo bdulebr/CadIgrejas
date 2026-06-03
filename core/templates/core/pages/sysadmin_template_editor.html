@@ -31,13 +31,13 @@
 {% block content %}
 <div class="min-h-screen bg-transparent p-8">
     <div class="max-w-7xl mx-auto">
-        
+
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-white flex items-center gap-3">
                 <a href="{% url 'sysadmin_dashboard' %}" class="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors text-sm font-bold flex items-center gap-2">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar
                 </a>
-                {% if is_new %}Criar Novo Template Dinâmico{% else %}Editar Template: {{ template.nome_acao }}{% endif %}
+                {% if is_new %}Criar Novo Template Dinâmico{% else %}Editar Template: {{ template.identificador_sistema }}{% endif %}
             </h1>
             <button onclick="salvarTemplate()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2">
                 <i data-lucide="save" class="w-5 h-5"></i> Salvar Template
@@ -47,21 +47,23 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div class="col-span-1 md:col-span-1">
                 <label class="block text-sm font-bold text-gray-300 mb-1">Nome da Ação / Gatilho</label>
-                <input type="text" id="nome_acao" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500" value="{{ template.nome_acao|default_if_none:'' }}" placeholder="Ex: escala_publicada" {% if not is_new %}readonly{% endif %}>
+                <input type="text" id="nome_acao" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500" value="{{ template.identificador_sistema|default_if_none:'' }}" placeholder="Ex: escala_publicada" {% if not is_new %}readonly{% endif %}>
             </div>
             <div class="col-span-1 md:col-span-1">
                 <label class="block text-sm font-bold text-gray-300 mb-1">Tipo de Template</label>
                 <select id="tipo" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500">
-                    <option value="email" {% if template.tipo == 'email' %}selected{% endif %}>E-mail</option>
-                    <option value="pdf" {% if template.tipo == 'pdf' %}selected{% endif %}>PDF / Relatório</option>
+                    <option value="email" {% if template.tipo_documento == 'email' %}selected{% endif %}>E-mail Automático</option>
+                    <option value="pdf_lgpd" {% if template.tipo_documento == 'pdf_lgpd' %}selected{% endif %}>PDF (Termos/Contratos)</option>
+                    <option value="pdf_escala" {% if template.tipo_documento == 'pdf_escala' %}selected{% endif %}>PDF (Relatório de Escalas)</option>
+                    <option value="pdf" {% if template.tipo_documento == 'pdf' %}selected{% endif %}>PDF Genérico</option>
                 </select>
             </div>
             <div class="col-span-1 md:col-span-2">
                 <label class="block text-sm font-bold text-gray-300 mb-1">Assunto Padrão (Se E-mail)</label>
-                <input type="text" id="assunto_padrao" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500" value="{{ template.assunto_padrao|default_if_none:'' }}" placeholder="Aviso: Nova Escala Publicada para {{ nome }}">
+                <input type="text" id="assunto_padrao" class="bg-gray-900 border-gray-700 text-white w-full px-4 py-2 border rounded-lg focus:ring-blue-500" value="{{ template.descricao|default_if_none:'' }}" placeholder="Aviso: Nova Escala Publicada para {{ nome }}">
             </div>
         </div>
-        
+
         <div class="bg-blue-900/20 border border-blue-800 p-4 rounded-lg mb-6">
             <h4 class="text-blue-400 font-bold mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Variáveis Disponíveis (Copie e Cole nos Textos do Editor)</h4>
             <p class="text-gray-300 text-sm">
@@ -73,9 +75,9 @@
 
         <!-- Editor GrapesJS -->
         <div id="gjs">
-            {% if template.html_content %}
-                {{ template.html_content|safe }}
-                <style>{{ template.css_content|safe }}</style>
+            {% if template.html_canva %}
+                {{ template.html_canva|safe }}
+                <style>{{ template.css_canva|safe }}</style>
             {% else %}
                 <div style="text-align:center; padding: 50px; font-family: Arial, sans-serif;">
                     <h1 style="color: #333;">Arraste blocos da direita para cá!</h1>
@@ -83,7 +85,7 @@
                 </div>
             {% endif %}
         </div>
-        
+
     </div>
 </div>
 
@@ -101,11 +103,11 @@
             }
         }
     });
-    
+
     // Se tivermos os componentes salvos em JSON, carregamos (mais preciso que HTML puro)
-    {% if template.components_json %}
+    {% if template.json_canva %}
         try {
-            const components = {{ template.components_json|safe }};
+            const components = {{ template.json_canva|safe }};
             editor.setComponents(components);
         } catch(e) {
             console.error('Erro ao carregar componentes JSON', e);
@@ -118,15 +120,15 @@
             alert('Por favor, informe o Nome da Ação / Gatilho.');
             return;
         }
-        
+
         const tipo = document.getElementById('tipo').value;
         const assunto_padrao = document.getElementById('assunto_padrao').value;
-        
+
         // Pega o HTML e CSS do editor
         const html_content = editor.getHtml();
         const css_content = editor.getCss();
         const components_json = editor.getComponents();
-        
+
         const payload = {
             nome_acao: nome_acao,
             tipo: tipo,
@@ -135,9 +137,9 @@
             css_content: css_content,
             components_json: JSON.parse(JSON.stringify(components_json))
         };
-        
+
         const url = "{% if is_new %}/sysadmin/templates/salvar/{% else %}/sysadmin/templates/{{ template.id }}/salvar/{% endif %}";
-        
+
         fetch(url, {
             method: 'POST',
             headers: {

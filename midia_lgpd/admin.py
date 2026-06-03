@@ -19,12 +19,17 @@ class ArquivoMidiaAdmin(admin.ModelAdmin):
     list_filter = ('departamento', 'data_envio', 'is_publico_para_membros')
     search_fields = ('titulo', 'enviado_por__first_name')
 
-from .models import PastaVirtual, CompartilhamentoPasta, DocumentoTemplate, DocumentoGerado
+from .models import PastaVirtual, CompartilhamentoPasta, DocumentoTemplate, DocumentoGerado, PermissaoPVDrive
 
 @admin.register(PastaVirtual)
 class PastaVirtualAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'departamento')
+    list_display = ('nome', 'departamento', 'gdrive_folder_id')
     search_fields = ('nome',)
+
+@admin.register(PermissaoPVDrive)
+class PermissaoPVDriveAdmin(admin.ModelAdmin):
+    list_display = ('pasta', 'alvo_departamento', 'alvo_membro', 'nivel', 'validade', 'is_ativo')
+    list_filter = ('nivel', 'is_ativo', 'alvo_departamento')
 
 @admin.register(CompartilhamentoPasta)
 class CompartilhamentoPastaAdmin(admin.ModelAdmin):

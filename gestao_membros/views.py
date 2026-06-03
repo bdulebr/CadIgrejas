@@ -33,9 +33,13 @@ def listar_departamentos(request):
     return render(request, 'gestao_membros/departamentos.html', {'departamentos': departamentos, 'is_master': is_super_admin(request.user)})
 
 @login_required
-@user_passes_test(is_super_admin)
+@user_passes_test(is_lider)
 def painel_lider(request):
-    departamentos = Departamento.objects.all()
+    if is_super_admin(request.user):
+        departamentos = Departamento.objects.all()
+    else:
+        departamentos = request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
+        departamentos = departamentos.distinct()
 
     membros_pendentes = Membro.objects.filter(is_active=False)
 
@@ -48,25 +52,44 @@ def painel_lider(request):
     membros_aprovados = departamento_ativo.membros_ativos.filter(is_active=True) if departamento_ativo else []
 
     # Indisponibilidades reais
-    from gestao_membros.models import Indisponibilidade
+    from gestao_membros.models import Indisponibilidade, AvisoMural
     hoje = timezone.now().date()
     indisponibilidades = Indisponibilidade.objects.filter(
         membro__in=membros_aprovados,
         data_fim__gte=hoje
     ).order_by('data_inicio')
 
+    # Avisos do departamento ativo
+    from django.db.models import Q
+    avisos = []
+    if departamento_ativo:
+        avisos = AvisoMural.objects.filter(
+            departamento=departamento_ativo
+        ).filter(
+            Q(data_expiracao__isnull=True) | Q(data_expiracao__gte=timezone.now())
+        ).order_by('-fixado', '-data_postagem')[:5]
+
     # Rascunhos pendentes e aniversariantes do mes
     try:
-        from escalas.models import CompetenciaEscala
+        from escalas.models import CompetenciaEscala, Escala, CultoEvento
         if departamento_ativo:
             escalas_rascunho = CompetenciaEscala.objects.filter(
                 departamento=departamento_ativo,
                 status='rascunho'
             )
+
+            # Próximos cultos (escalas confirmadas do setor)
+            proximos_cultos = Escala.objects.filter(
+                departamento_alocado=departamento_ativo,
+                data_escala__gte=hoje,
+                status='confirmado'
+            ).order_by('data_escala', 'horario_inicio')[:5]
         else:
             escalas_rascunho = []
+            proximos_cultos = []
     except ImportError:
         escalas_rascunho = []
+        proximos_cultos = []
 
     aniversariantes = []
     if departamento_ativo:
@@ -80,13 +103,15 @@ def painel_lider(request):
         'membros_pendentes': membros_pendentes,
         'departamento_ativo': departamento_ativo,
         'membros_aprovados': membros_aprovados,
-        'indisponibilidades': indisponibilidades,
+        'indisponiveis': indisponibilidades, # The template expects `indisponiveis`
         'escalas_rascunho': escalas_rascunho,
+        'proximos_cultos': proximos_cultos, # Passed to the template
+        'avisos': avisos, # Passed to the template
         'aniversariantes': aniversariantes
     })
 
 @login_required
-@user_passes_test(is_super_admin)
+@user_passes_test(is_lider)
 def aprovar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     membro.is_active = True
@@ -96,7 +121,7 @@ def aprovar_membro(request, membro_id):
     return redirect('painel_lider')
 
 @login_required
-@user_passes_test(is_super_admin)
+@user_passes_test(is_lider)
 def rejeitar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     membro.delete()
@@ -104,7 +129,7 @@ def rejeitar_membro(request, membro_id):
     return redirect('painel_lider')
 
 @login_required
-@user_passes_test(is_super_admin)
+@user_passes_test(is_lider)
 def evoluir_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     membro.nivel_hierarquico = 'lider'
@@ -153,10 +178,38 @@ def criar_aviso(request):
     if request.method == 'POST' and is_lider(request.user):
         titulo = request.POST.get('titulo')
         mensagem = request.POST.get('mensagem')
-        dep_id = request.POST.get('departamento_id')
+        dep_id = request.POST.get('departamento')
+        if not dep_id:
+            messages.error(request, 'Nenhum departamento selecionado ou você não lidera nenhum setor ainda.')
+            return redirect('painel_avisos')
+
+        duracao = request.POST.get('duracao')
+        fixado = request.POST.get('fixado') == 'on'
+        link_externo = request.POST.get('link_externo')
+
         dep = get_object_or_404(Departamento, id=dep_id)
-        AvisoMural.objects.create(titulo=titulo, mensagem=mensagem, departamento=dep, autor=request.user)
-        messages.success(request, 'Aviso criado.')
+
+        data_expiracao = None
+        if duracao:
+            from django.utils import timezone
+            from datetime import timedelta
+            data_expiracao = timezone.now() + timedelta(days=int(duracao))
+
+        aviso = AvisoMural.objects.create(
+            titulo=titulo,
+            mensagem=mensagem,
+            departamento=dep,
+            autor=request.user,
+            fixado=fixado,
+            data_expiracao=data_expiracao,
+            link_externo=link_externo if link_externo else None
+        )
+
+        anexos = request.FILES.getlist('anexos')
+        for f in anexos:
+            AvisoAnexo.objects.create(aviso=aviso, arquivo=f)
+
+        messages.success(request, 'Aviso criado com sucesso.')
         return redirect('painel_avisos')
 
     # GET request - Render form
@@ -168,7 +221,7 @@ def criar_aviso(request):
     if request.user.nivel_hierarquico == 'super_admin':
         departamentos = Departamento.objects.all()
 
-    return render(request, 'gestao_membros/criar_aviso.html', {'departamentos': departamentos.distinct()})
+    return render(request, 'gestao_membros/criar_aviso.html', {'departamentos': departamentos.distinct(), 'acao': 'Criar'})
 
 @login_required
 def editar_aviso(request, aviso_id):
@@ -176,19 +229,49 @@ def editar_aviso(request, aviso_id):
     if request.method == 'POST' and is_lider(request.user):
         aviso.titulo = request.POST.get('titulo')
         aviso.mensagem = request.POST.get('mensagem')
+
+        duracao = request.POST.get('duracao')
+        if duracao:
+            from django.utils import timezone
+            from datetime import timedelta
+            aviso.data_expiracao = timezone.now() + timedelta(days=int(duracao))
+        else:
+            aviso.data_expiracao = None
+
+        aviso.fixado = request.POST.get('fixado') == 'on'
+        aviso.link_externo = request.POST.get('link_externo') or None
         aviso.save()
-        messages.success(request, 'Aviso editado.')
-    return redirect('painel_avisos')
+
+        remover_anexos = request.POST.getlist('remover_anexos')
+        if remover_anexos:
+            AvisoAnexo.objects.filter(id__in=remover_anexos, aviso=aviso).delete()
+
+        anexos = request.FILES.getlist('anexos')
+        for f in anexos:
+            AvisoAnexo.objects.create(aviso=aviso, arquivo=f)
+
+        messages.success(request, 'Aviso editado com sucesso.')
+        return redirect('painel_avisos')
+
+    departamentos = request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
+    if request.user.nivel_hierarquico == 'super_admin':
+        departamentos = Departamento.objects.all()
+
+    return render(request, 'gestao_membros/criar_aviso.html', {
+        'departamentos': departamentos.distinct(),
+        'acao': 'Editar',
+        'aviso': aviso
+    })
 
 @login_required
 def excluir_aviso(request, aviso_id):
     aviso = get_object_or_404(AvisoMural, id=aviso_id)
     if request.method == 'POST':
-        if is_super_admin(request.user):
+        if is_super_admin(request.user) or aviso.autor == request.user:
             aviso.delete()
             messages.success(request, 'Aviso excluído.')
         else:
-            messages.error(request, 'Sem permissão. Apenas Sysadmin pode excluir.')
+            messages.error(request, 'Sem permissão. Apenas Sysadmin ou o autor podem excluir.')
     return redirect('painel_avisos')
 
 @login_required
@@ -210,13 +293,13 @@ def exportar_aviso_pdf(request, aviso_id):
     p.drawString(1 * inch, 10.5 * inch, "INTRANET PV ENSEADA")
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10 * inch, f"Aviso Oficial: {aviso.titulo}")
-    p.drawString(1 * inch, 9.5 * inch, f"Data de Publicação: {aviso.data_publicacao.strftime('%d/%m/%Y %H:%M')}")
-    p.drawString(1 * inch, 9.0 * inch, "Conteúdo:")
+    p.drawString(1 * inch, 9.5 * inch, f"Data de Publicacao: {aviso.data_postagem.strftime('%d/%m/%Y %H:%M')}")
+    p.drawString(1 * inch, 9.0 * inch, "Conteudo:")
 
     # Strip HTML and write basic text
     from django.utils.html import strip_tags
     import textwrap
-    text = strip_tags(aviso.conteudo)
+    text = strip_tags(aviso.mensagem)
     y_position = 8.5 * inch
     for line in textwrap.wrap(text, width=80):
         p.drawString(1 * inch, y_position, line)
@@ -343,16 +426,82 @@ def baixar_modelo_importacao(request):
     return HttpResponse("Função de baixar modelo será implementada em breve.")
 
 @login_required
+@user_passes_test(is_lider)
 def adicionar_membro(request):
     if request.method == 'POST':
-        messages.success(request, 'Membro adicionado (funcionalidade básica restaurada).')
+        membro = Membro()
+        membro.first_name = request.POST.get('first_name', '')
+        membro.last_name = request.POST.get('last_name', '')
+        membro.email = request.POST.get('email', '')
+        membro.username = request.POST.get('email', '')
+        membro.nivel_hierarquico = request.POST.get('nivel_hierarquico', 'membro_voluntario')
+        membro.is_active = True
+
+        # Senha padrão
+        nova_senha = request.POST.get('nova_senha', '123456789')
+        if not nova_senha: nova_senha = '123456789'
+        membro.set_password(nova_senha)
+
+        # Trata campos sensíveis
+        cpf_val = request.POST.get('cpf', '').strip()
+        membro.cpf = cpf_val if cpf_val else None
+
+        rg_val = request.POST.get('rg', '').strip()
+        membro.rg = rg_val if rg_val else None
+
+        tel_val = request.POST.get('telefone', '').strip()
+        membro.telefone = tel_val if tel_val else None
+
+        membro.anotacoes_lideranca = request.POST.get('anotacoes_lideranca', '')
+
+        data_nascimento = request.POST.get('data_nascimento')
+        membro.data_nascimento = data_nascimento if data_nascimento else None
+
+        data_casamento = request.POST.get('data_casamento')
+        membro.data_casamento = data_casamento if data_casamento else None
+
+        membro.horario_trabalho_inicio = request.POST.get('horario_trabalho_inicio') or None
+        membro.horario_trabalho_fim = request.POST.get('horario_trabalho_fim') or None
+
+        dias_trabalho_lista = request.POST.getlist('dias_trabalho')
+        membro.dias_trabalho = ",".join(dias_trabalho_lista)
+        membro.dias_folga = request.POST.get('dias_folga', '')
+
+        foto_perfil = request.FILES.get('foto_perfil')
+        if foto_perfil: membro.foto_perfil = foto_perfil
+
+        conjuge_id = request.POST.get('conjuge_id')
+        if conjuge_id:
+            membro.conjuge_id = conjuge_id
+        else:
+            membro.conjuge = None
+
+        membro.filhos = request.POST.get('filhos', '')
+
+        # Salva o membro primeiro para poder adicionar relações ManyToMany
+        membro.save()
+
+        departamentos_ids = request.POST.getlist('departamentos')
+        membro.departamentos_ativos.set(departamentos_ids)
+
+        habilidades_ids = request.POST.getlist('habilidades')
+        membro.habilidades.set(habilidades_ids)
+
+        messages.success(request, 'Novo membro cadastrado com sucesso!')
         return redirect('painel_membros')
+
+    dias_semana = [(str(i), nome) for i, nome in enumerate(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'])]
     todos_departamentos = Departamento.objects.all()
     todas_habilidades = Habilidade.objects.all()
+
     return render(request, 'gestao_membros/form_membro.html', {
         'acao': 'Novo',
         'todos_departamentos': todos_departamentos,
-        'todas_habilidades': todas_habilidades
+        'todas_habilidades': todas_habilidades,
+        'dias_semana': dias_semana,
+        'dias_trabalho_list': [],
+        'habilidades_membro': [],
+        'departamentos_membro': []
     })
 
 @login_required
@@ -360,22 +509,18 @@ def gerir_membro_lider(request, membro_id):
     return redirect('painel_membros')
 
 @login_required
-@user_passes_test(is_super_admin)
+@user_passes_test(is_lider)
 def editar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     if request.method == 'POST':
         membro.first_name = request.POST.get('first_name', '')
         membro.last_name = request.POST.get('last_name', '')
+        membro.apelido = request.POST.get('apelido', '')
         membro.email = request.POST.get('email', '')
         membro.username = request.POST.get('email', '')
-        nivel = request.POST.get('nivel_hierarquico', membro.nivel_hierarquico)
 
-        if membro.nivel_hierarquico != nivel:
-            membro.nivel_hierarquico = nivel
-            membro.save()
-        else:
-            membro.nivel_hierarquico = nivel
-            membro.save()
+        nivel = request.POST.get('nivel_hierarquico', membro.nivel_hierarquico)
+        membro.nivel_hierarquico = nivel
 
         departamentos_ids = request.POST.getlist('departamentos')
         membro.departamentos_ativos.set(departamentos_ids)
@@ -499,7 +644,7 @@ def remover_configuracao_slot(request, config_id):
 # MÓDULO DE RECURSOS HUMANOS (RH LIDERANÇA)
 # ==============================================================================
 from .models import AvaliacaoMembro, Ocorrencia, AcaoDisciplinar
-from core.models import TemplateDocumento
+from midia_lgpd.models import DocumentoTemplate
 import json
 from django.template import Context, Template
 from intranet.services.pdf_service import gerar_pdf
@@ -639,14 +784,14 @@ def rh_gerar_pdf_disciplina(request, acao_id):
 
     # Try to fetch template based on type
     nome_acao = f"carta_{acao.tipo}"
-    template_doc = TemplateDocumento.objects.filter(nome_acao=nome_acao).first()
+    template_doc = DocumentoTemplate.objects.filter(identificador_sistema=nome_acao).first()
 
     if not template_doc:
         messages.error(request, 'O Template de PDF para esta ação não está cadastrado no sistema (SysAdmin).')
         return redirect('rh_dossie_membro', membro_id=acao.membro.id)
 
     # Render template using Django's template engine
-    t = Template(template_doc.html_content)
+    t = Template(template_doc.html_canva)
     c = Context({'acao': acao, 'membro': acao.membro})
     html_final = t.render(c)
 

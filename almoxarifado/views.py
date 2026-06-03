@@ -39,9 +39,16 @@ def is_lider(user):
     return user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor', 'missionario', 'lider', 'sub_lider']
 
 def can_edit_almoxarifado(user):
-    return user.nivel_hierarquico == 'super_admin' or user.is_superuser or user.departamentos_liderados.filter(nome__icontains='Almoxarifado').exists()
+    if not user.is_authenticated: return False
+    return (
+        user.nivel_hierarquico == 'super_admin' or
+        user.is_superuser or
+        user.departamentos_liderados.filter(nome__icontains='Almoxarifado').exists() or
+        user.departamentos_ativos.filter(nome__icontains='Almoxarifado').exists()
+    )
 
 @login_required
+@user_passes_test(can_edit_almoxarifado)
 def painel_inventario(request):
     busca_codigo = request.GET.get('busca_codigo')
     if busca_codigo:
@@ -207,6 +214,7 @@ def devolver_item(request, ativo_id):
     return redirect('painel_inventario')
 
 @login_required
+@user_passes_test(can_edit_almoxarifado)
 def ativo_detalhe(request, ativo_id):
     ativo = get_object_or_404(Ativo, id=ativo_id)
 
@@ -327,6 +335,7 @@ def remover_uso_fixo(request, ativo_id):
     return redirect('ativo_detalhe', ativo_id=ativo.id)
 
 @login_required
+@user_passes_test(can_edit_almoxarifado)
 def gerar_termo_pdf(request, ativo_id):
     ativo = get_object_or_404(Ativo, id=ativo_id)
     emprestimo = ativo.historico_emprestimos.filter(data_devolucao_real__isnull=True).last()
@@ -413,6 +422,7 @@ def gerar_termo_pdf(request, ativo_id):
     return response
 
 @login_required
+@user_passes_test(can_edit_almoxarifado)
 def painel_alimentos(request):
     departamentos = Departamento.objects.all()
 
@@ -467,6 +477,7 @@ def deletar_alimento(request, lote_id):
     return redirect('painel_alimentos')
 
 @login_required
+@user_passes_test(can_edit_almoxarifado)
 def alimento_detalhe(request, lote_id):
     lote = get_object_or_404(AlimentoLote, id=lote_id)
 

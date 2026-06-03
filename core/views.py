@@ -172,8 +172,13 @@ def dashboard_view(request):
     if termo_ativo:
         assinou_lgpd = AssinaturaLGPD.objects.filter(membro=request.user, termo=termo_ativo).exists()
 
-    # Pega os avisos dos departamentos que o membro faz parte
-    departamentos_do_usuario = request.user.departamentos_ativos.all()
+    # Pega os avisos dos departamentos que o membro faz parte ou lidera
+    if request.user.nivel_hierarquico == 'super_admin':
+        departamentos_do_usuario = Departamento.objects.all()
+    else:
+        departamentos_do_usuario = request.user.departamentos_ativos.all() | request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
+        departamentos_do_usuario = departamentos_do_usuario.distinct()
+
     from django.db.models import Q
     avisos = AvisoMural.objects.filter(
         departamento__in=departamentos_do_usuario
@@ -183,7 +188,11 @@ def dashboard_view(request):
 
     # Verifica permissões específicas
     is_lider_lgpd = request.user.departamentos_liderados.filter(nome__icontains='LGPD').exists() or request.user.nivel_hierarquico == 'super_admin'
-    is_lider_almoxarifado = request.user.departamentos_liderados.filter(nome__icontains='Almoxarifado').exists() or request.user.nivel_hierarquico == 'super_admin'
+    try:
+        from almoxarifado.views import can_edit_almoxarifado
+        is_lider_almoxarifado = can_edit_almoxarifado(request.user)
+    except ImportError:
+        is_lider_almoxarifado = False
 
     # Próxima escala do usuário
     from datetime import date
@@ -207,13 +216,20 @@ def dashboard_view(request):
     # IA Insight
     insight_ia = gerar_insight_ia(request.user)
 
+    # PDV Access Check
+    try:
+        from pdv.views import pdv_access_check
+        is_lider_pdv = pdv_access_check(request.user)
+    except ImportError:
+        is_lider_pdv = False
+
     return render(request, 'core/pages/dashboard.html', {
         'assinou_lgpd': assinou_lgpd,
         'avisos': avisos,
         'departamentos_do_usuario': departamentos_do_usuario,
         'is_lider_lgpd': is_lider_lgpd,
         'is_lider_almoxarifado': is_lider_almoxarifado,
-        'is_lider_pdv': True, # Hardcoded cause they use config now
+        'is_lider_pdv': is_lider_pdv,
         'minha_proxima_escala': minha_proxima_escala,
         'proximos_cultos': proximos_cultos,
         'noticias_ticker': noticias_ticker,
@@ -233,6 +249,7 @@ def editar_perfil(request):
         # Dados basicos
         user.first_name = request.POST.get('first_name', user.first_name)
         user.last_name = request.POST.get('last_name', user.last_name)
+        user.apelido = request.POST.get('apelido', user.apelido)
         cpf_input = request.POST.get('cpf', user.cpf)
         user.cpf = cpf_input if cpf_input else None
         user.rg = request.POST.get('rg', user.rg)
@@ -354,7 +371,8 @@ def sysadmin_dashboard(request):
     }
 
     # Templates
-    templates = TemplateDocumento.objects.all()
+    from midia_lgpd.models import DocumentoTemplate
+    templates = DocumentoTemplate.objects.all()
     links_rapidos = LinkRapido.objects.all()
 
     context = {
@@ -382,11 +400,13 @@ def sysadmin_link_salvar(request):
         titulo = request.POST.get('titulo')
         url = request.POST.get('url')
         ordem = request.POST.get('ordem', 0)
+        visibilidade = request.POST.get('visibilidade', 'geral')
 
         LinkRapido.objects.create(
             titulo=titulo,
             url=url,
-            ordem=ordem
+            ordem=ordem,
+            visibilidade=visibilidade
         )
         messages.success(request, 'Link Rápido criado com sucesso!')
     return redirect('sysadmin_dashboard')
@@ -808,7 +828,8 @@ import json
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
-from core.models import Membro, TemplateDocumento
+from core.models import Membro
+from midia_lgpd.models import DocumentoTemplate
 
 @login_required
 def pesquisa_global_api(request):
@@ -974,7 +995,7 @@ def bi_escalas(request):
     return render(request, 'core/pages/bi_escalas.html', context)
 
 from django.http import JsonResponse
-from core.models import TemplateDocumento
+from midia_lgpd.models import DocumentoTemplate
 
 @login_required
 @user_passes_test(is_super_admin)
@@ -988,7 +1009,7 @@ def sysadmin_template_editor(request, template_id=None):
 
     template_doc = None
     if template_id:
-        template_doc = get_object_or_404(TemplateDocumento, id=template_id)
+        template_doc = get_object_or_404(DocumentoTemplate, id=template_id)
 
     context = {
         'template': template_doc,
@@ -1015,19 +1036,22 @@ def sysadmin_template_salvar(request, template_id=None):
                 return JsonResponse({"error": "Nome da ação é obrigatório"}, status=400)
 
             if template_id:
-                t = get_object_or_404(TemplateDocumento, id=template_id)
+                t = get_object_or_404(DocumentoTemplate, id=template_id)
             else:
                 # Se for novo, checa se a acao ja existe
-                if TemplateDocumento.objects.filter(nome_acao=nome_acao).exists():
+                if DocumentoTemplate.objects.filter(identificador_sistema=nome_acao).exists():
                     return JsonResponse({"error": "Já existe um template para esta ação."}, status=400)
-                t = TemplateDocumento()
+                t = DocumentoTemplate()
 
-            t.nome_acao = nome_acao
-            t.tipo = tipo
-            t.assunto_padrao = assunto
-            t.html_content = html
-            t.css_content = css
-            t.components_json = components
+            t.identificador_sistema = nome_acao
+            t.titulo = nome_acao
+            t.tipo_documento = tipo
+            t.descricao = assunto
+            t.html_canva = html
+            t.css_canva = css
+            t.json_canva = components
+            if not t.id:
+                t.criado_por = request.user
             t.save()
 
             return JsonResponse({"success": True, "template_id": t.id})
@@ -1043,7 +1067,7 @@ def sysadmin_template_deletar(request, template_id):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Acesso restrito.")
 
-    t = get_object_or_404(TemplateDocumento, id=template_id)
+    t = get_object_or_404(DocumentoTemplate, id=template_id)
     t.delete()
     messages.success(request, 'Template excluído com sucesso.')
     return redirect('/sysadmin/')
