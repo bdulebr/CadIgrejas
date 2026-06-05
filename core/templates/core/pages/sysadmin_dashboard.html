@@ -3,30 +3,36 @@
 {% block title %}Painel do Servidor - PVE{% endblock title %}
 
 {% block content %}
-<div class="min-h-screen bg-transparent p-8" x-data="{ openUpload: false, activeTab: 'geral' }">
+<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ openUpload: false, activeTab: 'geral' }">
     <div class="max-w-7xl mx-auto">
 
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <!-- HEADER E CONTROLE MESTRE -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <h1 class="text-3xl font-black text-white flex items-center gap-3">
                     <a href="{% url 'dashboard' %}" class="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors text-sm font-bold flex items-center gap-2" title="Voltar ao Painel">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar
                     </a>
-                    Gestão do Servidor (SysAdmin)
+                    SysAdmin Center
                 </h1>
-                <p class="text-gray-500 mt-2">Controle de Hardware, Manutenção e Configurações Globais</p>
-                <a href="{% url 'admin:index' %}" target="_blank" class="inline-flex items-center gap-2 mt-3 text-sm px-4 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/40 rounded-lg transition-colors">
-                    <i data-lucide="database"></i> Acessar Painel Nativo Django (Admin)
-                </a>
+                <p class="text-gray-400 mt-2 text-sm max-w-2xl">Módulo de controle mestre isolado. Visível exclusivamente para Super Administradores. Gere com responsabilidade.</p>
+                <div class="flex gap-2 mt-3 flex-wrap">
+                    <a href="{% url 'admin:index' %}" target="_blank" class="inline-flex items-center gap-2 text-sm px-4 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/40 rounded-lg transition-colors font-bold">
+                        <i data-lucide="database" class="w-4 h-4"></i> Acessar Painel Nativo Django (Admin)
+                    </a>
+                    <a href="{% url 'sysadmin_logs' %}" class="inline-flex items-center gap-2 text-sm px-4 py-1.5 bg-gray-800 text-gray-300 hover:text-white border border-gray-700 hover:bg-gray-700 rounded-lg transition-colors font-bold">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i> Auditoria Imutável
+                    </a>
+                </div>
             </div>
 
             <form method="POST" action="{% url 'sysadmin_toggle_manutencao' %}" onsubmit="return confirm('ATENÇÃO: Ligar o modo de manutenção desconectará todos os usuários (exceto Admins) imediatamente. Continuar?')">
                 {% csrf_token %}
-                <button type="submit" class="px-6 py-2 rounded-lg font-bold shadow-sm transition-colors text-white {% if config.is_maintenance %}bg-red-600 hover:bg-red-700{% else %}bg-gray-800 hover:bg-black{% endif %}">
+                <button type="submit" class="px-6 py-3 rounded-xl font-black shadow-sm transition-all text-white flex items-center gap-2 {% if config.is_maintenance %}bg-red-600 hover:bg-red-700 animate-pulse{% else %}bg-gray-800 hover:bg-black border border-gray-700{% endif %}">
                     {% if config.is_maintenance %}
-                    <i data-lucide="alert-triangle"></i> Desativar Modo Manutenção
+                    <i data-lucide="alert-triangle"></i> DESATIVAR MANUTENÇÃO
                     {% else %}
-                    <i data-lucide="power"></i> Ligar Modo Manutenção
+                    <i data-lucide="power"></i> LIGAR MODO MANUTENÇÃO
                     {% endif %}
                 </button>
             </form>
@@ -44,473 +50,591 @@
         </div>
         {% endif %}
 
-        <!-- Navegação por Abas -->
-        <div class="flex border-b border-white/20 mb-8 space-x-8 overflow-x-auto">
-            <button @click="activeTab = 'geral'" :class="{'border-blue-500 text-blue-400': activeTab === 'geral', 'border-transparent text-gray-400': activeTab !== 'geral'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
-                <i data-lucide="server" class="w-4 h-4"></i> Hardware & Geral
+        <!-- Navegação por Abas (Nova UX) -->
+        <div class="flex border-b border-white/10 mb-8 space-x-6 overflow-x-auto custom-scrollbar pb-1">
+            <button @click="activeTab = 'geral'" :class="{'border-blue-500 text-blue-400': activeTab === 'geral', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'geral'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+                <i data-lucide="server" class="w-4 h-4"></i> Servidor & Rede
             </button>
-            <button @click="activeTab = 'instituicao'" :class="{'border-blue-500 text-blue-400': activeTab === 'instituicao', 'border-transparent text-gray-400': activeTab !== 'instituicao'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
-                <i data-lucide="church" class="w-4 h-4"></i> Identidade & Instituição
+            <button @click="activeTab = 'comunicacao'" :class="{'border-blue-500 text-blue-400': activeTab === 'comunicacao', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'comunicacao'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+                <i data-lucide="mail" class="w-4 h-4"></i> Comunicação & E-mail
             </button>
-            <button @click="activeTab = 'templates'" :class="{'border-blue-500 text-blue-400': activeTab === 'templates', 'border-transparent text-gray-400': activeTab !== 'templates'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
-                <i data-lucide="layout-template" class="w-4 h-4"></i> Editor de Templates
+            <button @click="activeTab = 'seguranca'" :class="{'border-red-500 text-red-400': activeTab === 'seguranca', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'seguranca'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i> Segurança & Controle Mestre
             </button>
-            <button @click="activeTab = 'links'" :class="{'border-blue-500 text-blue-400': activeTab === 'links', 'border-transparent text-gray-400': activeTab !== 'links'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+            <button @click="activeTab = 'instituicao'" :class="{'border-blue-500 text-blue-400': activeTab === 'instituicao', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'instituicao'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+                <i data-lucide="church" class="w-4 h-4"></i> Instituição
+            </button>
+            <button @click="activeTab = 'templates'" :class="{'border-blue-500 text-blue-400': activeTab === 'templates', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'templates'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+                <i data-lucide="layout-template" class="w-4 h-4"></i> Templates
+            </button>
+            <button @click="activeTab = 'links'" :class="{'border-blue-500 text-blue-400': activeTab === 'links', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'links'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
                 <i data-lucide="link" class="w-4 h-4"></i> Links Rápidos
-            </button>
-            <a href="{% url 'sysadmin_logs' %}" class="pb-3 border-b-2 border-transparent text-gray-400 hover:text-white font-bold transition-colors whitespace-nowrap flex items-center gap-2">
-                <i data-lucide="eye" class="w-4 h-4"></i> Auditoria Jurídica (Zero-Trust)
-            </a>
-            <button @click="activeTab = 'seguranca'" :class="{'border-blue-500 text-blue-400': activeTab === 'seguranca', 'border-transparent text-gray-400': activeTab !== 'seguranca'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
-                <i data-lucide="shield-alert" class="w-4 h-4"></i> Segurança & Backup
             </button>
         </div>
 
         <!-- CONTEÚDO DAS ABAS -->
 
-        <!-- ABA 1: GERAL E HARDWARE -->
+        <!-- ABA 1: GERAL, REDE E HARDWARE -->
         <div x-show="activeTab === 'geral'" style="display: none;" x-transition>
-            <h2 class="text-xl font-bold text-gray-200 mb-4">Uso do Servidor em Tempo Real</h2>
+
+            <h2 class="text-xl font-bold text-gray-200 mb-4 flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5"></i> Hardware em Tempo Real</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- CPU -->
-                <div class="bg-white/5 backdrop-blur-md text-white p-6 rounded-2xl shadow-sm border border-white/10 flex flex-col justify-between">
+                <div class="bg-gray-900/50 backdrop-blur-md text-white p-6 rounded-2xl border border-white/5 flex flex-col justify-between">
                     <div class="flex justify-between items-start mb-4">
-                        <p class="text-sm text-gray-500 font-medium uppercase">Processamento (CPU)</p>
+                        <p class="text-sm text-gray-400 font-bold uppercase">Processamento (CPU)</p>
                         <i data-lucide="cpu" class="text-blue-500"></i>
                     </div>
                     <div>
-                        <h3 class="text-3xl font-black {% if cpu_percent > 85 %}text-red-600{% else %}text-white{% endif %}">{{ cpu_percent }}%</h3>
+                        <h3 class="text-4xl font-black {% if cpu_percent > 85 %}text-red-500{% else %}text-white{% endif %}">{{ cpu_percent }}%</h3>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
-                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ cpu_percent }}%"></div>
+                    <div class="w-full bg-gray-800 rounded-full h-2 mt-4">
+                        <div class="bg-blue-500 h-2 rounded-full transition-all" style="width: {{ cpu_percent }}%"></div>
                     </div>
                 </div>
 
                 <!-- RAM -->
-                <div class="bg-white/5 backdrop-blur-md text-white p-6 rounded-2xl shadow-sm border border-white/10 flex flex-col justify-between">
+                <div class="bg-gray-900/50 backdrop-blur-md text-white p-6 rounded-2xl border border-white/5 flex flex-col justify-between">
                     <div class="flex justify-between items-start mb-4">
-                        <p class="text-sm text-gray-500 font-medium uppercase">Memória (RAM)</p>
+                        <p class="text-sm text-gray-400 font-bold uppercase">Memória (RAM)</p>
                         <i data-lucide="memory-stick" class="text-purple-500"></i>
                     </div>
                     <div>
-                        <h3 class="text-3xl font-black {% if ram_percent > 85 %}text-red-600{% else %}text-white{% endif %}">{{ ram_used_gb|floatformat:1 }} / {{ ram_total_gb|floatformat:1 }} GB</h3>
+                        <h3 class="text-4xl font-black {% if ram_percent > 85 %}text-red-500{% else %}text-white{% endif %}">{{ ram_used_gb|floatformat:1 }} <span class="text-xl">GB</span></h3>
+                        <p class="text-xs text-gray-500 mt-1">De {{ ram_total_gb|floatformat:1 }} GB ({{ ram_percent }}%)</p>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
-                        <div class="bg-purple-600 h-2.5 rounded-full" style="width: {{ ram_percent }}%"></div>
+                    <div class="w-full bg-gray-800 rounded-full h-2 mt-4">
+                        <div class="bg-purple-500 h-2 rounded-full transition-all" style="width: {{ ram_percent }}%"></div>
                     </div>
                 </div>
 
                 <!-- DISCO -->
-                <div class="bg-white/5 backdrop-blur-md text-white p-6 rounded-2xl shadow-sm border border-white/10 flex flex-col justify-between">
+                <div class="bg-gray-900/50 backdrop-blur-md text-white p-6 rounded-2xl border border-white/5 flex flex-col justify-between">
                     <div class="flex justify-between items-start mb-4">
-                        <p class="text-sm text-gray-500 font-medium uppercase">Armazenamento (Disco)</p>
+                        <p class="text-sm text-gray-400 font-bold uppercase">Armazenamento (Disco)</p>
                         <i data-lucide="hard-drive" class="text-green-500"></i>
                     </div>
                     <div>
-                        <h3 class="text-3xl font-black {% if disk_percent > 90 %}text-red-600{% else %}text-white{% endif %}">{{ disk_free_gb|floatformat:1 }} GB Livres</h3>
-                        <p class="text-xs text-gray-500 mt-1">Total: {{ disk_total_gb|floatformat:1 }} GB</p>
+                        <h3 class="text-4xl font-black {% if disk_percent > 90 %}text-red-500{% else %}text-white{% endif %}">{{ disk_free_gb|floatformat:1 }} <span class="text-xl">GB Livres</span></h3>
+                        <p class="text-xs text-gray-500 mt-1">Uso: {{ disk_percent }}% de {{ disk_total_gb|floatformat:1 }} GB</p>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                        <div class="bg-green-600 h-2.5 rounded-full" style="width: {{ disk_percent }}%"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Banco de Dados e Nuvem -->
-            <h2 class="text-xl font-bold text-gray-200 mb-4">Banco de Dados e Nuvem</h2>
-            <div class="bg-white/5 backdrop-blur-md text-white p-8 rounded-2xl shadow-sm border border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-                <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                        <i data-lucide="database" class="text-3xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold text-white">db.sqlite3</h3>
-                        <p class="text-sm text-gray-500">Tamanho Atual: {{ db_size_mb|floatformat:2 }} MB</p>
-                    </div>
-                </div>
-
-                <div class="flex flex-col gap-3 w-full md:w-auto">
-                    <div class="flex gap-3 w-full">
-                        <button @click="openUpload = true" class="w-full md:w-auto px-6 py-3 bg-white/10 hover:bg-gray-200 text-gray-200 rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
-                            <i data-lucide="upload-cloud"></i> Restaurar Local
-                        </button>
-                        <a href="{% url 'sysadmin_baixar_backup' %}" class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
-                            <i data-lucide="download-cloud"></i> Download Local
-                        </a>
-                    </div>
-                    <div class="flex gap-3 w-full">
-                        <a href="{% url 'sysadmin_backup_gdrive' %}" class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2 text-sm">
-                            <i data-lucide="cloud-upload"></i> Fazer Backup no Google Drive (Agora)
-                        </a>
+                    <div class="w-full bg-gray-800 rounded-full h-2 mt-4">
+                        <div class="bg-green-500 h-2 rounded-full transition-all" style="width: {{ disk_percent }}%"></div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- ABA 2: INSTITUIÇÃO -->
-        <div x-show="activeTab === 'instituicao'" style="display: none;" x-transition>
-            <div class="bg-white/5 backdrop-blur-md text-white p-8 rounded-2xl shadow-sm border border-white/10 mb-8">
-                <p class="text-sm text-gray-500 mb-6">Estas informações são injetadas dinamicamente nos rodapés, e-mails, relatórios em PDF e Títulos/Abas de navegador do sistema.</p>
-
-                <form method="POST" action="{% url 'sysadmin_salvar_igreja' %}" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {% csrf_token %}
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Nome Real (Razão Social)</label>
-                        <input type="text" name="igreja_nome" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ config.igreja_nome }}" placeholder="Palavra de Vida Enseada" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Nome Fantasia (Títulos e Abas)</label>
-                        <input type="text" name="nome_fantasia" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ config.nome_fantasia|default_if_none:'' }}" placeholder="PV Enseada">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">CNPJ</label>
-                        <input type="text" name="cnpj" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ config.cnpj|default_if_none:'' }}" placeholder="00.000.000/0001-00">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Endereço Completo</label>
-                        <input type="text" name="endereco" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ config.endereco|default_if_none:'' }}" placeholder="Av. Principal, 123 - Centro">
-                    </div>
-                    <div class="flex items-center gap-4">
-                        {% if config.igreja_logo %}
-                            <img src="{{ config.igreja_logo.url }}" class="h-12 w-auto rounded-lg bg-white/10 p-1">
-                        {% endif %}
-                        <div class="flex-grow">
-                            <label class="block text-sm font-bold text-gray-300 mb-1">Logo Principal (Painéis)</label>
-                            <input type="file" name="igreja_logo" accept=".jpg,.jpeg,.png,.svg,.webp" class="bg-gray-950/60 text-sm text-gray-400 w-full px-4 py-1.5 border border-white/20 rounded-lg file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Informações de Rede e SO -->
+                <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl">
+                    <h2 class="text-xl font-bold text-gray-200 mb-4 flex items-center gap-2"><i data-lucide="globe" class="w-5 h-5"></i> Configurações de Rede e SO</h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-gray-400 text-sm font-bold">Sistema Operacional</span>
+                            <span class="text-white font-mono text-sm bg-gray-800 px-3 py-1 rounded">{{ os_info }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-gray-400 text-sm font-bold">Hostname</span>
+                            <span class="text-white font-mono text-sm bg-gray-800 px-3 py-1 rounded">{{ hostname }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-gray-400 text-sm font-bold">IP Local Exposto</span>
+                            <span class="text-blue-400 font-mono text-sm bg-blue-900/20 border border-blue-500/20 px-3 py-1 rounded">{{ local_ip }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm font-bold">Domínio BASE_URL</span>
+                            <span class="text-green-400 font-mono text-sm bg-green-900/20 border border-green-500/20 px-3 py-1 rounded">{{ env_data.BASE_URL }}</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        {% if config.favicon %}
-                            <img src="{{ config.favicon.url }}" class="h-10 w-10 object-contain rounded bg-white/10 p-1">
-                        {% endif %}
-                        <div class="flex-grow">
-                            <label class="block text-sm font-bold text-gray-300 mb-1">Favicon (Ícone do Navegador)</label>
-                            <input type="file" name="favicon" accept=".ico,.png,.jpg,.jpeg,.svg" class="bg-gray-950/60 text-sm text-gray-400 w-full px-4 py-1.5 border border-white/20 rounded-lg file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+                </div>
+
+                </div>
+        </div>
+        </div>
+
+        <!-- ABA 2: COMUNICAÇÃO E E-MAIL -->
+        <div x-show="activeTab === 'comunicacao'" style="display: none;" x-transition>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Master Switch -->
+                <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="toggle-right"></i> Master Switch de E-mail</h3>
+                        <p class="text-sm text-gray-400 mb-6">Controle global de disparo. Ao desligar, nenhum e-mail transacional será enviado (são marcados como falha/pausados).</p>
+
+                        <div class="flex items-center justify-center mb-6">
+                            {% if config.envios_email_ativos %}
+                            <div class="bg-green-500/10 text-green-400 px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 border border-green-500/30">
+                                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> E-MAILS ATIVADOS
+                            </div>
+                            {% else %}
+                            <div class="bg-red-500/10 text-red-400 px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 border border-red-500/30">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span> E-MAILS BLOQUEADOS
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-
-                    <div class="col-span-1 md:col-span-2 mt-2">
-                        <button type="submit" class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
-                            <i data-lucide="save"></i> Salvar Dados da Instituição
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- ABA 3: TEMPLATES (CANVA-LIKE) -->
-        <div x-show="activeTab === 'templates'" style="display: none;" x-transition>
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-200">Gerenciador de Templates Dinâmicos</h2>
-                <a href="{% url 'sysadmin_template_novo' %}" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2 text-sm">
-                    <i data-lucide="plus"></i> Criar Novo Template
-                </a>
-            </div>
-
-            <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden mb-8">
-                <table class="w-full text-left text-sm text-gray-300">
-                    <thead class="bg-gray-900/50 text-xs uppercase font-bold text-gray-400">
-                        <tr>
-                            <th scope="col" class="px-6 py-4">Ação / Gatilho</th>
-                            <th scope="col" class="px-6 py-4">Tipo</th>
-                            <th scope="col" class="px-6 py-4">Última Atualização</th>
-                            <th scope="col" class="px-6 py-4 text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/10">
-                        {% for template in templates %}
-                                <tr class="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors">
-                                    <td class="px-4 py-3 text-sm text-gray-300 font-bold">{{ template.identificador_sistema }}</td>
-                                    <td class="px-4 py-3 text-sm">
-                                        {% if template.tipo_documento == 'email' %}
-                                        <span class="bg-blue-900/50 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-500/30 flex items-center gap-1 w-max"><i data-lucide="mail" class="w-3 h-3"></i> E-mail</span>
-                                        {% else %}
-                                        <span class="bg-orange-900/50 text-orange-400 px-2 py-1 rounded text-xs font-bold border border-orange-500/30 flex items-center gap-1 w-max"><i data-lucide="file-text" class="w-3 h-3"></i> PDF</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-4 py-3 text-sm text-gray-400 truncate max-w-xs">{{ template.descricao|default:"-" }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-400">{{ template.data_criacao|date:"d/m/Y H:i" }}</td>
-                            <td class="px-6 py-4 text-right flex justify-end gap-3">
-                                <a href="{% url 'sysadmin_template_editar' template.id %}" class="text-blue-400 hover:text-blue-300" title="Editar Canvas">
-                                    <i data-lucide="edit-3"></i>
-                                </a>
-                                <form method="POST" action="{% url 'sysadmin_template_deletar' template.id %}" onsubmit="return confirm('Excluir este template fará o sistema voltar a usar o layout hardcoded original. Deseja continuar?')" class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="text-red-400 hover:text-red-300" title="Deletar">
-                                        <i data-lucide="trash-2"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                Nenhum template dinâmico criado. O sistema está usando os arquivos HTML originais.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Motor de E-mail Global -->
-            <div class="bg-white/5 backdrop-blur-md text-white p-6 rounded-2xl shadow-sm border border-white/10 flex flex-col justify-between">
-                <div class="mb-4">
-                    <h3 class="text-lg font-bold text-white mb-1">Disparo Global de E-mails</h3>
-                    <p class="text-sm text-gray-500">Controla o disparo de e-mails em todos os módulos (Escalas, Avisos, Cadastro). <b>Útil para manutenção silenciosa</b>.</p>
-                </div>
-
-                <div class="flex-grow flex items-center justify-center mb-4">
-                    {% if config.envios_email_ativos %}
-                    <div class="bg-blue-100 text-blue-800 px-6 py-3 rounded-full font-bold flex items-center gap-2 border border-blue-300">
-                        <i data-lucide="mail"></i> E-mails ATIVADOS
-                    </div>
-                    {% else %}
-                    <div class="bg-gray-800 text-gray-400 px-6 py-3 rounded-full font-bold flex items-center gap-2 border border-gray-700">
-                        <i data-lucide="mail-x"></i> E-mails PAUSADOS
-                    </div>
-                    {% endif %}
-                </div>
-
-                <form method="POST" action="{% url 'sysadmin_toggle_email' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="w-full py-2 rounded-lg font-bold text-sm transition-colors text-white {% if config.envios_email_ativos %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %}">
-                        {% if config.envios_email_ativos %}
-                        Pausar Todos os Envios
-                        {% else %}
-                        Retomar Envios (Reativar)
-                        {% endif %}
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- ABA: LINKS RÁPIDOS -->
-        <div x-show="activeTab === 'links'" style="display: none;" x-transition>
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-200">Gerenciador de Links Rápidos (Sidebar)</h2>
-            </div>
-
-            <div class="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl mb-8">
-                <form method="POST" action="{% url 'sysadmin_link_salvar' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    {% csrf_token %}
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Título</label>
-                        <input type="text" name="titulo" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" placeholder="Ex: Portal InChurch" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">URL (Link)</label>
-                        <input type="url" name="url" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" placeholder="https://" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Visibilidade</label>
-                        <select name="visibilidade" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" required>
-                            <option value="geral">Geral (Todos)</option>
-                            <option value="membros">Apenas Membros</option>
-                            <option value="lideres">Líderes e Acima</option>
-                            <option value="admin">Somente Administradores</option>
-                        </select>
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
-                            <i data-lucide="plus"></i> Adicionar
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden mb-8">
-                <table class="w-full text-left text-sm text-gray-300">
-                    <thead class="bg-gray-900/50 text-xs uppercase font-bold text-gray-400">
-                        <tr>
-                            <th scope="col" class="px-6 py-4">Ícone</th>
-                            <th scope="col" class="px-6 py-4">Título</th>
-                            <th scope="col" class="px-6 py-4">URL</th>
-                            <th scope="col" class="px-6 py-4 text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/10">
-                        {% for link in links_rapidos %}
-                        <tr class="hover:bg-white/5 transition-colors">
-                            <td class="px-6 py-4">
-                                <img src="https://www.google.com/s2/favicons?domain={{ link.url }}&sz=64" alt="Ícone" class="w-6 h-6 rounded bg-white/10 p-0.5 object-contain">
-                            </td>
-                            <td class="px-6 py-4 font-bold text-white">{{ link.titulo }}</td>
-                            <td class="px-6 py-4 text-gray-400 truncate max-w-[200px]">{{ link.url }}</td>
-                            <td class="px-6 py-4 text-right flex justify-end gap-3">
-                                <a href="{% url 'admin:core_linkrapido_change' link.id %}" target="_blank" class="text-blue-400 hover:text-blue-300" title="Editar no Admin">
-                                    <i data-lucide="edit-3"></i>
-                                </a>
-                                <form method="POST" action="{% url 'sysadmin_link_deletar' link.id %}" onsubmit="return confirm('Excluir este link?')" class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="text-red-400 hover:text-red-300" title="Deletar">
-                                        <i data-lucide="trash-2"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                Nenhum link rápido cadastrado.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ABA 4: SEGURANÇA E BACKUP (Zero-Trust) -->
-        <div x-show="activeTab === 'seguranca'" style="display: none;" x-transition>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-                <!-- Força Bruta / Blocked IPs -->
-                <div class="bg-white/5 backdrop-blur-md text-white p-6 rounded-2xl shadow-sm border border-white/10 flex flex-col justify-between">
-                    <div class="mb-4">
-                        <h3 class="text-lg font-bold text-white mb-1">Proteção contra Força Bruta</h3>
-                        <p class="text-sm text-gray-500">Bloqueios ativos por excesso de tentativas de senha (Axes).</p>
-                    </div>
-
-                    {% if tentativas_bloqueadas %}
-                    <div class="max-h-40 overflow-y-auto mb-4 border border-white/10 rounded-lg">
-                        <ul class="divide-y divide-gray-100">
-                            {% for tentativa in tentativas_bloqueadas %}
-                            <li class="p-3 text-sm flex justify-between items-center bg-red-900/20">
-                                <div>
-                                    <span class="font-bold text-red-700">{{ tentativa.ip_address }}</span>
-                                    <span class="text-xs text-gray-500 block">Falhas: {{ tentativa.failures_since_start }} | Usuário: {{ tentativa.username }}</span>
-                                </div>
-                                <form method="POST" action="{% url 'sysadmin_desbloquear_ip' %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="ip_address" value="{{ tentativa.ip_address }}">
-                                    <button type="submit" class="text-xs bg-white/5 backdrop-blur-md text-white text-red-400 border border-red-900/50 px-3 py-1 rounded hover:bg-red-900/30">Desbloquear</button>
-                                </form>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <form method="POST" action="{% url 'sysadmin_desbloquear_ip' %}">
+                    <form method="POST" action="{% url 'sysadmin_toggle_email' %}">
                         {% csrf_token %}
-                        <button type="submit" class="w-full py-2 bg-gray-900 hover:bg-black text-white rounded-lg font-bold text-sm transition-colors">
-                            Resetar TODOS os Bloqueios
+                        <button type="submit" class="w-full py-3 rounded-lg font-black text-sm transition-colors text-white {% if config.envios_email_ativos %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %}">
+                            {% if config.envios_email_ativos %}
+                            DESATIVAR ENVIOS AUTOMÁTICOS
+                            {% else %}
+                            REATIVAR ENVIOS
+                            {% endif %}
                         </button>
                     </form>
-                    {% else %}
-                    <div class="bg-green-900/20 text-green-400 p-4 rounded-lg flex items-center justify-center border border-green-900/50 mt-auto">
-                        <i data-lucide="shield-check" class="mr-2"></i> Nenhum IP ou conta bloqueada.
-                    </div>
-                    {% endif %}
                 </div>
 
-                <!-- Módulo DEBUG (Zero-Day Mitigation) -->
-                <div class="bg-white/5 backdrop-blur-md text-white p-6 rounded-2xl shadow-sm border border-white/10 flex flex-col justify-between">
+                <!-- Credenciais SMTP -->
+                <div class="lg:col-span-2 bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="key"></i> Configurações SMTP / IA (.env)</h3>
+                    <p class="text-sm text-gray-400 mb-4">Salvar reiniciará o servidor para aplicar em memória.</p>
+
+                    <form method="POST" action="{% url 'sysadmin_salvar_env' %}" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="return confirm('Alterar credenciais reiniciará o sistema. Continuar?')">
+                        {% csrf_token %}
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-400 mb-1">Google Groq AI Token</label>
+                            <input type="password" name="GROQ_API_KEY" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-blue-500 text-sm" value="{{ env_data.GROQ_API_KEY_MASKED }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1">SMTP Host</label>
+                            <input type="text" name="EMAIL_HOST" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-blue-500 text-sm" value="{{ env_data.EMAIL_HOST }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1">SMTP Port</label>
+                            <input type="number" name="EMAIL_PORT" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-blue-500 text-sm" value="{{ env_data.EMAIL_PORT }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1">SMTP User (Email)</label>
+                            <input type="email" name="EMAIL_USER" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-blue-500 text-sm" value="{{ env_data.EMAIL_USER }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1">SMTP Password (App Password)</label>
+                            <input type="password" name="EMAIL_PASSWORD" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-blue-500 text-sm" value="{{ env_data.EMAIL_PASSWORD_MASKED }}" placeholder="Deixe em branco p/ manter">
+                        </div>
+                        <div class="col-span-1 md:col-span-2 mt-1">
+                            <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors text-sm">
+                                Salvar e Reiniciar Servidor
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabela de Logs de E-mail -->
+            <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden mb-8">
+                <div class="p-4 border-b border-white/5 bg-gray-900">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="list"></i> Logs Recentes de Disparo</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-black/40 text-xs uppercase font-bold text-gray-500">
+                            <tr>
+                                <th class="px-6 py-3">Data</th>
+                                <th class="px-6 py-3">Status</th>
+                                <th class="px-6 py-3">Destinatário</th>
+                                <th class="px-6 py-3">Assunto</th>
+                                <th class="px-6 py-3">Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% for log in email_logs %}
+                            <tr class="hover:bg-white/5">
+                                <td class="px-6 py-3 whitespace-nowrap text-xs">{{ log.data_envio|date:"d/m/Y H:i" }}</td>
+                                <td class="px-6 py-3">
+                                    {% if log.status == 'enviado' %}
+                                    <span class="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-bold">Enviado</span>
+                                    {% elif log.status == 'pendente' %}
+                                    <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded text-xs font-bold">Pendente</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs font-bold">Falha</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-3 font-mono text-xs text-blue-400">{{ log.destinatario }}</td>
+                                <td class="px-6 py-3 truncate max-w-[200px]">{{ log.assunto }}</td>
+                                <td class="px-6 py-3 text-xs text-gray-500 truncate max-w-[200px]">{{ log.erro_mensagem|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                    Nenhum log de e-mail registrado.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: SEGURANÇA E ZERO-TRUST -->
+        <div x-show="activeTab === 'seguranca'" style="display: none;" x-transition>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Zona de Perigo: Zerar Banco -->
+                <div class="bg-red-950/30 backdrop-blur-md border border-red-900/50 p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 text-red-900/20">
+                        <i data-lucide="skull" class="w-32 h-32"></i>
+                    </div>
+                    <div class="relative z-10 mb-6">
+                        <h3 class="text-xl font-black text-red-500 mb-2 flex items-center gap-2"><i data-lucide="alert-octagon"></i> ZERAR BANCO DE DADOS</h3>
+                        <p class="text-sm text-red-300"><b>AÇÃO DESTRUTIVA.</b> Apagará todas as Escalas, Estoque, Mídias, Departamentos e Usuários Comuns.</p>
+                        <p class="text-xs text-red-400 mt-2">Sua conta (`marcos@pvenseada.org`), Templates e Configurações de Sistema <b>SERÃO PRESERVADOS</b> (Blindagem Super-Admin).</p>
+                    </div>
+                    <form method="POST" action="{% url 'sysadmin_zerar_banco' %}" class="relative z-10" onsubmit="return prompt('Digite ZERAR para confirmar:') === 'ZERAR'">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-black shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all flex justify-center items-center gap-2 uppercase">
+                            <i data-lucide="trash-2"></i> Executar Factory Reset
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Debug Mode -->
+                <div class="bg-gray-900/50 backdrop-blur-md text-white p-6 rounded-2xl border border-white/5 flex flex-col justify-between">
                     <div class="mb-4">
-                        <h3 class="text-lg font-bold text-white mb-1">Modo de Depuração (DEBUG)</h3>
-                        <p class="text-sm text-gray-500">Controla a exibição de erros detalhados. <b>Obrigatório estar DESLIGADO em produção</b> para evitar vazamento de dados confidenciais.</p>
+                        <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2"><i data-lucide="bug"></i> Modo DEBUG</h3>
+                        <p class="text-sm text-gray-400">Quando ativo, vaza informações confidenciais de código em caso de erro. <b>Use apenas em desenvolvimento local.</b></p>
                     </div>
 
                     <div class="flex-grow flex items-center justify-center mb-4">
                         {% if is_debug_active %}
-                        <div class="animate-pulse bg-red-100 text-red-800 px-6 py-3 rounded-full font-bold flex items-center gap-2 border border-red-300">
-                            <i data-lucide="alert-triangle"></i> DEBUG LIGADO (Vulnerável)
+                        <div class="animate-pulse bg-red-900/40 text-red-400 px-6 py-2 rounded-full text-sm font-bold border border-red-500/30">
+                            DEBUG LIGADO (VULNERÁVEL)
                         </div>
                         {% else %}
-                        <div class="bg-green-100 text-green-800 px-6 py-3 rounded-full font-bold flex items-center gap-2 border border-green-300">
-                            <i data-lucide="shield-check"></i> DEBUG DESLIGADO (Seguro)
+                        <div class="bg-green-900/40 text-green-400 px-6 py-2 rounded-full text-sm font-bold border border-green-500/30">
+                            DEBUG DESLIGADO (SEGURO)
                         </div>
                         {% endif %}
                     </div>
 
                     <form method="POST" action="{% url 'sysadmin_toggle_debug' %}" onsubmit="return confirm('Alterar o modo DEBUG irá reiniciar o servidor web instantaneamente. Confirmar?')">
                         {% csrf_token %}
-                        <button type="submit" class="w-full py-2 rounded-lg font-bold text-sm transition-colors text-white {% if is_debug_active %}bg-green-600 hover:bg-green-700{% else %}bg-red-600 hover:bg-red-700{% endif %}">
+                        <button type="submit" class="w-full py-2 rounded-lg font-bold text-sm transition-colors text-white border {% if is_debug_active %}bg-green-600/20 hover:bg-green-600 border-green-500/50{% else %}bg-red-600/20 hover:bg-red-600 border-red-500/50{% endif %}">
                             {% if is_debug_active %}
-                            Desligar DEBUG (Recomendado)
+                            Desligar DEBUG
                             {% else %}
-                            Ligar DEBUG Temporariamente
+                            Ligar DEBUG (Perigoso)
                             {% endif %}
                         </button>
                     </form>
                 </div>
+
+                <!-- Bloqueio IP (Axes) -->
+                <div class="md:col-span-2 bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="shield-off"></i> Defesa Ativa contra Força Bruta (IPs Bloqueados)</h3>
+
+                    {% if tentativas_bloqueadas %}
+                    <div class="max-h-40 overflow-y-auto mb-4 custom-scrollbar">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="bg-black/40 text-xs uppercase font-bold text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-2">Endereço IP</th>
+                                    <th class="px-4 py-2">Usuário Tentado</th>
+                                    <th class="px-4 py-2">Falhas</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                {% for t in tentativas_bloqueadas %}
+                                <tr class="bg-red-900/10">
+                                    <td class="px-4 py-2 font-mono text-red-400">{{ t.ip_address }}</td>
+                                    <td class="px-4 py-2">{{ t.username }}</td>
+                                    <td class="px-4 py-2 font-bold">{{ t.failures_since_start }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <form method="POST" action="{% url 'sysadmin_desbloquear_ip' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-bold text-sm transition-colors border border-gray-600">
+                            Resetar TODOS os Bloqueios
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="bg-green-900/10 text-green-400 p-4 rounded-lg flex items-center gap-3 border border-green-900/30 font-medium">
+                        <i data-lucide="check-circle"></i> Nenhum IP ou conta sob bloqueio malicioso no momento.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+            <!-- Gestão de Backups e Nuvem -->
+            <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-200 flex items-center gap-2"><i data-lucide="database" class="w-5 h-5"></i> Gestão de Backups e Restauração</h2>
+                        <p class="text-sm text-gray-400 mt-1">Versionamento automático do banco (`db.sqlite3`). Mantém as últimas 5 versões em disco.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="openUpload = true" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Subir DB Externo
+                        </button>
+                        <form method="POST" action="{% url 'sysadmin_gerar_backup' %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Gerar Novo Backup Local
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-white/5">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-black/40 text-xs uppercase font-bold text-gray-500">
+                            <tr>
+                                <th class="px-4 py-3">Data/Hora</th>
+                                <th class="px-4 py-3">Arquivo</th>
+                                <th class="px-4 py-3">Tamanho</th>
+                                <th class="px-4 py-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <!-- Backup Atual/Live (Sempre disponivel para download direto) -->
+                            <tr class="bg-blue-900/10">
+                                <td class="px-4 py-3 font-bold text-blue-400 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4"></i> BANCO ATUAL EM USO</td>
+                                <td class="px-4 py-3 text-gray-400 font-mono text-xs">db.sqlite3</td>
+                                <td class="px-4 py-3 font-bold">{{ db_size_mb|floatformat:2 }} MB</td>
+                                <td class="px-4 py-3 text-right flex justify-end gap-2">
+                                    <a href="{% url 'sysadmin_baixar_backup' %}" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded transition-colors" title="Baixar DB Atual">
+                                        <i data-lucide="download" class="w-4 h-4"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'sysadmin_backup_gdrive' %}" class="inline" onsubmit="return confirm('Enviar banco atual para o Google Drive?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="px-2 py-1 bg-green-900/50 hover:bg-green-800 text-green-400 rounded transition-colors" title="Subir para GDrive">
+                                            <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <!-- Lista de Backups -->
+                            {% for b in backups_db %}
+                            <tr class="hover:bg-white/5">
+                                <td class="px-4 py-3">{{ b.data_criacao|date:"d/m/Y H:i:s" }}</td>
+                                <td class="px-4 py-3 text-gray-400 font-mono text-xs">{{ b.arquivo }}</td>
+                                <td class="px-4 py-3">{{ b.tamanho_mb }} MB</td>
+                                <td class="px-4 py-3 text-right flex justify-end gap-2">
+                                    <a href="{% url 'sysadmin_baixar_backup_id' b.id %}" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors" title="Baixar">
+                                        <i data-lucide="download" class="w-4 h-4"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'sysadmin_backup_gdrive_id' b.id %}" class="inline" onsubmit="return confirm('Enviar este backup para o GDrive?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="px-2 py-1 bg-green-900/30 hover:bg-green-800 text-green-400 rounded transition-colors" title="Enviar Drive">
+                                            <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{% url 'sysadmin_restaurar_backup' b.id %}" class="inline" onsubmit="return confirm('ATENÇÃO: Isso irá substituir o banco atual por este backup imediatamente. Continuar?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="px-2 py-1 bg-orange-900/30 hover:bg-orange-800 text-orange-400 rounded transition-colors" title="Restaurar">
+                                            <i data-lucide="history" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{% url 'sysadmin_deletar_backup' b.id %}" class="inline" onsubmit="return confirm('Excluir este backup fisicamente?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="px-2 py-1 bg-red-900/30 hover:bg-red-800 text-red-400 rounded transition-colors" title="Excluir">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-gray-500">Nenhum backup local registrado no histórico.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- Formulário de Variaveis Globais (.env) -->
-            <div class="bg-white/5 backdrop-blur-md text-white p-8 rounded-2xl shadow-sm border border-white/10 mb-6">
-                <h3 class="text-xl font-bold text-white mb-1">Credenciais do Servidor (SMTP e APIs)</h3>
-                <p class="text-sm text-gray-500 mb-6">Ao salvar, o sistema reiniciará para aplicar os dados com segurança. Os valores atuais ficam ocultos (mascarados) se já configurados.</p>
+        <!-- ABA 4: INSTITUIÇÃO -->
+        <div x-show="activeTab === 'instituicao'" style="display: none;" x-transition>
+            <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 p-8 rounded-2xl mb-8">
+                <p class="text-sm text-gray-400 mb-6">Estas informações são injetadas em rodapés, e-mails, relatórios em PDF e no navegador.</p>
 
-                <form method="POST" action="{% url 'sysadmin_salvar_env' %}" class="grid grid-cols-1 md:grid-cols-2 gap-6" onsubmit="return confirm('Alterar credenciais de SMTP e IA pode tirar o sistema do ar temporariamente. Confirmar?')">
+                <form method="POST" action="{% url 'sysadmin_salvar_igreja' %}" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {% csrf_token %}
-                    <div class="col-span-1 md:col-span-2">
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Google Groq AI Token</label>
-                        <input type="password" name="GROQ_API_KEY" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.GROQ_API_KEY_MASKED }}" placeholder="AIzaSy...">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Nome Real (Razão Social)</label>
+                        <input type="text" name="igreja_nome" class="bg-black/40 text-white w-full px-4 py-2 border border-white/10 rounded-lg focus:border-blue-500" value="{{ config.igreja_nome }}" required>
                     </div>
-                    <div class="col-span-1 md:col-span-2">
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Domínio do Sistema (BASE_URL) - <i>Única Fonte da Verdade</i></label>
-                        <input type="text" name="BASE_URL" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.BASE_URL }}" placeholder="http://127.0.0.1:8000 ou https://intranet.pvenseada.org">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Nome Fantasia (Títulos e Abas)</label>
+                        <input type="text" name="nome_fantasia" class="bg-black/40 text-white w-full px-4 py-2 border border-white/10 rounded-lg focus:border-blue-500" value="{{ config.nome_fantasia|default_if_none:'' }}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">CNPJ</label>
+                        <input type="text" name="cnpj" class="bg-black/40 text-white w-full px-4 py-2 border border-white/10 rounded-lg focus:border-blue-500" value="{{ config.cnpj|default_if_none:'' }}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-1">Endereço Completo</label>
+                        <input type="text" name="endereco" class="bg-black/40 text-white w-full px-4 py-2 border border-white/10 rounded-lg focus:border-blue-500" value="{{ config.endereco|default_if_none:'' }}">
+                    </div>
+                    <div class="flex items-center gap-4">
+                        {% if config.igreja_logo %}
+                            <img src="{{ config.igreja_logo.url }}" class="h-12 w-auto rounded-lg bg-white p-1">
+                        {% endif %}
+                        <div class="flex-grow">
+                            <label class="block text-sm font-bold text-gray-300 mb-1">Logo Principal</label>
+                            <input type="file" name="igreja_logo" accept=".jpg,.jpeg,.png,.svg,.webp" class="text-sm text-gray-400 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        {% if config.favicon %}
+                            <img src="{{ config.favicon.url }}" class="h-10 w-10 object-contain rounded bg-white p-1">
+                        {% endif %}
+                        <div class="flex-grow">
+                            <label class="block text-sm font-bold text-gray-300 mb-1">Favicon (Ícone)</label>
+                            <input type="file" name="favicon" accept=".ico,.png,.jpg,.jpeg,.svg" class="text-sm text-gray-400 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white cursor-pointer">
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">SMTP Host (Servidor de E-mail)</label>
-                        <input type="text" name="EMAIL_HOST" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.EMAIL_HOST }}" placeholder="smtp.gmail.com">
+                    <div class="col-span-1 md:col-span-2 mt-4 pt-4 border-t border-white/5">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i> Salvar Identidade
+                        </button>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">SMTP Port</label>
-                        <input type="number" name="EMAIL_PORT" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.EMAIL_PORT }}" placeholder="587">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">E-mail (Usuário)</label>
-                        <input type="email" name="EMAIL_USER" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.EMAIL_USER }}" placeholder="intranet@igreja.com">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-300 mb-1">Senha (App Password)</label>
-                        <input type="password" name="EMAIL_PASSWORD" class="bg-gray-950/60 border-gray-700/80 text-white w-full px-4 py-2 border border-white/20 rounded-lg focus:ring-blue-500" value="{{ env_data.EMAIL_PASSWORD_MASKED }}" placeholder="Deixe em branco para não alterar">
-                    </div>
+                </form>
+            </div>
+        </div>
 
-                    <div class="col-span-1 md:col-span-2 mt-2">
-                        <button type="submit" class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
-                            <i data-lucide="save"></i> Salvar Credenciais no Servidor (.env)
+        <!-- ABA 5: TEMPLATES -->
+        <div x-show="activeTab === 'templates'" style="display: none;" x-transition>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2"><i data-lucide="layout-template"></i> Editor Canvas (E-mails e PDFs)</h2>
+                <a href="{% url 'sysadmin_template_novo' %}" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow-sm transition-colors flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Novo Template
+                </a>
+            </div>
+
+            <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden mb-8">
+                <table class="w-full text-left text-sm text-gray-300">
+                    <thead class="bg-black/40 text-xs uppercase font-bold text-gray-500">
+                        <tr>
+                            <th class="px-6 py-4">ID/Gatilho</th>
+                            <th class="px-6 py-4">Tipo</th>
+                            <th class="px-6 py-4">Descrição</th>
+                            <th class="px-6 py-4 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        {% for template in templates %}
+                        <tr class="hover:bg-white/5">
+                            <td class="px-6 py-4 font-bold text-white">{{ template.identificador_sistema }}</td>
+                            <td class="px-6 py-4">
+                                {% if template.tipo_documento == 'email' %}
+                                <span class="bg-blue-900/30 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-500/20 flex items-center gap-1 w-max"><i data-lucide="mail" class="w-3 h-3"></i> E-mail</span>
+                                {% else %}
+                                <span class="bg-orange-900/30 text-orange-400 px-2 py-1 rounded text-xs font-bold border border-orange-500/20 flex items-center gap-1 w-max"><i data-lucide="file-text" class="w-3 h-3"></i> PDF</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-gray-400 truncate max-w-xs">{{ template.descricao|default:"-" }}</td>
+                            <td class="px-6 py-4 text-right flex justify-end gap-3">
+                                <a href="{% url 'sysadmin_template_editar' template.id %}" class="text-blue-400 hover:text-blue-300" title="Editar">
+                                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                                </a>
+                                <form method="POST" action="{% url 'sysadmin_template_deletar' template.id %}" onsubmit="return confirm('Excluir este template?')" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-400 hover:text-red-300" title="Deletar">
+                                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhum template dinâmico customizado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ABA 6: LINKS RÁPIDOS -->
+        <div x-show="activeTab === 'links'" style="display: none;" x-transition>
+            <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl mb-8">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="link"></i> Adicionar Link Rápido na Sidebar</h2>
+                <form method="POST" action="{% url 'sysadmin_link_salvar' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1">Título</label>
+                        <input type="text" name="titulo" class="bg-black/40 border-white/10 text-white w-full px-3 py-2 rounded-lg focus:border-blue-500 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1">URL (https://)</label>
+                        <input type="url" name="url" class="bg-black/40 border-white/10 text-white w-full px-3 py-2 rounded-lg focus:border-blue-500 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1">Visibilidade</label>
+                        <select name="visibilidade" class="bg-black/40 border-white/10 text-white w-full px-3 py-2 rounded-lg focus:border-blue-500 text-sm" required>
+                            <option value="geral">Todos</option>
+                            <option value="membros">Apenas Membros</option>
+                            <option value="lideres">Líderes+</option>
+                            <option value="admin">Apenas Admins</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Adicionar
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div class="bg-red-900/20 p-8 rounded-2xl shadow-sm border border-red-200 flex flex-col md:flex-row justify-between items-center gap-6">
-                <div>
-                    <h3 class="text-xl font-bold text-red-900">Zerar Dados de Operação (Manter Usuários)</h3>
-                    <p class="text-sm text-red-700 max-w-2xl mt-1">Isso apagará permanentemente todos os registros de Estoque, Empréstimos, Manutenções, Transações, Mídias LGPD e Escalas. Serão preservados <b>apenas os Usuários (Membros) e as Configurações do Sistema</b>.</p>
-                </div>
-
-                <form method="POST" action="{% url 'sysadmin_zerar_banco' %}" onsubmit="return confirm('TEM CERTEZA ABSOLUTA? ISSO NÃO PODE SER DESFEITO!')">
-                    {% csrf_token %}
-                    <button type="submit" class="w-full md:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition-colors flex justify-center items-center gap-2">
-                        <i data-lucide="trash-2"></i> Zerar Banco de Dados
-                    </button>
-                </form>
+            <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden mb-8">
+                <table class="w-full text-left text-sm text-gray-300">
+                    <thead class="bg-black/40 text-xs uppercase font-bold text-gray-500">
+                        <tr>
+                            <th class="px-6 py-4">Título</th>
+                            <th class="px-6 py-4">URL</th>
+                            <th class="px-6 py-4 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        {% for link in links_rapidos %}
+                        <tr class="hover:bg-white/5">
+                            <td class="px-6 py-4 font-bold text-white">{{ link.titulo }}</td>
+                            <td class="px-6 py-4 text-gray-400 truncate max-w-[250px]">{{ link.url }}</td>
+                            <td class="px-6 py-4 text-right flex justify-end gap-3">
+                                <form method="POST" action="{% url 'sysadmin_link_deletar' link.id %}" onsubmit="return confirm('Excluir este link?')" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-400 hover:text-red-300">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- Modal de Upload (Restauração DB) -->
+        <!-- MODAL DE UPLOAD DB -->
         <div x-show="openUpload" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="openUpload = false"></div>
+                <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" @click="openUpload = false"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white/5 backdrop-blur-md text-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="inline-block align-bottom bg-gray-900 border border-white/10 text-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                     <form method="POST" action="{% url 'sysadmin_subir_backup' %}" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <div class="bg-white/5 backdrop-blur-md text-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                            <h3 class="text-xl font-bold text-red-600 mb-2 flex items-center gap-2"><i data-lucide="alert-octagon"></i> Restaurar Banco de Dados</h3>
-                            <p class="text-sm text-gray-400 mb-6">Esta ação irá substituir integralmente os dados atuais pelo arquivo `.sqlite3` que você fizer upload. Recomenda-se colocar o sistema em Manutenção antes de prosseguir.</p>
+                        <div class="px-6 pt-6 pb-4">
+                            <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="alert-octagon" class="text-red-500"></i> Restaurar DB via Arquivo</h3>
+                            <p class="text-sm text-gray-400 mb-6">Substituição integral da base `.sqlite3`. Ação irreversível.</p>
 
-                            <div class="border-2 border-dashed border-white/20 rounded-xl p-8 text-center bg-white/5 hover:bg-gray-700/50 transition-colors cursor-pointer relative">
-                                <i data-lucide="upload" class="text-4xl text-gray-400 mb-2"></i>
-                                <p class="text-gray-400 font-medium">Clique para selecionar o arquivo db.sqlite3</p>
-                                <input type="file" name="backup_file" accept=".sqlite3" required class="bg-gray-950/60 border-gray-700/80 text-white absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <div class="border-2 border-dashed border-white/20 rounded-xl p-8 text-center bg-black/40 hover:bg-gray-800 transition-colors relative cursor-pointer group">
+                                <i data-lucide="upload" class="text-4xl text-blue-500 mb-2 mx-auto group-hover:-translate-y-1 transition-transform"></i>
+                                <p class="text-gray-300 font-bold">Selecionar arquivo</p>
+                                <input type="file" name="backup_file" accept=".sqlite3" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                             </div>
                         </div>
-                        <div class="bg-white/5 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
-                            <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-bold text-white hover:bg-red-700 sm:w-auto sm:text-sm">Restauração Irreversível</button>
-                            <button type="button" @click="openUpload = false" class="w-full inline-flex justify-center rounded-lg border border-white/20 shadow-sm px-4 py-2 bg-white/5 backdrop-blur-md text-white text-base font-medium text-gray-300 hover:bg-gray-800/50 sm:w-auto sm:text-sm">Cancelar</button>
+                        <div class="bg-black/40 px-6 py-4 flex justify-end gap-3 border-t border-white/5">
+                            <button type="button" @click="openUpload = false" class="px-4 py-2 bg-transparent text-gray-400 hover:text-white font-bold text-sm">Cancelar</button>
+                            <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm shadow-[0_0_10px_rgba(220,38,38,0.3)]">FORÇAR RESTAURAÇÃO</button>
                         </div>
                     </form>
                 </div>
@@ -520,7 +644,13 @@
     </div>
 </div>
 
-<!-- Icons lucide -->
+<style>
+.custom-scrollbar::-webkit-scrollbar { height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+</style>
+
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
   lucide.createIcons();

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório do Almoxarifado</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+        h1 { text-align: center; color: #1e3a8a; }
+        p { text-align: center; color: #555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f3f4f6; color: #374151; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .hash { font-family: monospace; font-size: 9px; color: #6b7280; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>LIVRO DE REGISTROS - ALMOXARIFADO</h1>
+    <p>Auditoria Zero-Trust - Relatório Gerado em: {% now "d/m/Y H:i:s" %}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Responsável / Assinatura</th>
+                <th>Ação</th>
+                <th>Item Movimentado</th>
+                <th>Hash Imutável SHA-256</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in movimentacoes %}
+            <tr>
+                <td>{{ mov.data_hora|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <b>{% if mov.membro_vinculado %}{{ mov.membro_vinculado.first_name }} (Verificado){% else %}{{ mov.nome_digitado }}{% endif %}</b>
+                </td>
+                <td>
+                    {% if mov.tipo == 'retirada' %}Retirou{% elif mov.tipo == 'devolucao' %}Devolveu{% else %}Cadastrou{% endif %}
+                    ({{ mov.quantidade }} un)
+                </td>
+                <td>{{ mov.item.nome }} <br> <small>{{ mov.item.id_unico }}</small></td>
+                <td class="hash">{{ mov.assinatura_digital_hash }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center;">Nenhum registro encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -163,7 +163,10 @@
                         <ul class="space-y-3">
                             {% for indisp in indisponiveis %}
                             <li class="bg-gray-950/50 p-3 rounded-lg border border-gray-800">
-                                <p class="font-bold text-white text-sm">{{ indisp.membro.first_name }} {{ indisp.membro.last_name }}</p>
+                                <p class="font-bold text-white text-sm">
+                                    {{ indisp.membro.first_name }}
+                                    {% if indisp.membro.apelido %} <span class="text-brand-400">({{ indisp.membro.apelido }})</span> {% else %} {{ indisp.membro.last_name }} {% endif %}
+                                </p>
                                 <p class="text-xs text-red-400">{{ indisp.data_inicio|date:"d/m" }} a {{ indisp.data_fim|date:"d/m" }}</p>
                             </li>
                             {% endfor %}
@@ -224,7 +227,10 @@
                                             <div class="w-10 h-10 rounded-full bg-brand-800 flex items-center justify-center font-bold text-white border border-gray-700">{{ membro.first_name|slice:":1" }}</div>
                                         {% endif %}
                                         <div>
-                                            <h4 class="font-bold text-white">{{ membro.first_name }} {{ membro.last_name }}</h4>
+                                            <h4 class="font-bold text-white">
+                                                {{ membro.first_name }}
+                                                {% if membro.apelido %} <span class="text-brand-400">({{ membro.apelido }})</span> {% else %} {{ membro.last_name }} {% endif %}
+                                            </h4>
                                             <p class="text-xs text-gray-400">{{ membro.telefone|default:"Sem Telefone" }}</p>
                                         </div>
                                     </div>

@@ -116,6 +116,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.notificacoes_globais',
                 'core.context_processors.global_config',
             ],
         },
@@ -131,6 +132,11 @@ WSGI_APPLICATION = 'intranet.wsgi.application'
 DATABASES = {
     'default': env.db('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
+
+if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+    DATABASES['default']['OPTIONS'] = {
+        'timeout': 20,  # Aumenta timeout para lidar com requisições concorrentes no Waitress
+    }
 
 
 # Password validation

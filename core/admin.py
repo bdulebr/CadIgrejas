@@ -4,9 +4,9 @@ from .models import Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker
 
 @admin.register(Membro)
 class MembroAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'nivel_hierarquico', 'is_active')
+    list_display = ('username', 'apelido', 'email', 'first_name', 'last_name', 'nivel_hierarquico', 'is_active')
     list_filter = ('nivel_hierarquico', 'is_active', 'is_staff')
-    search_fields = ('username', 'email', 'first_name', 'last_name', 'cpf')
+    search_fields = ('username', 'apelido', 'email', 'first_name', 'last_name', 'cpf')
     readonly_fields = ('hash_aceite_lgpd',)
 
     fieldsets = UserAdmin.fieldsets + (
@@ -56,3 +56,18 @@ class LinkRapidoAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'url', 'ordem')
     search_fields = ('titulo', 'url')
     ordering = ('ordem',)
+
+from .models import NotificacaoGlobal
+@admin.register(NotificacaoGlobal)
+class NotificacaoGlobalAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'destinatario', 'tipo', 'lida', 'data_criacao')
+    list_filter = ('lida', 'tipo', 'data_criacao')
+    search_fields = ('titulo', 'mensagem', 'destinatario__username', 'destinatario__first_name')
+
+from .models import EmailLog
+
+@admin.register(EmailLog)
+class EmailLogAdmin(admin.ModelAdmin):
+    list_display = ('destinatario', 'assunto', 'status', 'data_envio')
+    list_filter = ('status', 'data_envio')
+    search_fields = ('destinatario', 'assunto')

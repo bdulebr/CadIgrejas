@@ -24,6 +24,7 @@ urlpatterns = [
     path('drive/pasta/criar/', views.criar_pasta, name='criar_pasta'),
     path('drive/pasta/download/<int:pasta_id>/', views.download_pasta_zip, name='download_pasta_zip'),
     path('drive/upload/', views.upload_drive, name='upload_drive'),
+    path('drive/upload_inteligente_ocr/', views.upload_inteligente_ocr, name='upload_inteligente_ocr'),
     path('drive/lixeira/', views.pv_drive_lixeira, name='pv_drive_lixeira'),
     path('drive/restaurar/<int:arquivo_id>/', views.restaurar_arquivo, name='restaurar_arquivo'),
     path('drive/arquivo/<int:arquivo_id>/visualizar/', views.visualizar_arquivo, name='visualizar_arquivo'),

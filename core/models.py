@@ -235,3 +235,63 @@ class LinkRapido(models.Model):
 
     def __str__(self):
         return self.titulo
+
+class NotificacaoGlobal(models.Model):
+    TIPO_CHOICES = (
+        ('info', 'Informação'),
+        ('success', 'Sucesso'),
+        ('warning', 'Aviso'),
+        ('error', 'Erro'),
+        ('upload_ia', 'Upload IA'),
+    )
+
+    destinatario = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='notificacoes')
+    remetente = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True, blank=True, related_name='notificacoes_enviadas')
+    titulo = models.CharField(max_length=200)
+    mensagem = models.TextField()
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='info')
+    link_acao = models.CharField(max_length=500, blank=True, null=True, help_text="URL para onde a notificação redireciona")
+    lida = models.BooleanField(default=False)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f"{self.titulo} para {self.destinatario.username}"
+
+
+class EmailLog(models.Model):
+    STATUS_CHOICES = [
+        ('enviado', 'Enviado'),
+        ('pendente', 'Pendente'),
+        ('falha', 'Falha ao Enviar'),
+    ]
+
+    destinatario = models.EmailField()
+    assunto = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
+    data_envio = models.DateTimeField(auto_now_add=True)
+    erro_mensagem = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Log de E-mail'
+        verbose_name_plural = 'Logs de E-mails'
+        ordering = ['-data_envio']
+
+    def __str__(self):
+        return f"[{self.get_status_display()}] {self.assunto} -> {self.destinatario}"
+
+
+class DatabaseBackup(models.Model):
+    arquivo = models.CharField(max_length=500, help_text="Caminho físico do arquivo de backup.")
+    tamanho_mb = models.DecimalField(max_digits=10, decimal_places=2, help_text="Tamanho do arquivo em MB.")
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Backup de Banco de Dados'
+        verbose_name_plural = 'Backups de Banco de Dados'
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f"Backup {self.data_criacao.strftime('%d/%m/%Y %H:%M:%S')} - {self.tamanho_mb}MB"

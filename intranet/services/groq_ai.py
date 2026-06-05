@@ -175,3 +175,64 @@ def gerar_escala_inteligente_groq(departamento_nome, mes, ano, membros, eventos,
     texto_json = response.choices[0].message.content
     dados = json.loads(texto_json)
     return dados
+
+def analisar_documento_para_roteamento(file_obj):
+    client = obter_client_groq()
+    if not client:
+        raise Exception("Chave do Groq não configurada no sistema.")
+
+    extensao = ".pdf"
+    if hasattr(file_obj, 'name'):
+        extensao = os.path.splitext(file_obj.name)[1].lower()
+
+    # Como pdfplumber precisa de um file path local, vamos salvar num temp file
+    tmp_path = None
+    with tempfile.NamedTemporaryFile(delete=False, suffix=extensao) as tmp:
+        for chunk in file_obj.chunks():
+            tmp.write(chunk)
+        tmp_path = tmp.name
+
+    try:
+        with open(tmp_path, 'rb') as f_obj:
+            text_data = extrair_texto_arquivo(f_obj, extensao)
+
+        prompt = f'''
+        Você é um Assistente de Inteligência Artificial Especialista em Triagem de Documentos Departamentais.
+        Sua missão é analisar o texto extraído de um documento recém-carregado e extrair metadados úteis para catalogação.
+
+        RETORNE ESTRITAMENTE UM OBJETO JSON VÁLIDO. NENHUMA PALAVRA A MAIS.
+        O JSON DEVE CONTER:
+        {{
+            "titulo_sugerido": "Um título curto e claro para este arquivo (máx 5 palavras)",
+            "departamento_sugerido": "O nome do departamento que mais provavemente gerou ou deve gerenciar este documento. Ex: Tesouraria, Música, Jovens, Recepção, Liderança, Geral. Se for um documento genérico, retorne 'Geral'.",
+            "resumo": "Uma frase resumindo do que se trata o documento.",
+            "tags": ["tag1", "tag2", "tag3"]
+        }}
+
+        TEXTO DO DOCUMENTO EXTRAÍDO:
+        =============================
+        {text_data[:6000]}  # limitando p/ evitar limite de tokens
+        =============================
+        '''
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+
+        texto_json = response.choices[0].message.content
+        import json
+        dados = json.loads(texto_json)
+        return dados
+
+    except Exception as e:
+        print("Erro no motor Groq OCR para Upload Inteligente:", str(e))
+        return None
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass

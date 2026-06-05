@@ -267,6 +267,83 @@
                     <p class="text-xs text-blue-300 uppercase">{{ user.get_nivel_hierarquico_display }}</p>
                 </div>
 
+
+                <!-- Notificações -->
+                <div class="relative mr-2" x-data="{ open: false }">
+                    <button @click="open = !open" class="relative p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5">
+                        <i data-lucide="bell" class="w-6 h-6"></i>
+                        {% if notificacoes_count > 0 %}
+                        <span class="absolute top-1 right-1 flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 border border-gray-900"></span>
+                        </span>
+                        {% endif %}
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" style="display: none;"
+                         class="origin-top-right absolute right-0 mt-2 w-80 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-gray-800 border border-gray-700 ring-1 ring-black ring-opacity-5 z-[9999] overflow-hidden">
+
+                        <div class="p-3 border-b border-gray-700 flex justify-between items-center bg-gray-900/50">
+                            <h3 class="text-sm font-bold text-white">Notificações</h3>
+                            {% if notificacoes_count > 0 %}
+                            <button onclick="marcarTodasComoLidas()" class="text-xs text-blue-400 hover:text-blue-300">Marcar todas como lidas</button>
+                            {% endif %}
+                        </div>
+
+                        <div class="max-h-80 overflow-y-auto">
+                            {% if notificacoes_count > 0 %}
+                                {% for notif in notificacoes_nao_lidas %}
+                                <div id="notif-{{ notif.id }}" class="p-3 border-b border-gray-700/50 hover:bg-gray-700/50 transition-colors">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <p class="text-sm font-bold text-white">{{ notif.titulo }}</p>
+                                        <button onclick="lerNotificacao({{ notif.id }})" class="text-gray-500 hover:text-white" title="Marcar como lida">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-300 mb-2">{{ notif.mensagem }}</p>
+                                    {% if notif.link_acao %}
+                                    <a href="{{ notif.link_acao }}" onclick="lerNotificacao({{ notif.id }})" class="text-xs font-bold text-blue-400 hover:underline">Ver Detalhes</a>
+                                    {% endif %}
+                                    <p class="text-[10px] text-gray-500 mt-1">{{ notif.data_criacao|timesince }} atrás</p>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-6 text-center text-gray-400">
+                                    <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                                    <p class="text-sm">Nenhuma notificação nova.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function lerNotificacao(id) {
+                        fetch(`/notificacao/${id}/ler/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}'
+                            }
+                        }).then(r => r.json()).then(data => {
+                            if(data.success) {
+                                document.getElementById('notif-'+id).style.display = 'none';
+                            }
+                        });
+                    }
+                    function marcarTodasComoLidas() {
+                        fetch(`/notificacoes/ler_todas/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}'
+                            }
+                        }).then(r => r.json()).then(data => {
+                            if(data.success) {
+                                window.location.reload();
+                            }
+                        });
+                    }
+                </script>
+
                 <!-- Avatar e Dropdown -->
                 <div class="relative" x-data="{ open: false }">
                     <button @click="open = !open" class="focus:outline-none flex items-center">

@@ -1,4 +1,4 @@
-from core.models import ConfiguracaoSistema, LinkRapido
+from core.models import ConfiguracaoSistema, LinkRapido, NotificacaoGlobal
 
 def global_config(request):
     config = ConfiguracaoSistema.objects.first()
@@ -16,6 +16,7 @@ def global_config(request):
         elif link.visibilidade == 'admin' and request.user.is_authenticated:
             if request.user.nivel_hierarquico == 'super_admin' or request.user.is_superuser:
                 links_permitidos.append(link)
+
     is_almoxarifado_team = False
     if request.user.is_authenticated:
         try:
@@ -29,3 +30,12 @@ def global_config(request):
         'links_rapidos': links_permitidos,
         'is_almoxarifado_team': is_almoxarifado_team
     }
+
+def notificacoes_globais(request):
+    if request.user.is_authenticated:
+        notifs = NotificacaoGlobal.objects.filter(destinatario=request.user, lida=False)
+        return {
+            'notificacoes_nao_lidas': notifs,
+            'notificacoes_count': notifs.count()
+        }
+    return {}

@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: erp_db
+    restart: always
+    environment:
+      POSTGRES_USER: erp_admin
+      POSTGRES_PASSWORD: super_password_aqui
+      POSTGRES_DB: intranet_pve
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - erp_network
+
+  web:
+    build: .
+    container_name: erp_web
+    restart: always
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             gunicorn intranet.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60"
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=False
+      - USE_HTTPS=False
+      - ALLOWED_HOSTS=intranet.pvenseda.org,intranet.pvenseada.org,www.intranet.pvenseada.org,localhost,127.0.0.1
+      - CSRF_TRUSTED_ORIGINS=https://intranet.pvenseda.org,https://intranet.pvenseada.org,http://intranet.pvenseda.org,http://intranet.pvenseada.org,http://localhost,http://127.0.0.1
+      - DATABASE_URL=postgres://erp_admin:super_password_aqui@db:5432/intranet_pve
+    depends_on:
+      - db
+    networks:
+      - erp_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: erp_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    depends_on:
+      - web
+    networks:
+      - erp_network
+
+volumes:
+  postgres_data:
+
+networks:
+  erp_network:
+    driver: bridge

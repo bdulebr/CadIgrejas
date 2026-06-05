@@ -533,7 +533,7 @@ def gerar_escala_automatica(request):
 
             membros_data.append({
                 'id': m.id,
-                'nome': f"{m.first_name} {m.last_name}",
+                'nome': f"{m.first_name} {m.last_name} ({m.apelido})" if m.apelido else f"{m.first_name} {m.last_name}",
                 'habilidades_ids': list(m.habilidades.values_list('id', flat=True)),
                 'datas_indisponiveis': datas_indisp
             })
@@ -605,7 +605,8 @@ def gerar_escala_automatica(request):
                     )
                     slots_criados += 1
                 except Exception as e:
-                    pass
+                    import logging
+                    logging.getLogger(__name__).warning(f"Erro no Motor Groq ao alocar: {e}")
 
             messages.success(request, f'✨ Motor LPU Groq finalizado! A IA analisou as restrições e alocou {slots_criados} voluntários com precisão matemática.')
 
@@ -704,8 +705,35 @@ def gerar_escala_automatica_fallback(request):
 
                             is_trabalho = is_trabalhando(m, data_atual, start_time, end_time)
 
+                            import datetime
+                            ja_escalado_recentemente = Escala.objects.filter(
+                                membro_escalado=m,
+                                data_escala__gte=data_atual - datetime.timedelta(days=6),
+                                data_escala__lt=data_atual
+                            ).exists()
+
+                            # Intelligent Load Balancing: Try to avoid if scheduled recently
+                            # We can just put them in a secondary list and use them only if primary is empty
                             if not is_indisponivel and count_mes < 4 and not ja_escalado_hoje and not is_trabalho:
-                                membros_disponiveis.append(m)
+                                if not ja_escalado_recentemente:
+                                    membros_disponiveis.append(m)
+
+                        # If strict cooldown leaves no one available, relax the cooldown
+                        if not membros_disponiveis:
+                            for m in membros_funcao:
+                                is_indisponivel = Indisponibilidade.objects.filter(
+                                    membro=m, data_inicio__lte=data_atual, data_fim__gte=data_atual
+                                ).exists()
+                                count_mes = Escala.objects.filter(
+                                    membro_escalado=m, data_escala__year=ano, data_escala__month=mes
+                                ).count()
+                                ja_escalado_hoje = Escala.objects.filter(
+                                    membro_escalado=m, data_escala=data_atual
+                                ).exists()
+                                is_trabalho = is_trabalhando(m, data_atual, start_time, end_time)
+
+                                if not is_indisponivel and count_mes < 4 and not ja_escalado_hoje and not is_trabalho:
+                                    membros_disponiveis.append(m)
 
                         if membros_disponiveis:
                             escolhido = random.choice(membros_disponiveis)

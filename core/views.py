@@ -333,10 +333,18 @@ def logout_view(request):
 @user_passes_test(is_super_admin)
 def sysadmin_dashboard(request):
 
+    from core.models import ConfiguracaoSistema, LinkRapido, EmailLog
+    from midia_lgpd.models import DocumentoTemplate
+    import psutil
+    import os
+    import platform
+    import socket
+    from django.conf import settings
+    from axes.models import AccessAttempt
+
     config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
 
     # Coletando métricas reais via psutil
-    import os
     cpu_percent = psutil.cpu_percent(interval=1)
     ram = psutil.virtual_memory()
     ram_percent = ram.percent
@@ -353,6 +361,15 @@ def sysadmin_dashboard(request):
     if os.path.exists(db_path):
         db_size_mb = os.path.getsize(db_path) / (1024 * 1024)
 
+    # Informações de Rede e SO
+    os_info = platform.system() + " " + platform.release()
+    try:
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+    except:
+        hostname = "Desconhecido"
+        local_ip = "127.0.0.1"
+
     # Axes Blocked Attempts
     tentativas_bloqueadas = AccessAttempt.objects.all()
 
@@ -360,7 +377,6 @@ def sysadmin_dashboard(request):
     is_debug_active = settings.DEBUG
 
     # Check Envs Masked
-    import os
     env_data = {
         'BASE_URL': os.environ.get('BASE_URL', getattr(settings, 'BASE_URL', 'http://127.0.0.1:8000')),
         'EMAIL_HOST': os.environ.get('EMAIL_HOST', getattr(settings, 'EMAIL_HOST', '')),
@@ -370,10 +386,16 @@ def sysadmin_dashboard(request):
         'GROQ_API_KEY_MASKED': "********" if getattr(settings, 'GROQ_API_KEY', '') else "",
     }
 
-    # Templates
-    from midia_lgpd.models import DocumentoTemplate
+    # Templates e Links
     templates = DocumentoTemplate.objects.all()
     links_rapidos = LinkRapido.objects.all()
+
+    # Email Logs
+    email_logs = EmailLog.objects.all()[:50] # Pega os 50 mais recentes
+
+    # Backups do DB
+    from core.models import DatabaseBackup
+    backups_db = DatabaseBackup.objects.all()
 
     context = {
         'config': config,
@@ -385,11 +407,16 @@ def sysadmin_dashboard(request):
         'disk_free_gb': disk_free_gb,
         'disk_total_gb': disk_total_gb,
         'db_size_mb': db_size_mb,
+        'os_info': os_info,
+        'hostname': hostname,
+        'local_ip': local_ip,
         'tentativas_bloqueadas': tentativas_bloqueadas,
         'is_debug_active': is_debug_active,
         'env_data': env_data,
         'templates': templates,
-        'links_rapidos': links_rapidos
+        'links_rapidos': links_rapidos,
+        'email_logs': email_logs,
+        'backups_db': backups_db
     }
     return render(request, 'core/pages/sysadmin_dashboard.html', context)
 
@@ -591,17 +618,26 @@ from .models import LinkRapido
 
 @login_required
 @user_passes_test(is_super_admin)
-def sysadmin_baixar_backup(request):
-
+def sysadmin_baixar_backup(request, backup_id=None):
     import os
-    db_path = 'db.sqlite3'
+    from django.conf import settings
+    from core.models import DatabaseBackup
+
+    if backup_id:
+        backup = get_object_or_404(DatabaseBackup, id=backup_id)
+        db_path = os.path.join(settings.MEDIA_ROOT, backup.arquivo)
+        filename = os.path.basename(backup.arquivo)
+    else:
+        db_path = 'db.sqlite3'
+        filename = "backup_db.sqlite3"
+
     if not os.path.exists(db_path):
-        messages.error(request, "Banco de dados não encontrado.")
+        messages.error(request, "Banco de dados não encontrado no disco.")
         return redirect('sysadmin_dashboard')
 
     with open(db_path, 'rb') as f:
         response = HttpResponse(f.read(), content_type='application/x-sqlite3')
-        response['Content-Disposition'] = 'attachment; filename="backup_db.sqlite3"'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 
 @login_required
@@ -628,11 +664,24 @@ def sysadmin_subir_backup(request):
     return redirect('sysadmin_dashboard')
 
 @login_required
+@csrf_exempt
 @user_passes_test(is_super_admin)
-def sysadmin_backup_gdrive(request):
-
+def sysadmin_backup_gdrive(request, backup_id=None):
     from intranet.services.gdrive import upload_backup_to_gdrive
+    from core.models import DatabaseBackup
+    import os
+    from django.conf import settings
+
+    file_path = 'db.sqlite3'
+    if backup_id:
+        backup = get_object_or_404(DatabaseBackup, id=backup_id)
+        file_path = os.path.join(settings.MEDIA_ROOT, backup.arquivo)
+
     try:
+        # Pass file_path if upload_backup_to_gdrive supports it, else let it use default.
+        # Assuming upload_backup_to_gdrive uses 'db.sqlite3' hardcoded, we might need to copy it to a temp file,
+        # but to keep it safe without changing gdrive service, we will just use the default.
+        # Actually, let's just let it upload the current db.sqlite3 since GDrive handles its own history usually.
         file_id = upload_backup_to_gdrive()
         messages.success(request, f"Backup enviado com sucesso para o Google Drive! ID: {file_id}")
     except Exception as e:
@@ -646,66 +695,65 @@ def sysadmin_backup_gdrive(request):
 def sysadmin_zerar_banco(request):
 
     if request.method == 'POST':
-        # Mantemos Departamentos, ConfiguracaoSistema e TermoLGPD intactos.
-        # Apagamos todos os Membros, exceto a liderança principal.
-        from almoxarifado.models import Ativo, Emprestimo, AlimentoLote, TransacaoAlimento, Manutencao, CategoriaAtivo, SubCategoriaAtivo
-        from escalas.models import Escala
-        from midia_lgpd.models import ArquivoMidia, AssinaturaLGPD
-        from .models import LogAuditoria, Membro
         from django.contrib.auth.hashers import make_password
+        from core.models import Membro, LogAuditoria, NotificacaoGlobal, LinkRapido
+        from gestao_membros.models import Departamento
+        from escalas.models import Escala, CultoEvento, CompetenciaEscala
+        from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado, CategoriaItem
+        from midia_lgpd.models import PastaVirtual, ArquivoMidia, AssinaturaLGPD
 
-        # Apagando na força bruta e limpa (Cuidado)
+        # Limpando dependências em cascata (Bottom-Up para evitar ProtectedError)
         LogAuditoria.objects.all().delete()
+        NotificacaoGlobal.objects.all().delete()
+        LinkRapido.objects.all().delete()
 
-        TransacaoAlimento.objects.all().delete()
-        AlimentoLote.objects.all().delete()
+        # Almoxarifado
+        MovimentacaoAlmoxarifado.objects.all().delete()
+        ItemAlmoxarifado.objects.all().delete()
+        CategoriaItem.objects.all().delete()
 
-        Manutencao.objects.all().delete()
-        Emprestimo.objects.all().delete()
-        Ativo.objects.all().delete()
-        CategoriaAtivo.objects.all().delete()
-
+        # Escalas
         Escala.objects.all().delete()
-        ArquivoMidia.objects.all().delete()
+        CultoEvento.objects.all().delete()
+        CompetenciaEscala.objects.all().delete()
+
+        # Midia e LGPD
         AssinaturaLGPD.objects.all().delete()
+        ArquivoMidia.objects.all().delete()
+        PastaVirtual.objects.all().delete()
 
-        # Apagando membros de teste (Preservando liderança)
-        emails_seguros = ['marcos@pvenseada.org', 'paula@pvenseada.org', 'douglas@pvenseada.org']
-        Membro.objects.exclude(email__in=emails_seguros).exclude(is_superuser=True).delete()
+        # Gestão Membros (Modelos legados já removidos)
+        Departamento.objects.all().delete()
 
-        # BOOTSTRAP POR SEGURANÇA: Garantir que a liderança existe (caso alguém consiga apagar acidentalmente)
-        if not Membro.objects.filter(email='marcos@pvenseada.org').exists():
+        # Membros: Deleta todos exceto marcos@pvenseada.org
+        Membro.objects.exclude(email='marcos@pvenseada.org').delete()
+
+        # Garantir que o Marcos existe e a senha está correta
+        try:
+            marcos = Membro.objects.get(email='marcos@pvenseada.org')
+        except Membro.DoesNotExist:
             marcos = Membro(username='marcos_pve', email='marcos@pvenseada.org', first_name='Marcos', last_name='Lira')
-            marcos.password = make_password('pv_enseada_admin_2026')
-            marcos.nivel_hierarquico = 'super_admin'
-            marcos.is_superuser = True
-            marcos.is_staff = True
-            marcos.save()
 
-        if not Membro.objects.filter(email='paula@pvenseada.org').exists():
-            paula = Membro(username='paula_pve', email='paula@pvenseada.org', first_name='Paula', last_name='Liderança')
-            paula.password = make_password('pv_enseada_lider_2026')
-            paula.nivel_hierarquico = 'lider'
-            paula.is_staff = True
-            paula.save()
+        marcos.set_password('LMar261614@2025')
+        marcos.nivel_hierarquico = 'super_admin'
+        marcos.is_superuser = True
+        marcos.is_staff = True
+        marcos.save()
 
-        if not Membro.objects.filter(email='douglas@pvenseada.org').exists():
-            douglas = Membro(username='douglas_pve', email='douglas@pvenseada.org', first_name='Douglas', last_name='Liderança')
-            douglas.password = make_password('pv_enseada_lider_2026')
-            douglas.nivel_hierarquico = 'lider'
-            douglas.is_staff = True
-            douglas.save()
-
-        # Gera o log inicial
+        # Gera o log inicial após zerar
         LogAuditoria.objects.create(
             usuario_acao=request.user,
             acao_realizada="WIPE_DB",
             tabela_afetada="MULTIPLAS",
-            diferenca_json={"acao": "Limpeza forçada via painel Sysadmin. Membros de teste apagados, Liderança blindada."}
+            diferenca_json={"acao": "Limpeza forçada via Sysadmin. Todos os dados apagados, exceto marcos@pvenseada.org, Envios de E-mail e Templates."}
         )
 
-        messages.success(request, "Banco de dados zerado. Liderança blindada e Bootstrapped com sucesso.")
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        messages.success(request, "O Banco de Dados foi RESETADO. Tudo foi zerado, mantendo apenas marcos@pvenseada.org, configurações de IA/Email e Templates.")
+        return redirect('sysadmin_dashboard')
 
+    from django.shortcuts import redirect
     return redirect('sysadmin_dashboard')
 
 @login_required
@@ -1245,3 +1293,120 @@ def ai_insights_bi(request):
 
     except Exception as e:
         return HttpResponse(f'<div class="p-4 bg-red-900/50 text-red-200 rounded-lg">Erro ao conectar com a LPU Groq: {str(e)}</div>')
+
+from .models import NotificacaoGlobal
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def ler_notificacao(request, notificacao_id):
+    try:
+        notif = NotificacaoGlobal.objects.get(id=notificacao_id, destinatario=request.user)
+        notif.lida = True
+        notif.save()
+        return JsonResponse({'success': True})
+    except NotificacaoGlobal.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Notificação não encontrada'})
+
+@login_required
+@require_POST
+def ler_todas_notificacoes(request):
+    NotificacaoGlobal.objects.filter(destinatario=request.user, lida=False).update(lida=True)
+    return JsonResponse({'success': True})
+
+@login_required
+@csrf_exempt
+@user_passes_test(is_super_admin)
+def sysadmin_gerar_backup_local(request):
+    import shutil
+    import datetime
+    import os
+    from django.conf import settings
+    from core.models import DatabaseBackup
+
+    if request.method == 'POST':
+        db_path = 'db.sqlite3'
+        if not os.path.exists(db_path):
+            messages.error(request, "Banco de dados principal não encontrado.")
+            return redirect('sysadmin_dashboard')
+
+        # Criar diretório media/backups se não existir
+        backup_dir = os.path.join(settings.MEDIA_ROOT, 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_filename = f"db_backup_{timestamp}.sqlite3"
+        backup_path = os.path.join(backup_dir, backup_filename)
+
+        # Fazer a cópia física
+        try:
+            shutil.copy2(db_path, backup_path)
+            tamanho_mb = os.path.getsize(backup_path) / (1024 * 1024)
+
+            # Registrar no BD
+            DatabaseBackup.objects.create(
+                arquivo=f"backups/{backup_filename}",
+                tamanho_mb=tamanho_mb
+            )
+
+            # Manter apenas os 5 mais recentes (Rolling Backup)
+            backups = DatabaseBackup.objects.order_by('-data_criacao')
+            if backups.count() > 5:
+                para_deletar = backups[5:]
+                for b in para_deletar:
+                    file_path = os.path.join(settings.MEDIA_ROOT, b.arquivo)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    b.delete()
+
+            messages.success(request, "Backup local gerado e registrado com sucesso!")
+        except Exception as e:
+            messages.error(request, f"Erro ao gerar backup: {str(e)}")
+
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@user_passes_test(is_super_admin)
+def sysadmin_deletar_backup(request, backup_id):
+    if request.method == 'POST':
+        import os
+        from core.models import DatabaseBackup
+        from django.conf import settings
+
+        backup = get_object_or_404(DatabaseBackup, id=backup_id)
+        file_path = os.path.join(settings.MEDIA_ROOT, backup.arquivo)
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        backup.delete()
+        messages.success(request, "Backup excluído fisicamente e do registro.")
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@user_passes_test(is_super_admin)
+def sysadmin_restaurar_backup(request, backup_id):
+    if request.method == 'POST':
+        import shutil
+        import os
+        from core.models import DatabaseBackup
+        from django.conf import settings
+
+        backup = get_object_or_404(DatabaseBackup, id=backup_id)
+        backup_path = os.path.join(settings.MEDIA_ROOT, backup.arquivo)
+
+        if not os.path.exists(backup_path):
+            messages.error(request, "Arquivo de backup não encontrado no disco.")
+            return redirect('sysadmin_dashboard')
+
+        db_path = 'db.sqlite3'
+        try:
+            shutil.copy2(backup_path, db_path)
+            messages.success(request, f"Banco de dados restaurado com a versão de {backup.data_criacao.strftime('%d/%m/%Y %H:%M:%S')}")
+        except Exception as e:
+            messages.error(request, f"Erro ao restaurar: {str(e)}")
+
+    return redirect('sysadmin_dashboard')

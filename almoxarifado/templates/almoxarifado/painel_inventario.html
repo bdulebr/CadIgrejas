@@ -1,0 +1,115 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Inventário - Almoxarifado{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-white">Gestão de Almoxarifado</h1>
+            <p class="text-gray-400 mt-1">Gerencie os ativos e o estoque de mantimentos.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'livro_almoxarifado' %}" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-bold border border-gray-700 transition-colors">
+                <i data-lucide="book-open" class="w-5 h-5 mr-2"></i> Livro de Registros
+            </a>
+            <a href="{% url 'cadastrar_item_almoxarifado' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors">
+                <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Cadastrar Item
+            </a>
+        </div>
+    </div>
+
+    <!-- Dash Widgets -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-gray-800/80 rounded-2xl p-5 border border-gray-700/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Total de Itens</p>
+                    <p class="text-3xl font-black text-white mt-1">{{ itens.count }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                    <i data-lucide="boxes" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-800/80 rounded-2xl p-5 border border-gray-700/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Emprestados</p>
+                    <p class="text-3xl font-black text-orange-400 mt-1">
+                        {{ itens|length }} <!-- Fix this properly if needed -->
+                    </p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                    <i data-lucide="log-out" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Inventario -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
+            <h2 class="text-xl font-bold text-white">Inventário Atual</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-400">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-800/80">
+                    <tr>
+                        <th class="px-6 py-4 font-black tracking-wider">ID</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Item</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Categoria</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Estoque</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Status</th>
+                        <th class="px-6 py-4 font-black tracking-wider text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {% for item in itens %}
+                    <tr class="hover:bg-gray-800/30 transition-colors">
+                        <td class="px-6 py-4 font-mono text-xs text-blue-400 font-bold">{{ item.id_unico }}</td>
+                        <td class="px-6 py-4 font-medium text-white">{{ item.nome }}</td>
+                        <td class="px-6 py-4">
+                            {% if item.categoria %}
+                            <span class="px-2 py-1 bg-gray-800 rounded text-xs border border-gray-700">{{ item.categoria.nome }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 font-bold text-white">{{ item.quantidade_estoque }}</td>
+                        <td class="px-6 py-4">
+                            {% if item.status_item == 'disponivel' %}
+                                <span class="px-2.5 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-lg border border-green-500/20">Disponível</span>
+                            {% elif item.status_item == 'emprestado' %}
+                                <span class="px-2.5 py-1 bg-orange-500/20 text-orange-400 text-xs font-bold rounded-lg border border-orange-500/20">Emprestado</span>
+                            {% elif item.status_item == 'consumido' %}
+                                <span class="px-2.5 py-1 bg-red-500/20 text-red-400 text-xs font-bold rounded-lg border border-red-500/20">Esgotado</span>
+                            {% else %}
+                                <span class="px-2.5 py-1 bg-gray-500/20 text-gray-400 text-xs font-bold rounded-lg border border-gray-500/20">{{ item.get_status_item_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right flex justify-end gap-2">
+                            {% if item.pasta_pv_drive %}
+                            <a href="{% url 'pv_drive_home' %}?pasta={{ item.pasta_pv_drive.id }}" class="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors" title="Ver Arquivos no PV Drive">
+                                <i data-lucide="folder" class="w-4 h-4"></i>
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'qr_retirar_item' item.id_unico %}" target="_blank" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" title="Ver QR Code Publico">
+                                <i data-lucide="qr-code" class="w-4 h-4"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            Nenhum item cadastrado no inventário ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -683,3 +683,114 @@ def compartilhar_pasta(request, pasta_id):
         return redirect('pv_drive_home')
 
     return redirect('pv_drive_home')
+
+from intranet.services.groq_ai import analisar_documento_para_roteamento
+from thefuzz import process
+from core.models import Membro, NotificacaoGlobal
+import mimetypes
+
+@login_required
+def upload_inteligente_ocr(request):
+    if request.method == 'POST':
+        arquivo = request.FILES.get('arquivo_ia')
+        if not arquivo:
+            messages.error(request, 'Nenhum arquivo enviado para a IA.')
+            return redirect('pv_drive_home')
+
+        # 1. Acionar Groq para extrair dados
+        messages.info(request, 'A IA está lendo o documento, aguarde...')
+        dados_ia = analisar_documento_para_roteamento(arquivo)
+
+        if not dados_ia:
+            messages.error(request, 'A Inteligência Artificial falhou em ler este documento. Faça o upload manual.')
+            return redirect('pv_drive_home')
+
+        dept_nome = dados_ia.get('departamento_sugerido', 'Geral')
+        titulo = dados_ia.get('titulo_sugerido', arquivo.name)
+        resumo = dados_ia.get('resumo', '')
+
+        # 2. Fuzzy Matching para encontrar o Departamento
+        departamentos_all = Departamento.objects.all()
+        nomes_deptos = {d.id: d.nome for d in departamentos_all}
+        best_match = process.extractOne(dept_nome, nomes_deptos)
+
+        departamento = None
+        if best_match and best_match[1] >= 50:
+            departamento = Departamento.objects.get(id=best_match[2])
+
+        if not departamento:
+            messages.warning(request, f'IA sugeriu departamento "{dept_nome}" mas não encontramos. Salvo na sua raiz.')
+            pasta_destino, _ = PastaVirtual.objects.get_or_create(
+                nome='Meus Uploads Inteligentes',
+                dono_membro=request.user,
+                tipo_pasta='usuario',
+                defaults={'is_sistema': True}
+            )
+        else:
+            # Encontrar a pasta Raiz do Departamento
+            pasta_destino = PastaVirtual.objects.filter(departamento=departamento, tipo_pasta='departamento', parent__isnull=True).first()
+            if not pasta_destino:
+                pasta_destino = PastaVirtual.objects.create(
+                    nome=departamento.nome,
+                    departamento=departamento,
+                    tipo_pasta='departamento',
+                    is_sistema=True
+                )
+
+        # 3. Upload para Google Drive (se configurado)
+        service = get_drive_service()
+        gdrive_file_id = None
+        gdrive_url = None
+
+        if service and pasta_destino.gdrive_folder_id:
+            try:
+                import hashlib
+                from googleapiclient.http import MediaIoBaseUpload
+
+                # Reset file pointer after pdfplumber read it
+                arquivo.seek(0)
+
+                file_metadata = {
+                    'name': arquivo.name, # Mantem o nome original como pedido pelo usuario
+                    'parents': [pasta_destino.gdrive_folder_id]
+                }
+                mime_type, _ = mimetypes.guess_type(arquivo.name)
+                media = MediaIoBaseUpload(arquivo.file, mimetype=mime_type or 'application/octet-stream', resumable=True)
+                file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink', supportsAllDrives=True).execute()
+
+                gdrive_file_id = file.get('id')
+                gdrive_url = file.get('webViewLink')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Upload IA Falhou GDrive: {e}")
+
+        # 4. Criar ArquivoMidia
+        novo_arquivo = ArquivoMidia.objects.create(
+            titulo=arquivo.name,
+            departamento=departamento,
+            dono_membro=request.user if not departamento else None,
+            pasta=pasta_destino,
+            enviado_por=request.user,
+            tamanho_bytes=arquivo.size,
+            extensao=arquivo.name.split('.')[-1] if '.' in arquivo.name else '',
+            gdrive_file_id=gdrive_file_id,
+            gdrive_url=gdrive_url
+        )
+
+        # 5. Notificar Líderes do Departamento
+        if departamento:
+            lideres = Membro.objects.filter(departamentos_liderados=departamento, is_active=True)
+            for lider in lideres:
+                NotificacaoGlobal.objects.create(
+                    destinatario=lider,
+                    remetente=request.user,
+                    titulo=f"Novo Upload Inteligente: {departamento.nome}",
+                    mensagem=f"A IA roteou o arquivo '{titulo}' para seu departamento. Resumo: {resumo}",
+                    tipo='upload_ia',
+                    link_acao=f"/drive/dep/{departamento.id}/"
+                )
+
+        messages.success(request, f'🤖 Mágica feita! Arquivo classificado pela IA como "{titulo}" e roteado para a pasta {pasta_destino.nome}.')
+        return redirect('pv_drive_home')
+
+    return redirect('pv_drive_home')
