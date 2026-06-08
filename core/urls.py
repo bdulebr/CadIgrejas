@@ -64,4 +64,9 @@ urlpatterns = [
     path('sysadmin/logs/tracker/', views.sysadmin_ux_tracker, name='sysadmin_ux_tracker'),
     path('sysadmin/logs/<int:log_id>/pdf/', views.sysadmin_log_pdf, name='sysadmin_log_pdf'),
     path('bi/ai-insights/', views.ai_insights_bi, name='ai_insights_bi'),
+
+    # Spider Test
+    path('sysadmin/rodar-spider/', views.sysadmin_rodar_spider, name='sysadmin_rodar_spider'),
+    path('sysadmin/baixar-spider-log/<int:log_id>/', views.sysadmin_baixar_log_spider, name='sysadmin_baixar_log_spider'),
+
 ]

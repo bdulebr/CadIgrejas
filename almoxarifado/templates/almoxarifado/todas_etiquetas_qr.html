@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Todas as Etiquetas QR</title>
+    <style>
+        @page {
+            size: 15cm 10cm; /* Tamanho comum de etiqueta grande */
+            margin: 0.5cm;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #000;
+        }
+        .etiqueta-page {
+            page-break-after: always;
+        }
+        .etiqueta-page:last-child {
+            page-break-after: auto;
+        }
+        .container {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #000;
+            box-sizing: border-box;
+            padding: 10px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+        .header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .titulo {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .patrimonio {
+            font-size: 18px;
+            margin: 5px 0 0 0;
+        }
+        .qr-container {
+            width: 100%;
+        }
+        .qr-box {
+            width: 45%;
+            display: inline-block;
+            vertical-align: top;
+            text-align: center;
+        }
+        .qr-image {
+            width: 100px;
+            height: 100px;
+        }
+        .qr-label {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 10px;
+            color: #555;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="padding: 20px; text-align: center; background: #eee; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 5px;">Imprimir Etiquetas Agora</button>
+        <a href="{% url 'painel_inventario' %}" style="margin-left: 10px; color: #4b5563; text-decoration: none;">Voltar ao Painel</a>
+    </div>
+
+    {% for obj in itens_qr %}
+    <div class="etiqueta-page">
+        <div class="container">
+            <div class="header">
+                <h1 class="titulo">{{ obj.item.nome }}</h1>
+                <p class="patrimonio">PATRIMÔNIO ID: <b>{{ obj.item.id_unico }}</b></p>
+            </div>
+            
+            <div class="qr-container">
+                <div class="qr-box">
+                    <img src="data:image/png;base64,{{ obj.qr_retirar_b64 }}" class="qr-image">
+                    <p class="qr-label">1. RETIRAR ITEM</p>
+                </div>
+                
+                <div class="qr-box">
+                    <img src="data:image/png;base64,{{ obj.qr_devolver_b64 }}" class="qr-image">
+                    <p class="qr-label">2. DEVOLVER ITEM</p>
+                </div>
+            </div>
+            
+            <div class="footer">
+                Ao ler o QR Code com a câmera do celular, o sistema registrará a movimentação automaticamente.<br>
+                Igreja Palavra de Vida Enseada - Gestão Zero-Trust
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align: center; padding: 50px;">
+        <h2>Nenhum item cadastrado no Almoxarifado para gerar etiquetas.</h2>
+    </div>
+    {% endfor %}
+    
+    <script>
+        // Auto print when page loads
+        window.onload = function() {
+            if ({{ itens_qr|length }} > 0) {
+                window.print();
+            }
+        }
+    </script>
+</body>
+</html>

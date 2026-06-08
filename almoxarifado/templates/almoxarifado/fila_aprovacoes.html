@@ -1,0 +1,92 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Aprovações Pendentes - Almoxarifado{% endblock title %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-extrabold text-white flex items-center gap-3">
+                <i data-lucide="inbox" class="w-8 h-8 text-yellow-500"></i>
+                Fila de Aprovações
+            </h1>
+            <p class="text-gray-400 mt-1">Gerencie as retiradas de ativos críticos solicitadas no Auto-Atendimento.</p>
+        </div>
+        <a href="{% url 'painel_inventario' %}" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-lg transition-colors border border-gray-700">
+            Voltar ao Almoxarifado
+        </a>
+    </div>
+
+    {% if movimentacoes %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for mov in movimentacoes %}
+                <div class="bg-gray-900 border border-yellow-500/30 rounded-2xl overflow-hidden shadow-lg relative">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-yellow-500/10 rounded-bl-full flex justify-end items-start p-3">
+                        <i data-lucide="clock" class="w-5 h-5 text-yellow-500"></i>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <span class="px-2 py-1 bg-yellow-900/50 text-yellow-500 text-xs font-black uppercase rounded-md border border-yellow-700/50">Aguardando Liberação</span>
+                        </div>
+                        
+                        <h3 class="text-xl font-bold text-white mb-1">{{ mov.item.nome }}</h3>
+                        <p class="text-sm text-gray-400 font-mono mb-4">ID: {{ mov.item.id_unico }}</p>
+                        
+                        <div class="bg-gray-800/50 rounded-xl p-4 space-y-3 mb-6">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-400">Qtd Solicitada:</span>
+                                <span class="font-bold text-white text-base">{{ mov.quantidade }} un</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-400">Ação:</span>
+                                <span class="font-bold text-orange-400">{{ mov.get_tipo_display }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-400">Estoque Atual:</span>
+                                <span class="font-bold {% if mov.item.quantidade_estoque >= mov.quantidade %}text-green-400{% else %}text-red-400{% endif %}">{{ mov.item.quantidade_estoque }} un</span>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-gray-800 pt-4 mb-6">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Solicitante</p>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 font-bold border border-blue-500/30">
+                                    {{ mov.nome_digitado|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <p class="text-white font-bold text-sm">{{ mov.nome_digitado }}</p>
+                                    <p class="text-gray-400 text-xs">{{ mov.email_digitado|default:"E-mail não informado" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <form action="{% url 'processar_aprovacao' mov.id 'rejeitar' %}" method="POST" class="flex-1">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full py-3 bg-red-900/20 hover:bg-red-900/40 text-red-500 font-bold rounded-xl border border-red-500/30 transition-colors flex justify-center items-center gap-2">
+                                    <i data-lucide="x" class="w-4 h-4"></i> Negar
+                                </button>
+                            </form>
+                            <form action="{% url 'processar_aprovacao' mov.id 'aprovar' %}" method="POST" class="flex-1">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl shadow-lg shadow-green-500/20 transition-colors flex justify-center items-center gap-2" {% if mov.item.quantidade_estoque < mov.quantidade and mov.tipo == 'retirada' %}disabled title="Estoque Insuficiente"{% endif %}>
+                                    <i data-lucide="check" class="w-4 h-4"></i> Aprovar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl p-12 text-center">
+            <div class="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="check-circle" class="w-12 h-12 text-green-500"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Tudo Limpo!</h2>
+            <p class="text-gray-400">Não há nenhuma retirada pendente de aprovação no momento.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

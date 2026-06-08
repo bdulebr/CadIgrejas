@@ -1,0 +1,217 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Auto-Atendimento ({% if tipo == 'retirada' %}Retirada{% else %}Devolução{% endif %}) - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 p-4 md:p-8 flex flex-col md:flex-row gap-6 items-start justify-center" x-data="carrinhoScanner()">
+    
+    <!-- Lado Esquerdo: Leitor QR -->
+    <div class="w-full md:w-1/2 max-w-md bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        <div class="p-6 text-center border-b {% if tipo == 'retirada' %}border-orange-500/30{% else %}border-green-500/30{% endif %} bg-gray-900/40 backdrop-blur-md">
+            <h1 class="text-2xl font-bold text-white mb-2">
+                Scanner de {% if tipo == 'retirada' %}Retirada{% else %}Devolução{% endif %}
+            </h1>
+            <p class="text-sm text-gray-400">Escaneie quantos itens precisar antes de concluir.</p>
+        </div>
+        
+        <div class="p-6">
+            <!-- Alerta HTTPS para Celulares -->
+            <div id="https-warning" class="hidden mb-4 p-4 bg-yellow-900/20 text-yellow-500 text-sm rounded-lg border border-yellow-500/30 text-center">
+                <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto mb-2"></i>
+                <b>Câmera Bloqueada pelo Navegador</b><br>
+                Celulares exigem conexão <b>HTTPS</b> para acessar a câmera. Como você está testando via IP local (HTTP), a câmera não abrirá. <br>
+                <i>Alternativa:</i> Use o botão de anexar arquivo logo abaixo para enviar uma foto do QR Code.
+            </div>
+
+            <div id="reader" class="w-full rounded-2xl overflow-hidden border-4 border-dashed border-white/10"></div>
+            <div id="loading" x-show="buscando" class="mt-4 text-center text-gray-400 font-bold" style="display: none;">
+                Buscando dados do item...
+            </div>
+            <div x-show="erroMsg" x-text="erroMsg" class="mt-4 p-4 bg-red-900/20 text-red-500 text-sm rounded-lg text-center border border-red-500/30" style="display: none;"></div>
+        </div>
+        
+        <div class="p-4 bg-gray-900/40 backdrop-blur-md border-t border-white/10 text-center flex justify-between items-center">
+            <a href="{% url 'painel_inventario' %}" class="text-sm font-medium text-gray-300 hover:text-white">Sair do Modo Scanner</a>
+            <span class="px-2 py-1 bg-gray-800 rounded text-xs font-bold text-gray-400 uppercase">Acesso Livre</span>
+        </div>
+    </div>
+
+    <!-- Lado Direito: Carrinho e Checkout -->
+    <div class="w-full md:w-1/2 max-w-md bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col" style="min-h: 500px;">
+        <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white">Carrinho de Itens</h2>
+            <span class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full" x-text="itens.length + ' Itens'">0 Itens</span>
+        </div>
+        
+        <div class="p-6 flex-grow overflow-y-auto space-y-4">
+            <template x-if="itens.length === 0">
+                <div class="text-center text-gray-500 mt-10">
+                    <i data-lucide="shopping-cart" class="w-12 h-12 mx-auto mb-3 opacity-20"></i>
+                    <p>O carrinho está vazio.<br>Escaneie um QR Code para começar.</p>
+                </div>
+            </template>
+            
+            <template x-for="(item, index) in itens" :key="item.id_unico">
+                <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <div class="text-white font-bold text-sm" x-text="item.nome"></div>
+                        <div class="text-xs text-gray-400 mt-1" x-text="'ID: ' + item.id_unico"></div>
+                        <template x-if="item.exige_aprovacao && '{{ tipo }}' === 'retirada'">
+                            <span class="inline-block mt-2 text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/30 uppercase font-bold">Aprovação Necessária</span>
+                        </template>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="number" x-model="item.quantidade" min="1" class="w-16 bg-gray-900 border border-gray-700 text-white text-center rounded py-1">
+                        <button @click="removerItem(index)" class="text-red-400 hover:text-red-300 p-1">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div class="p-6 border-t border-gray-800 bg-gray-950">
+            <template x-if="itens.length > 0">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-400 font-bold uppercase mb-1 block">Seu Nome Completo *</label>
+                        <input type="text" x-model="nome" placeholder="Digite seu nome..." class="w-full bg-gray-900 border border-gray-700 text-white rounded p-3 text-sm focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 font-bold uppercase mb-1 block">Seu E-mail (Para Termo de Responsabilidade) *</label>
+                        <input type="email" x-model="email" placeholder="Digite seu e-mail..." class="w-full bg-gray-900 border border-gray-700 text-white rounded p-3 text-sm focus:border-blue-500 outline-none">
+                    </div>
+                    
+                    <button @click="finalizar()" :disabled="enviando || !nome || !email" class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition-colors flex justify-center items-center gap-2 shadow-lg">
+                        <span x-show="!enviando">Confirmar {{ tipo|title }}</span>
+                        <span x-show="enviando">Processando...</span>
+                    </button>
+                </div>
+            </template>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal de Sucesso -->
+<div id="sucessoModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-gray-900 border border-green-500/50 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+        <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/50">
+            <i data-lucide="check" class="w-10 h-10 text-green-500"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">Concluído!</h2>
+        <p class="text-gray-400 text-sm mb-6" id="sucessoText">Operação registrada com sucesso.</p>
+        <button onclick="window.location.reload()" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-xl transition-colors border border-gray-700">
+            Fazer Novo Registro
+        </button>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('carrinhoScanner', () => ({
+            itens: [],
+            nome: '',
+            email: '',
+            tipoAcao: '{{ tipo }}',
+            buscando: false,
+            erroMsg: '',
+            enviando: false,
+            scanner: null,
+
+            init() {
+                this.iniciarScanner();
+            },
+
+            iniciarScanner() {
+                if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    document.getElementById('https-warning').classList.remove('hidden');
+                }
+                this.scanner = new Html5QrcodeScanner("reader", { fps: 5, qrbox: {width: 250, height: 250} }, false);
+                this.scanner.render((decodedText) => this.onScanSuccess(decodedText), () => {});
+            },
+
+            onScanSuccess(decodedText) {
+                // Previne escaneamento duplo enquanto busca
+                if (this.buscando) return;
+                
+                // Pega ID do item (que vem do link ALM-XXX)
+                let itemId = decodedText;
+                let match = decodedText.match(/\/qr\/(?:retirar|devolver)\/([^\/]+)\//);
+                if (match) itemId = match[1];
+
+                // Verifica se já está no carrinho
+                let indexExistente = this.itens.findIndex(i => i.id_unico === itemId);
+                if (indexExistente !== -1) {
+                    this.itens[indexExistente].quantidade++;
+                    return;
+                }
+
+                this.buscando = true;
+                this.erroMsg = '';
+
+                fetch(`/almoxarifado/api/item/${itemId}/`)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.buscando = false;
+                        if (data.sucesso) {
+                            this.itens.push({
+                                id_unico: data.id_unico,
+                                nome: data.nome,
+                                quantidade: 1,
+                                exige_aprovacao: data.exige_aprovacao
+                            });
+                        } else {
+                            this.erroMsg = 'Item não encontrado ou código inválido.';
+                            setTimeout(() => this.erroMsg='', 3000);
+                        }
+                    })
+                    .catch(e => {
+                        this.buscando = false;
+                        this.erroMsg = 'Erro de rede. Tente novamente.';
+                        setTimeout(() => this.erroMsg='', 3000);
+                    });
+            },
+
+            removerItem(index) {
+                this.itens.splice(index, 1);
+            },
+
+            finalizar() {
+                if (this.itens.length === 0 || !this.nome || !this.email) return;
+                
+                this.enviando = true;
+                
+                fetch(`/almoxarifado/api/carrinho/finalizar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tipo_acao: this.tipoAcao,
+                        nome: this.nome,
+                        email: this.email,
+                        itens: this.itens.map(i => ({id_unico: i.id_unico, quantidade: i.quantidade}))
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.enviando = false;
+                    if (data.sucesso) {
+                        this.scanner.clear();
+                        document.getElementById('sucessoText').innerText = data.mensagem + " Um Termo de Responsabilidade foi enviado para seu e-mail.";
+                        document.getElementById('sucessoModal').classList.remove('hidden');
+                    } else {
+                        alert("Erro: " + data.mensagem);
+                    }
+                })
+                .catch(e => {
+                    this.enviando = false;
+                    alert("Erro ao conectar com o servidor.");
+                });
+            }
+        }));
+    });
+</script>
+{% endblock content %}

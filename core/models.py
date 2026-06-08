@@ -153,15 +153,23 @@ class LogAuditoria(models.Model):
 
                 # Fetch GeoIP inline
                 if self.ip_origem and self.ip_origem not in ['127.0.0.1', 'localhost']:
-                    try:
-                        resp = requests.get(f'http://ip-api.com/json/{self.ip_origem}', timeout=1.0)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            if data.get('status') == 'success':
-                                self.cidade_origem = f"{data.get('city', '')} - {data.get('region', '')}"[:100]
-                                self.isp_origem = data.get('isp', '')[:145]
-                    except Exception:
-                        pass
+                    import threading
+                    def fetch_geoip_async(ip):
+                        import requests
+                        try:
+                            resp = requests.get(f'http://ip-api.com/json/{ip}', timeout=2.0)
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                if data.get('status') == 'success':
+                                    cidade = f"{data.get('city', '')} - {data.get('region', '')}"[:100]
+                                    isp = data.get('isp', '')[:145]
+                                    LogAuditoria.objects.filter(ip_origem=ip, cidade_origem__isnull=True).update(
+                                        cidade_origem=cidade, isp_origem=isp
+                                    )
+                        except Exception:
+                            pass
+                    
+                    threading.Thread(target=fetch_geoip_async, args=(self.ip_origem,)).start()
 
             ultimo_log = LogAuditoria.objects.order_by('-id').first()
             if ultimo_log:
@@ -295,3 +303,14 @@ class DatabaseBackup(models.Model):
 
     def __str__(self):
         return f"Backup {self.data_criacao.strftime('%d/%m/%Y %H:%M:%S')} - {self.tamanho_mb}MB"
+
+
+class SpiderTestLog(models.Model):
+    data_execucao = models.DateTimeField(auto_now_add=True)
+    iniciado_por = models.ForeignKey('Membro', on_delete=models.SET_NULL, null=True, blank=True)
+    total_urls = models.IntegerField(default=0)
+    erros_encontrados = models.IntegerField(default=0)
+    log_texto = models.TextField()
+
+    def __str__(self):
+        return f"Spider Test em {self.data_execucao.strftime('%d/%m/%Y %H:%M')} - Erros: {self.erros_encontrados}"

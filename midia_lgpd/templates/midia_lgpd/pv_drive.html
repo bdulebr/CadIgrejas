@@ -86,6 +86,35 @@
                 </div>
                 {% else %}
 
+                <!-- Active Shares (Se a pasta atual for compartilhada e o user for dono) -->
+                {% if pasta_atual.permissoes.all %}
+                <div class="mb-8 p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                        Compartilhamentos Ativos desta Pasta
+                    </h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for perm in pasta_atual.permissoes.all %}
+                            {% if perm.is_ativo %}
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-900 border border-gray-600 rounded-lg text-sm">
+                                <span class="text-white">
+                                    {% if perm.alvo_departamento %}Depto: {{ perm.alvo_departamento.nome }}{% else %}Membro: {{ perm.alvo_membro.first_name }}{% endif %}
+                                </span>
+                                <span class="text-xs text-gray-400">({{ perm.get_nivel_display }})</span>
+                                {% if perm.validade %}<span class="text-xs text-brand-400 ml-1" title="Validade">Até {{ perm.validade|date:"d/m/Y H:i" }}</span>{% endif %}
+                                <form action="{% url 'cancelar_compartilhamento' perm.id %}" method="POST" class="ml-2 inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-400 hover:text-red-300" title="Cancelar Compartilhamento">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Folders Grid -->
                 {% if pastas %}
                 <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Pastas</h3>

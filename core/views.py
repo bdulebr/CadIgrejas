@@ -397,6 +397,9 @@ def sysadmin_dashboard(request):
     from core.models import DatabaseBackup
     backups_db = DatabaseBackup.objects.all()
 
+    from core.models import SpiderTestLog
+    spider_logs = SpiderTestLog.objects.all().order_by('-data_execucao')[:10]
+
     context = {
         'config': config,
         'cpu_percent': cpu_percent,
@@ -416,7 +419,8 @@ def sysadmin_dashboard(request):
         'templates': templates,
         'links_rapidos': links_rapidos,
         'email_logs': email_logs,
-        'backups_db': backups_db
+        'backups_db': backups_db,
+        'spider_logs': spider_logs
     }
     return render(request, 'core/pages/sysadmin_dashboard.html', context)
 
@@ -1006,13 +1010,16 @@ def bi_almoxarifado(request):
     if request.user.nivel_hierarquico not in ['super_admin', 'lider'] and not request.user.is_superuser:
         return HttpResponseForbidden("Acesso restrito.")
 
-    from almoxarifado.models import Ativo, Emprestimo
-    total_ativos = Ativo.objects.count()
-    emprestados = Emprestimo.objects.filter(data_devolucao_real__isnull=True).count()
+    from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
+    from django.db.models import Count
+    import json
 
-    # Agrupamento para a Curva ABC
-    ativos_agrupados = Emprestimo.objects.values('ativo__nome').annotate(total=Count('ativo')).order_by('-total')[:5]
-    abc_labels = [item['ativo__nome'] for item in ativos_agrupados]
+    total_ativos = ItemAlmoxarifado.objects.count()
+    emprestados = ItemAlmoxarifado.objects.filter(status_item='emprestado').count()
+
+    # Agrupamento para a Curva ABC (Quais itens mais tem retiradas)
+    ativos_agrupados = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(total=Count('item')).order_by('-total')[:5]
+    abc_labels = [item['item__nome'] for item in ativos_agrupados]
     abc_data = [item['total'] for item in ativos_agrupados]
 
     context = {
@@ -1410,3 +1417,38 @@ def sysadmin_restaurar_backup(request, backup_id):
             messages.error(request, f"Erro ao restaurar: {str(e)}")
 
     return redirect('sysadmin_dashboard')
+
+from django.core.management import call_command
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+import threading
+
+@login_required
+def sysadmin_rodar_spider(request):
+    if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
+        return HttpResponseForbidden("Acesso restrito.")
+        
+    def run_spider_thread(user_id):
+        try:
+            call_command('run_spider', user_id=user_id)
+        except Exception as e:
+            print(f"Erro ao rodar spider: {e}")
+            
+    thread = threading.Thread(target=run_spider_thread, args=(request.user.id,))
+    thread.start()
+    
+    messages.success(request, 'O Spider Test End-to-End foi iniciado em segundo plano. O resultado aparecerá nos logs abaixo em alguns instantes.')
+    return HttpResponseRedirect(reverse('sysadmin'))
+
+@login_required
+def sysadmin_baixar_log_spider(request, log_id):
+    if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
+        return HttpResponseForbidden("Acesso restrito.")
+        
+    from core.models import SpiderTestLog
+    from django.http import HttpResponse
+    
+    log = get_object_or_404(SpiderTestLog, id=log_id)
+    response = HttpResponse(log.log_texto, content_type='text/plain')
+    response['Content-Disposition'] = f'attachment; filename="spider_log_{log.id}_{log.data_execucao.strftime("%Y%m%d%H%M")}.txt"'
+    return response

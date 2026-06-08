@@ -30,6 +30,7 @@ urlpatterns = [
     path('drive/arquivo/<int:arquivo_id>/visualizar/', views.visualizar_arquivo, name='visualizar_arquivo'),
     path('drive/arquivo/<int:arquivo_id>/baixar/', views.baixar_arquivo, name='baixar_arquivo'),
     path('drive/pasta/<int:pasta_id>/compartilhar/', views.compartilhar_pasta, name='compartilhar_pasta'),
+    path('drive/compartilhamento/<int:permissao_id>/cancelar/', views.cancelar_compartilhamento, name='cancelar_compartilhamento'),
 
     # Documentos Avançados
     path('documentos/', views.painel_documentos, name='painel_documentos'),

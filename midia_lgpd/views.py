@@ -118,8 +118,9 @@ def exportar_dados_pessoais(request):
         'cidade': user.cidade,
         'estado': user.estado,
         'estado_civil': user.estado_civil,
-        'habilidades': user.habilidades,
-        'data_cadastro': str(user.data_cadastro),
+        'habilidades': list(user.habilidades.values_list('nome', flat=True)) if hasattr(user, 'habilidades') and hasattr(user.habilidades, 'all') else [],
+        'data_cadastro': str(user.date_joined),
+        'historico_escalas': list(user.escalas_individuais.values('id', 'data_escala', 'horario_inicio', 'funcao_alocada__nome')),
     }
     json_data = json.dumps(dados, indent=4, ensure_ascii=False)
 
@@ -356,13 +357,23 @@ def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
         # Se for a pasta Compartilhados Comigo, a lógica muda (Mostra os shortcuts ou permissoes)
         if pasta_atual.tipo_pasta == 'compartilhados':
             pastas = PastaVirtual.objects.none() # Atalhos de pastas poderiam ser mostrados aqui, mas por agora arquivos:
+            from django.db.models import Q
+            hoje = timezone.now()
             # Buscar arquivos onde eu tenho Permissao
             if modo == 'departamento':
                 # Arquivos compartilhados com meu departamento
-                permissoes = PermissaoPVDrive.objects.filter(alvo_departamento=dep_atual, is_ativo=True)
+                permissoes = PermissaoPVDrive.objects.filter(
+                    Q(validade__isnull=True) | Q(validade__gte=hoje),
+                    alvo_departamento=dep_atual, 
+                    is_ativo=True
+                )
             else:
                 # Arquivos compartilhados comigo
-                permissoes = PermissaoPVDrive.objects.filter(alvo_membro=request.user, is_ativo=True)
+                permissoes = PermissaoPVDrive.objects.filter(
+                    Q(validade__isnull=True) | Q(validade__gte=hoje),
+                    alvo_membro=request.user, 
+                    is_ativo=True
+                )
 
             pastas_ids = permissoes.values_list('pasta_id', flat=True)
             pastas = PastaVirtual.objects.filter(id__in=pastas_ids, is_excluida=False)
@@ -794,3 +805,29 @@ def upload_inteligente_ocr(request):
         return redirect('pv_drive_home')
 
     return redirect('pv_drive_home')
+
+@login_required
+def cancelar_compartilhamento(request, permissao_id):
+    permissao = get_object_or_404(PermissaoPVDrive, id=permissao_id)
+    
+    # Valida se o usuário pode cancelar (é o dono da pasta, o criador original ou admin)
+    if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente'] or 
+            permissao.pasta.dono_membro == request.user or 
+            permissao.concedido_por == request.user):
+        messages.error(request, "Você não tem autorização para cancelar este compartilhamento.")
+        return redirect('pv_drive_home')
+        
+    permissao.is_ativo = False
+    permissao.save()
+    
+    # Remover shortcut no GDrive poderia ser feito aqui caso o sistema estivesse com permissões completas, mas por agora inativar já remove da listagem.
+    
+    messages.success(request, "Compartilhamento cancelado com sucesso.")
+    
+    # Retorna para a mesma view que o usuario estava
+    modo = 'pessoal'
+    if permissao.pasta.departamento:
+        modo = 'departamento'
+        return redirect('pv_drive_pasta', alvo_id=permissao.pasta.departamento.id, pasta_id=permissao.pasta.id)
+    else:
+        return redirect('pv_drive_pessoal_pasta', pasta_id=permissao.pasta.id)

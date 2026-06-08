@@ -1,7 +1,7 @@
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from core.models import Membro
-from almoxarifado.models import CategoriaAtivo, Ativo
+from almoxarifado.models import CategoriaItem, ItemAlmoxarifado
 
 @override_settings(AXES_ENABLED=False)
 class AlmoxarifadoTestCase(TestCase):
@@ -26,13 +26,13 @@ class AlmoxarifadoTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_criar_ativo(self):
-        categoria = CategoriaAtivo.objects.create(nome='Móveis')
-        response = self.client.post(reverse('registrar_novo_ativo'), {
+        categoria = CategoriaItem.objects.create(nome='Móveis')
+        response = self.client.post(reverse('cadastrar_item_almoxarifado'), {
             'nome': 'Mesa Som',
-            'codigo_patrimonio': 'PAT001',
+            'id_unico': 'PAT001',
             'categoria': categoria.id,
-            'status': 'disponivel',
-            'departamento_id': self.departamento.id
+            'status_item': 'disponivel'
         })
+        # Note: If validation fails it might return 200 with form errors, if succeeds 302
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Ativo.objects.filter(codigo_patrimonio='PAT001').exists())
+        self.assertTrue(ItemAlmoxarifado.objects.filter(id_unico='PAT001').exists())

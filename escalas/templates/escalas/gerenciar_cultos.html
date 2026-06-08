@@ -113,13 +113,7 @@
                                     </td>
                                     <td class="px-6 py-4 text-gray-300 font-medium">
                                         {% if culto.tipo == 'padrao' %}
-                                            {{ culto.dia_semana|yesno:"domingo,domingo" }}
-                                            <script>
-                                                document.write((function() {
-                                                    const dias = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'};
-                                                    return dias[{{ culto.dia_semana }}] || 'N/A';
-                                                })());
-                                            </script>
+                                            {{ culto.get_dia_semana_str }}
                                         {% else %}
                                             <span class="font-mono text-xs">{{ culto.data_evento|date:"d/m/Y" }}</span>
                                         {% endif %}

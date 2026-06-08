@@ -40,11 +40,14 @@ class CultoEvento(models.Model):
         verbose_name = 'Tipo de Culto / Evento'
         verbose_name_plural = 'Tipos de Cultos e Eventos'
 
+    def get_dia_semana_str(self):
+        dias = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'}
+        return dias.get(self.dia_semana, 'N/A')
+
     def __str__(self):
         if self.tipo == 'extra':
             return f"{self.nome} ({self.data_evento.strftime('%d/%m/%Y')} {self.horario_inicio.strftime('%H:%M')})"
-        dias = {0: 'Segunda', 1: 'Terça', 2: 'Quarta', 3: 'Quinta', 4: 'Sexta', 5: 'Sábado', 6: 'Domingo'}
-        return f"{self.nome} - {dias.get(self.dia_semana, '')} ({self.horario_inicio.strftime('%H:%M')})"
+        return f"{self.nome} - {self.get_dia_semana_str()} ({self.horario_inicio.strftime('%H:%M')})"
 
 class CompetenciaEscala(models.Model):
     STATUS_CHOICES = (

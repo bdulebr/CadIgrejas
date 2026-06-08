@@ -14,12 +14,24 @@ class CategoriaItem(models.Model):
     def __str__(self):
         return self.nome
 
+class SubcategoriaItem(models.Model):
+    nome = models.CharField(max_length=100)
+    categoria = models.ForeignKey(CategoriaItem, on_delete=models.CASCADE, related_name='subcategorias')
+
+    class Meta:
+        unique_together = ('nome', 'categoria')
+
+    def __str__(self):
+        return f"{self.categoria.nome} - {self.nome}"
+
 class ItemAlmoxarifado(models.Model):
     STATUS_CHOICES = (
         ('disponivel', 'Disponível'),
         ('emprestado', 'Emprestado / Em Uso Externo'),
         ('manutencao', 'Em Manutenção'),
         ('consumido', 'Consumido / Esgotado'),
+        ('alocado', 'Alocado (Uso Fixo)'),
+        ('descartado', 'Descartado / Baixa'),
     )
     ORIGEM_CHOICES = (
         ('comprado', 'Comprado (Igreja)'),
@@ -31,19 +43,39 @@ class ItemAlmoxarifado(models.Model):
     TIPO_CHOICES = (
         ('permanente', 'Ativo Permanente (Devolução Obrigatória)'),
         ('consumo', 'Item de Consumo (Alimentos/Descartáveis)'),
+        ('fixo', 'Ativo Fixo (Alocado Permanentemente, não devolvido)'),
+    )
+    
+    PAGAMENTO_CHOICES = (
+        ('quitado', 'Quitado'),
+        ('parcelado', 'Parcelado'),
+        ('doacao', 'Doação/Grátis'),
+        ('nao_se_aplica', 'Não se Aplica')
+    )
+    
+    CONDICAO_CHOICES = (
+        ('nova', 'Nova / Excelente'),
+        ('boa', 'Boa'),
+        ('regular', 'Regular / Intermediária'),
+        ('ruim', 'Ruim')
     )
 
     # Identificação
     id_unico = models.CharField(max_length=50, unique=True, help_text="ID automático ou Código de Barras manual", blank=True)
     nome = models.CharField(max_length=200, help_text="Ex: Arroz 5kg, Câmera Sony, Microfone Shure")
     categoria = models.ForeignKey(CategoriaItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='itens')
-    subcategoria = models.CharField(max_length=100, blank=True)
+    subcategoria = models.ForeignKey(SubcategoriaItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='itens')
     tipo_item = models.CharField(max_length=20, choices=TIPO_CHOICES, default='permanente')
 
     # Quantidades e Validade
     quantidade_estoque = models.PositiveIntegerField(default=1)
     data_entrada = models.DateField(auto_now_add=True)
     data_vencimento = models.DateField(null=True, blank=True, help_text="Para alimentos perecíveis")
+
+    # Financeiro e Condição
+    valor_monetario = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status_pagamento = models.CharField(max_length=20, choices=PAGAMENTO_CHOICES, default='nao_se_aplica')
+    condicao_fisica = models.CharField(max_length=20, choices=CONDICAO_CHOICES, default='nova')
 
     # Fluxo
     origem = models.CharField(max_length=20, choices=ORIGEM_CHOICES, default='desconhecido')
@@ -56,6 +88,9 @@ class ItemAlmoxarifado(models.Model):
     observacao = models.TextField(blank=True)
     foto_item = models.ImageField(upload_to='fotos/almoxarifado/', blank=True, null=True, validators=img_validators)
     pasta_pv_drive = models.ForeignKey(PastaVirtual, on_delete=models.SET_NULL, null=True, blank=True, help_text="Pasta com todas as NF e comprovantes do item")
+    
+    # Controle de Alto Volume
+    exige_aprovacao = models.BooleanField(default=False, help_text="Se marcado, a retirada deste item ficará pendente até aprovação de um Gestor.")
 
     def save(self, *args, **kwargs):
         if not self.id_unico:
@@ -86,14 +121,22 @@ class MovimentacaoAlmoxarifado(models.Model):
         ('baixa', 'Baixa Definitiva (-)'),
     )
 
+    STATUS_APROVACAO = (
+        ('aprovado', 'Aprovado / Automático'),
+        ('pendente', 'Pendente de Aprovação'),
+        ('rejeitado', 'Rejeitado'),
+    )
+
     item = models.ForeignKey(ItemAlmoxarifado, on_delete=models.CASCADE, related_name='movimentacoes')
     tipo = models.CharField(max_length=20, choices=TIPO_MOVIMENTO)
     quantidade = models.PositiveIntegerField(default=1)
 
     # Rastreio de quem retirou (Zero-Trust + Fuzzy)
     nome_digitado = models.CharField(max_length=200, help_text="Nome digitado no QR Code Público")
+    email_digitado = models.EmailField(blank=True, null=True, help_text="Email para envio do Termo de Cautela Automático")
     membro_vinculado = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True, blank=True, help_text="Membro vinculado via IA/Fuzzy Match")
 
+    status_aprovacao = models.CharField(max_length=20, choices=STATUS_APROVACAO, default='aprovado')
     data_hora = models.DateTimeField(auto_now_add=True)
     assinatura_digital_hash = models.CharField(max_length=256, editable=False, help_text="Hash SHA-256 de segurança")
     observacao = models.TextField(blank=True)

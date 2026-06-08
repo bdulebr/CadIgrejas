@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Cadastrar Item - Almoxarifado{% endblock %}
+{% block title %}Editar Item - Almoxarifado{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
@@ -10,8 +10,8 @@
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </a>
         <div>
-            <h1 class="text-3xl font-extrabold text-white">Cadastrar Novo Item</h1>
-            <p class="text-gray-400 mt-1">O item ganhará uma pasta automática no PV Drive para os anexos.</p>
+            <h1 class="text-3xl font-extrabold text-white">Editar Item: {{ item.id_unico }}</h1>
+            <p class="text-gray-400 mt-1">Atualize os dados e o status do item.</p>
         </div>
     </div>
 
@@ -24,19 +24,25 @@
                 <h3 class="text-lg font-bold text-white mb-4 border-b border-gray-800 pb-2">Informações Básicas</h3>
             </div>
 
-
             <div class="col-span-1 md:col-span-2">
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">ID / Código de Patrimônio</label>
-                <input type="text" name="id_unico" placeholder="Ex: PAT001 (Deixe em branco para auto-gerar)" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono">
-                <p class="text-xs text-gray-500 mt-1">Se não preenchido, o sistema gerará um hash automático único.</p>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">ID / Código de Patrimônio (Inalterável)</label>
+                <input type="text" value="{{ item.id_unico }}" readonly class="w-full bg-gray-900 border border-gray-800 text-gray-500 px-4 py-3 rounded-xl outline-none font-mono cursor-not-allowed">
             </div>
 
             <div class="col-span-1 md:col-span-2">
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nome do Objeto / Alimento *</label>
-
-                <input type="text" name="nome" required placeholder="Ex: Arroz 5kg, Microfone Shure, Mesa de Som" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" name="nome" required value="{{ item.nome }}" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
 
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Categoria</label>
+                <select name="categoria" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                    <option value="">-- Selecione (Opcional) --</option>
+                    {% for cat in categorias %}
+                        <option value="{{ cat.id }}" {% if item.categoria and item.categoria.id == cat.id %}selected{% endif %}>{{ cat.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Subcategoria</label>
@@ -46,21 +52,10 @@
                         {% if cat.subcategorias.all %}
                             <optgroup label="{{ cat.nome }}">
                                 {% for sub in cat.subcategorias.all %}
-                                    <option value="{{ sub.id }}">{{ sub.nome }}</option>
+                                    <option value="{{ sub.id }}" {% if item.subcategoria and item.subcategoria.id == sub.id %}selected{% endif %}>{{ sub.nome }}</option>
                                 {% endfor %}
                             </optgroup>
                         {% endif %}
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Categoria</label>
-
-                <select name="categoria" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
-                    <option value="">-- Selecione (Opcional) --</option>
-                    {% for cat in categorias %}
-                        <option value="{{ cat.id }}">{{ cat.nome }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -69,19 +64,28 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tipo de Item *</label>
                 <select name="tipo_item" required class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
                     {% for value, label in tipos_choices %}
-                        <option value="{{ value }}">{{ label }}</option>
+                        <option value="{{ value }}" {% if item.tipo_item == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Quantidade Inicial *</label>
-                <input type="number" name="quantidade" required min="1" value="1" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Quantidade *</label>
+                <input type="number" name="quantidade" required min="0" value="{{ item.quantidade_estoque }}" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Data de Vencimento (Para Perecíveis)</label>
-                <input type="date" name="data_vencimento" class="w-full bg-gray-950 border border-gray-800 text-gray-400 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Data de Vencimento</label>
+                <input type="date" name="data_vencimento" value="{{ item.data_vencimento|date:'Y-m-d' }}" class="w-full bg-gray-950 border border-gray-800 text-gray-400 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Status do Item</label>
+                <select name="status_item" required class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if item.status_item == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <!-- Logistica -->
@@ -93,7 +97,7 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Origem *</label>
                 <select name="origem" required class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
                     {% for value, label in origens_choices %}
-                        <option value="{{ value }}">{{ label }}</option>
+                        <option value="{{ value }}" {% if item.origem == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -104,14 +108,14 @@
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Valor Estimado (R$)</label>
-                <input type="number" step="0.01" name="valor_monetario" placeholder="Ex: 1500.00" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="number" step="0.01" name="valor_monetario" value="{{ item.valor_monetario|default_if_none:'' }}" placeholder="Ex: 1500.00" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Status do Pagamento</label>
                 <select name="status_pagamento" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
                     {% for value, label in pagamento_choices %}
-                        <option value="{{ value }}">{{ label }}</option>
+                        <option value="{{ value }}" {% if item.status_pagamento == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -120,30 +124,30 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Condição Física do Item</label>
                 <select name="condicao_fisica" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
                     {% for value, label in condicao_choices %}
-                        <option value="{{ value }}">{{ label }}</option>
+                        <option value="{{ value }}" {% if item.condicao_fisica == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Fornecedor ou Doador</label>
-                <input type="text" name="fornecedor_doador" placeholder="Nome da loja ou pessoa..." class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" name="fornecedor_doador" value="{{ item.fornecedor_doador|default_if_none:'' }}" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Localização Física</label>
-                <input type="text" name="localizacao" placeholder="Ex: Prateleira A, Armário 2..." class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" name="localizacao" value="{{ item.localizacao|default_if_none:'' }}" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Destino de Uso</label>
-                <input type="text" name="destino_uso" placeholder="Ex: Cestas Básicas, Ministério Louvor..." class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" name="destino_uso" value="{{ item.destino_uso }}" placeholder="Ex: Cestas Básicas, Ministério Louvor..." class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
 
             <div class="col-span-1 md:col-span-2 mt-4 bg-yellow-900/10 border border-yellow-700/30 rounded-xl p-5">
                 <label class="flex items-start cursor-pointer">
                     <div class="flex items-center h-5">
-                        <input type="checkbox" name="exige_aprovacao" value="True" class="w-5 h-5 bg-gray-900 border-gray-700 rounded text-yellow-600 focus:ring-yellow-600 focus:ring-offset-gray-900">
+                        <input type="checkbox" name="exige_aprovacao" value="True" {% if item.exige_aprovacao %}checked{% endif %} class="w-5 h-5 bg-gray-900 border-gray-700 rounded text-yellow-600 focus:ring-yellow-600 focus:ring-offset-gray-900">
                     </div>
                     <div class="ml-3 text-sm">
                         <span class="font-bold text-yellow-500 uppercase tracking-wider">Esteira de Aprovação de Gestor</span>
@@ -152,38 +156,31 @@
                 </label>
             </div>
 
-            <!-- Arquivos PV Drive -->
-            <div class="col-span-1 md:col-span-2 mt-4">
-                <h3 class="text-lg font-bold text-white mb-4 border-b border-gray-800 pb-2">Anexos e Documentação (PV Drive)</h3>
-                <div class="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 mb-4">
-                    <p class="text-blue-300 text-sm flex items-start">
-                        <i data-lucide="info" class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5"></i>
-                        <span>Todos os arquivos enviados aqui serão movidos magicamente para uma nova pasta no <b>PV Drive</b> dedicada exclusivamente a este item. Você não tem limites de upload.</span>
-                    </p>
-                </div>
-            </div>
-
             <div class="col-span-1 md:col-span-2">
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Foto Principal do Objeto</label>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Foto Atual do Objeto</label>
+                {% if item.foto_item %}
+                <img src="{{ item.foto_item.url }}" class="h-32 rounded-lg mb-2">
+                {% endif %}
                 <input type="file" name="foto_item" accept="image/*" class="w-full bg-gray-950 border border-gray-800 text-gray-400 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
             </div>
 
             <div class="col-span-1 md:col-span-2">
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Anexar Notas Fiscais, Manuais e Comprovantes (Múltiplos)</label>
-                <input type="file" name="anexos_multiplos" multiple class="w-full bg-gray-950 border border-gray-800 text-gray-400 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600">
-                <p class="text-xs text-gray-500 mt-2">Segure CTRL para selecionar vários arquivos.</p>
-            </div>
-
-            <div class="col-span-1 md:col-span-2">
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Observações Adicionais</label>
-                <textarea name="observacao" rows="3" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"></textarea>
+                <textarea name="observacao" rows="3" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">{{ item.observacao|default_if_none:'' }}</textarea>
             </div>
-
         </div>
 
-        <div class="flex justify-end pt-6 border-t border-gray-800">
+        <div class="flex justify-between items-center pt-6 border-t border-gray-800">
+            {% if item.pasta_pv_drive %}
+            <a href="{% url 'pv_drive_home' %}?pasta={{ item.pasta_pv_drive.id }}" target="_blank" class="px-6 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold transition-all flex items-center gap-2">
+                <i data-lucide="folder"></i> Ver Anexos no Drive
+            </a>
+            {% else %}
+            <div></div>
+            {% endif %}
+            
             <button type="submit" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)]">
-                Salvar Item e Criar Pasta
+                Salvar Alterações
             </button>
         </div>
     </form>

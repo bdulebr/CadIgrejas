@@ -41,3 +41,23 @@ class AvisoMuralAdmin(admin.ModelAdmin):
 class AvisoAnexoAdmin(admin.ModelAdmin):
     list_display = ('aviso', 'nome_original', 'arquivo')
     search_fields = ('aviso__titulo', 'nome_original')
+
+from .models import AvaliacaoMembro, Ocorrencia, AcaoDisciplinar
+
+@admin.register(AvaliacaoMembro)
+class AvaliacaoMembroAdmin(admin.ModelAdmin):
+    list_display = ('membro', 'avaliador', 'nota', 'data', 'enviado_ao_membro')
+    list_filter = ('nota', 'enviado_ao_membro', 'data')
+    search_fields = ('membro__first_name', 'avaliador__first_name', 'comentarios')
+
+@admin.register(Ocorrencia)
+class OcorrenciaAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'data_ocorrencia', 'autor', 'data_registro')
+    list_filter = ('data_ocorrencia', 'data_registro')
+    search_fields = ('titulo', 'descricao', 'autor__first_name')
+
+@admin.register(AcaoDisciplinar)
+class AcaoDisciplinarAdmin(admin.ModelAdmin):
+    list_display = ('membro', 'tipo', 'data_aplicacao', 'autor', 'enviado_email')
+    list_filter = ('tipo', 'data_aplicacao', 'enviado_email')
+    search_fields = ('membro__first_name', 'motivo', 'autor__first_name')

@@ -1,0 +1,112 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Gerenciar Categorias - Almoxarifado{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'painel_inventario' %}" class="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-extrabold text-white">Categorias e Subcategorias</h1>
+            <p class="text-gray-400 mt-1">Gerencie a árvore de categorias do seu estoque de Almoxarifado.</p>
+        </div>
+    </div>
+
+    <!-- Adicionar Nova Categoria -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl mb-6">
+        <h3 class="text-lg font-bold text-white mb-4">Adicionar Nova Categoria Principal</h3>
+        <form method="POST" class="flex gap-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <input type="text" name="nome" required placeholder="Ex: Equipamentos de Áudio, Limpeza..." class="flex-grow bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> Adicionar
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista de Categorias e Subcategorias -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-400">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-800/80">
+                    <tr>
+                        <th class="px-6 py-4">Estrutura de Categorias</th>
+                        <th class="px-6 py-4 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {% for cat in categorias %}
+                    <tr class="bg-gray-800/20">
+                        <td class="px-6 py-4">
+                            <form method="POST" class="flex items-center gap-2" id="form-edit-{{ cat.id }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="edit">
+                                <input type="hidden" name="cat_id" value="{{ cat.id }}">
+                                <i data-lucide="folder" class="w-5 h-5 text-blue-400"></i>
+                                <input type="text" name="nome" value="{{ cat.nome }}" class="bg-transparent border border-transparent focus:border-gray-700 hover:border-gray-700 text-white font-bold px-2 py-1 rounded w-full transition-all">
+                            </form>
+                        </td>
+                        <td class="px-6 py-4 text-right flex justify-end gap-2">
+                            <button type="submit" form="form-edit-{{ cat.id }}" class="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors" title="Salvar Alteração">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                            </button>
+                            <form method="POST" onsubmit="return confirm('Deseja excluir esta categoria? As subcategorias também serão apagadas.')" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="cat_id" value="{{ cat.id }}">
+                                <button type="submit" class="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Excluir Categoria">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    
+                    <!-- Subcategorias Render -->
+                    {% for sub in cat.subcategorias.all %}
+                    <tr class="hover:bg-gray-800/30 transition-colors">
+                        <td class="px-6 py-3 pl-12 flex items-center gap-2">
+                            <i data-lucide="corner-down-right" class="w-4 h-4 text-gray-600"></i>
+                            <span class="text-gray-300">{{ sub.nome }}</span>
+                        </td>
+                        <td class="px-6 py-3 text-right">
+                            <form method="POST" onsubmit="return confirm('Excluir esta subcategoria?')" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_sub">
+                                <input type="hidden" name="sub_id" value="{{ sub.id }}">
+                                <button type="submit" class="p-1.5 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Excluir Subcategoria">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- Form Adicionar Subcategoria -->
+                    <tr class="bg-gray-900/50">
+                        <td colspan="2" class="px-6 py-3 pl-12">
+                            <form method="POST" class="flex items-center gap-2 max-w-sm">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="add_sub">
+                                <input type="hidden" name="cat_id" value="{{ cat.id }}">
+                                <input type="text" name="nome" placeholder="Nova Subcategoria..." required class="bg-gray-950 border border-gray-800 text-sm text-gray-300 px-3 py-1.5 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none w-full">
+                                <button type="submit" class="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="px-6 py-12 text-center text-gray-500">Nenhuma categoria cadastrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker
+from .models import Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker, LinkRapido, NotificacaoGlobal, EmailLog, DatabaseBackup, SpiderTestLog
 
 @admin.register(Membro)
 class MembroAdmin(UserAdmin):
@@ -49,25 +49,34 @@ class NoticiaTickerAdmin(admin.ModelAdmin):
     list_editable = ('ativo', 'ordem')
     search_fields = ('texto',)
 
-from .models import LinkRapido
-
 @admin.register(LinkRapido)
 class LinkRapidoAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'url', 'ordem')
     search_fields = ('titulo', 'url')
     ordering = ('ordem',)
 
-from .models import NotificacaoGlobal
 @admin.register(NotificacaoGlobal)
 class NotificacaoGlobalAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'destinatario', 'tipo', 'lida', 'data_criacao')
     list_filter = ('lida', 'tipo', 'data_criacao')
     search_fields = ('titulo', 'mensagem', 'destinatario__username', 'destinatario__first_name')
 
-from .models import EmailLog
-
 @admin.register(EmailLog)
 class EmailLogAdmin(admin.ModelAdmin):
     list_display = ('destinatario', 'assunto', 'status', 'data_envio')
     list_filter = ('status', 'data_envio')
     search_fields = ('destinatario', 'assunto')
+    readonly_fields = ('data_envio',)
+
+@admin.register(DatabaseBackup)
+class DatabaseBackupAdmin(admin.ModelAdmin):
+    list_display = ('arquivo', 'data_criacao', 'tamanho_mb')
+    list_filter = ('data_criacao',)
+    readonly_fields = ('data_criacao',)
+
+@admin.register(SpiderTestLog)
+class SpiderTestLogAdmin(admin.ModelAdmin):
+    list_display = ('data_execucao', 'iniciado_por', 'total_urls', 'erros_encontrados')
+    list_filter = ('data_execucao',)
+    search_fields = ('log_texto',)
+    readonly_fields = ('data_execucao',)

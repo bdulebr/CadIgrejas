@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Termo de Cautela - PVE</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 10px;
+            text-align: justify;
+            color: #555;
+        }
+        .assinatura {
+            margin-top: 50px;
+            text-align: center;
+        }
+        .linha-assinatura {
+            border-top: 1px solid #000;
+            width: 300px;
+            margin: 0 auto;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Projeto Vida Enseada</h1>
+        <div class="title">TERMO DE RESPONSABILIDADE E CAUTELA DE EQUIPAMENTOS</div>
+    </div>
+
+    <p>Eu, <strong>{{ nome_usuario }}</strong>, declaro ter recebido (ou devolvido) em <strong>{{ data|date:"d/m/Y H:i" }}</strong>, nas condições informadas abaixo, os materiais de propriedade da instituição, obrigando-me a zelar pela sua conservação e correto funcionamento.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Operação</th>
+                <th>Item</th>
+                <th>Qtd</th>
+                <th>Condição</th>
+                <th>Valor Estimado (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in movimentacoes %}
+            <tr>
+                <td>{{ mov.get_tipo_display }}</td>
+                <td>{{ mov.item.nome }}</td>
+                <td>{{ mov.quantidade }}</td>
+                <td>{{ mov.item.get_condicao_fisica_display }}</td>
+                <td>{% if mov.item.valor_monetario %}{{ mov.item.valor_monetario }}{% else %}N/A{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <strong>Cláusula de Responsabilidade Civil e Penal (Lei Geral de Proteção de Dados e Patrimônio):</strong>
+        <p>1. O usuário se compromete a utilizar os materiais exclusivamente para os fins a que se destinam e vinculados às atividades da instituição.</p>
+        <p>2. Em caso de perda, extravio, furto ou dano decorrente de mau uso ou negligência, o usuário assume total responsabilidade por repor o equipamento ou ressarcir financeiramente a instituição pelo valor estimado na tabela acima.</p>
+        <p>3. Este documento possui validade legal e a sua geração e envio por meios eletrônicos aos dados cadastrados (IP e E-mail) caracteriza ciência e aceite automático dos termos supramencionados por parte do usuário (Assinatura Eletrônica Simples).</p>
+        <p>4. Hash de Segurança e Autenticidade do Lote: {{ movimentacoes.0.assinatura_digital_hash }}</p>
+    </div>
+
+    <div class="assinatura">
+        <br><br><br>
+        <div class="linha-assinatura"></div>
+        <strong>{{ nome_usuario }}</strong><br>
+        Assinatura Digital - Termo Aceito via Auto-Serviço
+    </div>
+</body>
+</html>

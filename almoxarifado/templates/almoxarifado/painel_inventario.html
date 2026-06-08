@@ -4,18 +4,86 @@
 {% block title %}Inventário - Almoxarifado{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="max-w-7xl mx-auto space-y-6 relative">
+
+    {% if alerta_vencimento %}
+    <div id="modalVencimento" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-gray-900 border-2 border-red-500 rounded-2xl p-8 max-w-lg w-full mx-4 shadow-[0_0_50px_rgba(239,68,68,0.3)] animate-pulse-fast">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="p-4 bg-red-500/20 rounded-full">
+                    <i data-lucide="alert-triangle" class="w-10 h-10 text-red-500"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-red-500 uppercase tracking-widest">Alerta Crítico</h2>
+                    <p class="text-gray-400">Itens próximos da data de vencimento</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                {% for item in itens_vencendo %}
+                <div class="p-3 bg-red-950/30 border border-red-900/50 rounded-xl flex justify-between items-center">
+                    <div>
+                        <p class="text-white font-bold">{{ item.nome }}</p>
+                        <p class="text-xs text-red-400">Vence em: {{ item.data_vencimento|date:"d/m/Y" }}</p>
+                    </div>
+                    <span class="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">Estoque: {{ item.quantidade_estoque }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button onclick="document.getElementById('modalVencimento').style.display='none'" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-colors uppercase tracking-wider">
+                Estou Ciente
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-3xl font-extrabold text-white">Gestão de Almoxarifado</h1>
             <p class="text-gray-400 mt-1">Gerencie os ativos e o estoque de mantimentos.</p>
         </div>
         <div class="flex gap-3">
-            <a href="{% url 'livro_almoxarifado' %}" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-bold border border-gray-700 transition-colors">
-                <i data-lucide="book-open" class="w-5 h-5 mr-2"></i> Livro de Registros
+            <a href="{% url 'gerenciar_categorias_almoxarifado' %}" class="flex items-center gap-2 bg-gray-900 border border-gray-700 hover:bg-gray-800 text-white px-5 py-3 rounded-xl font-bold transition-all">
+                <i data-lucide="tags" class="w-5 h-5"></i>
+                <span class="hidden sm:inline">Categorias</span>
             </a>
-            <a href="{% url 'cadastrar_item_almoxarifado' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors">
-                <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Cadastrar Item
+            
+            <!-- Dropdown QR Codes Globais -->
+            <div x-data="{ openQR: false }" class="relative">
+                <button @click="openQR = !openQR" class="flex items-center gap-2 bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30 px-5 py-3 rounded-xl font-bold transition-all">
+                    <i data-lucide="qr-code" class="w-5 h-5"></i>
+                    <span class="hidden sm:inline">Placas QR Code</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+                
+                <div x-show="openQR" @click.away="openQR = false" class="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden" style="display: none;">
+                    <div class="p-3 border-b border-gray-800 text-xs text-gray-400 font-bold uppercase tracking-wider text-center">Auto-Atendimento</div>
+                    <a href="{% url 'baixar_qr_generico' 'retirada' %}" target="_blank" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition-colors border-b border-gray-800/50">
+                        <i data-lucide="arrow-up-right" class="w-5 h-5 text-orange-400"></i>
+                        <div>
+                            <div class="text-sm font-bold text-white">Placa de Retirada</div>
+                            <div class="text-xs text-gray-500">Imprimir para Porta do Almoxarifado</div>
+                        </div>
+                    </a>
+                    <a href="{% url 'baixar_qr_generico' 'devolucao' %}" target="_blank" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition-colors">
+                        <i data-lucide="corner-down-left" class="w-5 h-5 text-green-400"></i>
+                        <div>
+                            <div class="text-sm font-bold text-white">Placa de Devolução</div>
+                            <div class="text-xs text-gray-500">Imprimir para Porta do Almoxarifado</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <a href="{% url 'painel_aprovacoes_almoxarifado' %}" class="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-lg">
+                <i data-lucide="inbox" class="w-5 h-5"></i>
+                <span class="hidden sm:inline">Aprovações</span>
+            </a>
+
+            <a href="{% url 'cadastrar_item_almoxarifado' %}" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-lg">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+                <span class="hidden sm:inline">Novo Item</span>
             </a>
         </div>
     </div>
@@ -48,7 +116,67 @@
         </div>
     </div>
 
+    
+    <!-- Filtros e Busca Visíveis e Avançados -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl">
+        <form method="GET" class="flex flex-col gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                <div class="lg:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Buscar Item ou ID</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="search" class="w-5 h-5 text-gray-500"></i>
+                        </div>
+                        <input type="text" name="q" value="{{ q }}" placeholder="O que você está procurando?" class="w-full bg-gray-950 border border-gray-800 text-white pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Categoria</label>
+                    <select name="categoria" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                        <option value="">Todas</option>
+                        {% for cat in categorias %}
+                            <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == cat_filter %}selected{% endif %}>{{ cat.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Origem</label>
+                    <select name="origem" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                        <option value="">Todas</option>
+                        {% for value, label in origens_choices %}
+                            <option value="{{ value }}" {% if value == origem_filter %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tipo de Item</label>
+                    <select name="tipo_item" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                        <option value="">Todos</option>
+                        {% for value, label in tipos_choices %}
+                            <option value="{{ value }}" {% if value == tipo_filter %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-4 justify-end">
+                {% if q or cat_filter or origem_filter or tipo_filter %}
+                <a href="{% url 'painel_inventario' %}" class="px-6 py-3 bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-500/30 rounded-xl font-bold transition-colors">
+                    Limpar Filtros
+                </a>
+                {% endif %}
+                <button type="submit" class="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold border border-gray-700 transition-colors">
+                    <i data-lucide="filter" class="w-4 h-4 inline-block mr-2"></i>Aplicar
+                </button>
+            </div>
+        </form>
+    </div>
+
     <!-- Tabela de Inventario -->
+
     <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
         <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
             <h2 class="text-xl font-bold text-white">Inventário Atual</h2>
@@ -59,7 +187,10 @@
                     <tr>
                         <th class="px-6 py-4 font-black tracking-wider">ID</th>
                         <th class="px-6 py-4 font-black tracking-wider">Item</th>
-                        <th class="px-6 py-4 font-black tracking-wider">Categoria</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Categoria / Sub</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Origem</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Financeiro</th>
+                        <th class="px-6 py-4 font-black tracking-wider">Tipo</th>
                         <th class="px-6 py-4 font-black tracking-wider">Estoque</th>
                         <th class="px-6 py-4 font-black tracking-wider">Status</th>
                         <th class="px-6 py-4 font-black tracking-wider text-right">Ações</th>
@@ -73,10 +204,24 @@
                         <td class="px-6 py-4">
                             {% if item.categoria %}
                             <span class="px-2 py-1 bg-gray-800 rounded text-xs border border-gray-700">{{ item.categoria.nome }}</span>
-                            {% else %}
+                            {% endif %}
+                            {% if item.subcategoria %}
+                            <span class="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs border border-gray-600 inline-block mt-1"><i data-lucide="corner-down-right" class="w-3 h-3 inline"></i> {{ item.subcategoria.nome }}</span>
+                            {% endif %}
+                            {% if not item.categoria and not item.subcategoria %}
                             -
                             {% endif %}
                         </td>
+                        <td class="px-6 py-4 text-xs text-gray-400 font-medium">{{ item.get_origem_display }}</td>
+                        <td class="px-6 py-4">
+                            {% if item.valor_monetario %}
+                                <div class="text-white font-bold">R$ {{ item.valor_monetario }}</div>
+                            {% else %}
+                                <div class="text-gray-500">-</div>
+                            {% endif %}
+                            <div class="text-xs text-gray-500 mt-1">{{ item.get_condicao_fisica_display }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-xs text-gray-400 font-medium">{{ item.get_tipo_item_display }}</td>
                         <td class="px-6 py-4 font-bold text-white">{{ item.quantidade_estoque }}</td>
                         <td class="px-6 py-4">
                             {% if item.status_item == 'disponivel' %}
@@ -95,15 +240,21 @@
                                 <i data-lucide="folder" class="w-4 h-4"></i>
                             </a>
                             {% endif %}
-                            <a href="{% url 'qr_retirar_item' item.id_unico %}" target="_blank" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" title="Ver QR Code Publico">
-                                <i data-lucide="qr-code" class="w-4 h-4"></i>
+
+                            <a href="{% url 'editar_item_almoxarifado' item.id %}" class="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors" title="Editar Item">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
                             </a>
+                            <a href="{% url 'imprimir_etiqueta_qr' item.id %}" target="_blank" class="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors" title="Imprimir Etiqueta QR de Parede">
+                                <i data-lucide="printer" class="w-4 h-4"></i>
+                            </a>
+
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                            Nenhum item cadastrado no inventário ainda.
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                            <p>Nenhum item cadastrado no inventário ainda.</p>
+                            <p class="text-xs mt-2">Cadastre um item no botão acima para visualizar suas opções de Edição e Geração de Etiquetas QR Code.</p>
                         </td>
                     </tr>
                     {% endfor %}

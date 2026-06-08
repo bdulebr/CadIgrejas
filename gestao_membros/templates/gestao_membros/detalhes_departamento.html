@@ -136,6 +136,13 @@
                                     <input type="checkbox" name="tipo_evento" value="{{ id }}" class="rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-blue-500">
                                     {{ nome }}
                                 </label>
+                                {% empty %}
+                                <div class="col-span-1 sm:col-span-2 text-center p-4 bg-gray-950/80 border border-red-500/30 rounded-xl mt-2">
+                                    <p class="text-xs text-red-400 font-bold mb-2">Nenhum evento/dia da semana configurado ainda no sistema global.</p>
+                                    <a href="{% url 'gerenciar_cultos' %}" class="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition-colors">
+                                        + Criar Cultos / Dias da Semana
+                                    </a>
+                                </div>
                                 {% endfor %}
                             </div>
                         </div>
