@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #e11d48, #be123c); padding: 40px 20px; text-align: center; }
+        .logo { max-width: 150px; height: auto; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .title { color: white; font-size: 24px; font-weight: bold; margin: 0; }
+        .content { padding: 40px 30px; color: #374151; line-height: 1.6; }
+        .greeting { font-size: 20px; font-weight: bold; color: #111827; margin-bottom: 20px; }
+        .highlight { color: #e11d48; font-weight: bold; }
+        .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ logo_url }}" alt="Logo da Igreja" class="logo">
+            <h1 class="title">Bem-vindos ao Ministério de Casais!</h1>
+        </div>
+        <div class="content">
+            <p class="greeting">Olá, {{ casal.nomes_juntos }}!</p>
+            <p>É com muita alegria que recebemos vocês no <strong>Ministério de Casais</strong> da nossa igreja.</p>
+            <p>Acreditamos que o casamento é um projeto divino e estamos aqui para caminhar junto com vocês, oferecendo suporte, aconselhamento, cursos maravilhosos e uma comunidade acolhedora.</p>
+            <p>O seu cadastro foi realizado com sucesso. A partir de agora, vocês receberão atualizações sobre nossos <strong>Eventos Especiais para Casais</strong>, oportunidades para a <span class="highlight">Trilha de Noivos/Cursos</span> e muito mais!</p>
+            <p>Que Deus abençoe grandemente a aliança de vocês!</p>
+            <br>
+            <p>Com amor e carinho,<br><strong>Liderança do Ministério de Casais</strong></p>
+        </div>
+        <div class="footer">
+            <p>Este é um e-mail automático. Por favor, não responda.</p>
+            <p>&copy; 2026 Palavra de Vida - Sistema de Intranet</p>
+        </div>
+    </div>
+</body>
+</html>

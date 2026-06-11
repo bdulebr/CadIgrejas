@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 2cm;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 50pt; width: 512pt; top: 50pt; height: 40pt;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+            }
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #333333;
+            text-align: center;
+        }
+        .cert-border {
+            border: 10px solid #be123c; /* Rose 700 */
+            padding: 40px;
+            height: 100%;
+        }
+        .logo {
+            width: 150px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #be123c;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 24px;
+            color: #555555;
+            font-weight: normal;
+        }
+        .casal-nome {
+            font-size: 36px;
+            font-weight: bold;
+            color: #000000;
+            margin: 40px 0;
+            border-bottom: 2px solid #be123c;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+        .curso-nome {
+            font-size: 28px;
+            font-weight: bold;
+            color: #be123c;
+            margin: 30px 0;
+        }
+        .assinaturas {
+            margin-top: 80px;
+            width: 100%;
+        }
+        .assinatura-box {
+            width: 40%;
+            display: inline-block;
+            text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cert-border">
+        <img src="{{ logo_path }}" class="logo">
+
+        <h1>CERTIFICADO DE CONCLUSÃO</h1>
+        <h2>Certificamos com alegria que o casal</h2>
+
+        <div class="casal-nome">{{ matricula.casal.nomes_juntos }}</div>
+
+        <h2>concluiu com êxito todos os requisitos do curso</h2>
+        <div class="curso-nome">"{{ matricula.curso.nome }}"</div>
+
+        <p>Carga horária de {{ matricula.curso.carga_horaria }} horas.</p>
+        <p>Concedido em {{ data_geracao|date:"d" }} de {{ data_geracao|date:"F" }} de {{ data_geracao|date:"Y" }}.</p>
+
+        <div class="assinaturas">
+            <div class="assinatura-box" style="margin-right: 10%;">
+                <p><strong>Liderança do Ministério de Casais</strong></p>
+            </div>
+            <div class="assinatura-box">
+                <p><strong>Pastores Seniores</strong></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

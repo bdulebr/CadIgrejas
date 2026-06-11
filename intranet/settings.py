@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'almoxarifado',
     'pdv',
     'visitantes',
+    'ministerio_casais',
 ]
 
 MIDDLEWARE = [
