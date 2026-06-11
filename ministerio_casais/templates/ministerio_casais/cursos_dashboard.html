@@ -1,0 +1,107 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Cursos - Ministério de Casais{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                <i data-lucide="book-open" class="w-8 h-8 text-rose-500"></i>
+                Gestão de Cursos
+            </h1>
+            <p class="text-gray-400">Cadastre cursos e eventos voltados ao Ministério de Casais.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'dashboard_casais' %}" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2 border border-gray-700">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar
+            </a>
+            <button @click="$dispatch('open-modal', 'modal-add-curso')" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-medium shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> Novo Curso
+            </button>
+        </div>
+    </div>
+
+    <!-- Lista de Cursos -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {% for curso in cursos %}
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl p-6 hover:border-rose-500/50 transition-colors">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-3 bg-gray-800 rounded-xl">
+                    <i data-lucide="graduation-cap" class="w-6 h-6 text-rose-500"></i>
+                </div>
+                <span class="bg-gray-800 text-gray-300 text-xs px-3 py-1 rounded-full font-medium">{{ curso.matriculas.count }} Matriculados</span>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">{{ curso.nome }}</h3>
+            <p class="text-sm text-gray-400 mb-4">{{ curso.descricao|truncatechars:80 }}</p>
+
+            <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">
+                <div class="flex items-center gap-1"><i data-lucide="clock" class="w-4 h-4"></i> {{ curso.carga_horaria }}h</div>
+                <div class="flex items-center gap-1"><i data-lucide="dollar-sign" class="w-4 h-4 text-green-400"></i> R$ {{ curso.valor_curso }}</div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-1 md:col-span-3 text-center py-12 bg-gray-900 border border-gray-700 rounded-2xl border-dashed">
+            <i data-lucide="book-x" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
+            <h3 class="text-lg font-medium text-white mb-2">Nenhum curso cadastrado</h3>
+            <p class="text-gray-400">Crie o primeiro curso do ministério (ex: Casados para Sempre).</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal Adicionar Curso -->
+<div x-data="{ open: false }"
+     @open-modal.window="if ($event.detail === 'modal-add-curso') open = true"
+     @keydown.escape.window="open = false"
+     x-show="open"
+     style="display: none;"
+     class="fixed inset-0 z-[99999] overflow-y-auto"
+     aria-labelledby="modal-title" role="dialog" aria-modal="true">
+
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="open" class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div x-show="open" class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <form action="{% url 'adicionar_curso' %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="book-plus" class="w-6 h-6 text-rose-500"></i> Novo Curso
+                        </h3>
+                        <button type="button" @click="open = false" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Curso *</label>
+                            <input type="text" name="nome" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
+                            <textarea name="descricao" rows="3" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Carga Horária (h)</label>
+                                <input type="number" name="carga_horaria" value="10" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Valor (R$)</label>
+                                <input type="number" step="0.01" name="valor_curso" value="0.00" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 border-t border-gray-700 flex justify-end gap-3">
+                    <button type="button" @click="open = false" class="px-4 py-2 border border-gray-600 text-gray-300 hover:text-white rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg shadow-lg">Salvar Curso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

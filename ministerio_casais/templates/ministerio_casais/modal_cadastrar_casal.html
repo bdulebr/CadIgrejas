@@ -1,0 +1,99 @@
+<!-- Modal Cadastrar Casal -->
+<div x-data="{ open: false }"
+     @open-modal.window="if ($event.detail === 'modal-cadastrar-casal') open = true"
+     @keydown.escape.window="open = false"
+     x-show="open"
+     style="display: none;"
+     class="fixed inset-0 z-[99999] overflow-y-auto"
+     aria-labelledby="modal-title" role="dialog" aria-modal="true">
+
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div x-show="open" x-transition.opacity class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true" @click="open = false"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal panel -->
+        <div x-show="open"
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+             class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] transform transition-all sm:my-8 sm:align-middle sm:max-w-xl w-full">
+
+            <form action="{% url 'cadastrar_casal' %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl leading-6 font-bold text-white flex items-center gap-2" id="modal-title">
+                            <i data-lucide="heart" class="w-6 h-6 text-rose-500"></i>
+                            Novo Casal
+                        </h3>
+                        <button type="button" @click="open = false" class="text-gray-400 hover:text-white transition-colors">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Cônjuge 1 *</label>
+                                <input type="text" name="nome_conjuge_1" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" placeholder="Ex: Marcos Lira">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Cônjuge 2 *</label>
+                                <input type="text" name="nome_conjuge_2" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" placeholder="Ex: Luana Lira">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                                <select name="status_relacionamento" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                                    <option value="Namorados">Namorados</option>
+                                    <option value="Noivos">Noivos</option>
+                                    <option value="Casados" selected>Casados</option>
+                                    <option value="Em Crise">Em Crise</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Bodas (Opcional)</label>
+                                <input type="date" name="data_aniversario_casamento" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Email Cônjuge 1</label>
+                                <input type="email" name="email_1" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Email Cônjuge 2</label>
+                                <input type="email" name="email_2" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Telefone Cônjuge 1</label>
+                                <input type="text" name="telefone_1" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Telefone Cônjuge 2</label>
+                                <input type="text" name="telefone_2" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-rose-400 font-medium">Ao salvar, o sistema enviará automaticamente um e-mail de Boas-Vindas se os e-mails forem informados.</p>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 border-t border-gray-700 flex justify-end gap-3">
+                    <button type="button" @click="open = false" class="px-4 py-2 bg-transparent border border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg font-medium transition-colors">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-medium transition-colors shadow-lg shadow-rose-600/30">Cadastrar Casal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

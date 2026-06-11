@@ -1,0 +1,186 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Kanban Pastoral - Ministério de Casais{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                <i data-lucide="kanban" class="w-8 h-8 text-rose-500"></i>
+                Kanban Pastoral
+            </h1>
+            <p class="text-gray-400">Arraste os casais pelas etapas do ministério e monitore os alertas vermelhos.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'dashboard_casais' %}" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2 border border-gray-700">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Dashboard
+            </a>
+            <button @click="$dispatch('open-modal', 'modal-cadastrar-casal')" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-medium shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> Novo Casal
+            </button>
+        </div>
+    </div>
+
+    <!-- Board -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-start h-[calc(100vh-220px)] pb-10" id="kanban-board">
+
+        <!-- Coluna: Namorados -->
+        <div class="bg-gray-900/50 rounded-2xl border border-gray-700/30 flex flex-col h-full overflow-hidden">
+            <div class="p-4 border-b border-gray-700/50 bg-gray-900">
+                <h2 class="text-lg font-bold text-white flex items-center justify-between">
+                    Namorados
+                    <span class="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">{{ casais_namorados.count }}</span>
+                </h2>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 kanban-column" data-status="Namorados" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for c in casais_namorados %}
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-3 cursor-grab hover:border-rose-500/50 transition-colors" draggable="true" ondragstart="drag(event)" id="casal-{{ c.id }}" data-id="{{ c.id }}">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-white text-sm leading-tight">{{ c.nomes_juntos }}</h3>
+                        <a href="{% url 'perfil_casal' c.id %}" class="text-gray-400 hover:text-rose-400"><i data-lucide="external-link" class="w-4 h-4"></i></a>
+                    </div>
+                    <p class="text-xs text-gray-400"><i data-lucide="phone" class="w-3 h-3 inline"></i> {{ c.telefone_1|default:"Sem tel" }}</p>
+                </div>
+                {% empty %}
+                <div class="text-center text-gray-500 text-sm py-4 border-2 border-dashed border-gray-700 rounded-xl kanban-empty">Arraste para cá</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Coluna: Noivos -->
+        <div class="bg-gray-900/50 rounded-2xl border border-gray-700/30 flex flex-col h-full overflow-hidden">
+            <div class="p-4 border-b border-gray-700/50 bg-gray-900">
+                <h2 class="text-lg font-bold text-white flex items-center justify-between">
+                    Noivos
+                    <span class="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">{{ casais_noivos.count }}</span>
+                </h2>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 kanban-column" data-status="Noivos" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for c in casais_noivos %}
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-3 cursor-grab hover:border-rose-500/50 transition-colors" draggable="true" ondragstart="drag(event)" id="casal-{{ c.id }}" data-id="{{ c.id }}">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-white text-sm leading-tight">{{ c.nomes_juntos }}</h3>
+                        <a href="{% url 'perfil_casal' c.id %}" class="text-gray-400 hover:text-rose-400"><i data-lucide="external-link" class="w-4 h-4"></i></a>
+                    </div>
+                    <p class="text-xs text-gray-400"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> {{ c.trilha_noivos_etapa }} Etapa(s)</p>
+                </div>
+                {% empty %}
+                <div class="text-center text-gray-500 text-sm py-4 border-2 border-dashed border-gray-700 rounded-xl kanban-empty">Arraste para cá</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Coluna: Casados -->
+        <div class="bg-gray-900/50 rounded-2xl border border-gray-700/30 flex flex-col h-full overflow-hidden">
+            <div class="p-4 border-b border-gray-700/50 bg-gray-900">
+                <h2 class="text-lg font-bold text-white flex items-center justify-between">
+                    Casados
+                    <span class="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">{{ casais_casados.count }}</span>
+                </h2>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 kanban-column" data-status="Casados" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for c in casais_casados %}
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-3 cursor-grab hover:border-rose-500/50 transition-colors" draggable="true" ondragstart="drag(event)" id="casal-{{ c.id }}" data-id="{{ c.id }}">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-white text-sm leading-tight">{{ c.nomes_juntos }}</h3>
+                        <a href="{% url 'perfil_casal' c.id %}" class="text-gray-400 hover:text-rose-400"><i data-lucide="external-link" class="w-4 h-4"></i></a>
+                    </div>
+                    {% if c.data_aniversario_casamento %}
+                    <p class="text-xs text-rose-400"><i data-lucide="gift" class="w-3 h-3 inline"></i> Bodas: {{ c.data_aniversario_casamento|date:"d/m/Y" }}</p>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center text-gray-500 text-sm py-4 border-2 border-dashed border-gray-700 rounded-xl kanban-empty">Arraste para cá</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Coluna: Em Crise -->
+        <div class="bg-red-900/20 rounded-2xl border border-red-700/30 flex flex-col h-full overflow-hidden relative">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-red-900/10 pointer-events-none"></div>
+            <div class="p-4 border-b border-red-700/30 bg-red-950/50">
+                <h2 class="text-lg font-bold text-red-400 flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Em Crise</span>
+                    <span class="bg-red-900/50 text-red-200 text-xs px-2 py-1 rounded-full">{{ casais_crise.count }}</span>
+                </h2>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 kanban-column" data-status="Em Crise" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for c in casais_crise %}
+                <div class="bg-red-950 p-4 rounded-xl border border-red-800/50 mb-3 cursor-grab hover:border-red-500 transition-colors" draggable="true" ondragstart="drag(event)" id="casal-{{ c.id }}" data-id="{{ c.id }}">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-red-100 text-sm leading-tight">{{ c.nomes_juntos }}</h3>
+                        <a href="{% url 'perfil_casal' c.id %}" class="text-red-400 hover:text-red-300"><i data-lucide="external-link" class="w-4 h-4"></i></a>
+                    </div>
+                    <div class="flex items-center gap-1 text-xs text-red-300">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Alerta Vermelho
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-red-500/50 text-sm py-4 border-2 border-dashed border-red-900/50 rounded-xl kanban-empty">Arraste para cá</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function allowDrop(ev) {
+        ev.preventDefault();
+        ev.currentTarget.classList.add('bg-gray-800/30');
+    }
+
+    function drag(ev) {
+        ev.dataTransfer.setData("text", ev.target.id);
+        ev.target.classList.add('opacity-50');
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+
+        document.querySelectorAll('.kanban-column').forEach(col => {
+            col.classList.remove('bg-gray-800/30');
+        });
+
+        var data = ev.dataTransfer.getData("text");
+        var draggedElement = document.getElementById(data);
+        if(!draggedElement) return;
+
+        draggedElement.classList.remove('opacity-50');
+
+        var targetColumn = ev.currentTarget;
+        var novoStatus = targetColumn.getAttribute('data-status');
+        var casalId = draggedElement.getAttribute('data-id');
+
+        // Remove a mensagem de vazio, se existir
+        var emptyMsg = targetColumn.querySelector('.kanban-empty');
+        if (emptyMsg) emptyMsg.remove();
+
+        targetColumn.appendChild(draggedElement);
+
+        // Fetch API request to update status
+        fetch(`/casais/atualizar-status/${casalId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `status=${encodeURIComponent(novoStatus)}`
+        })
+        .then(response => {
+            if(!response.ok) {
+                alert('Erro ao atualizar status do casal.');
+            }
+        });
+    }
+
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        col.addEventListener('dragleave', function(ev) {
+            ev.currentTarget.classList.remove('bg-gray-800/30');
+        });
+    });
+</script>
+{% include 'ministerio_casais/modal_cadastrar_casal.html' %}
+{% endblock %}
