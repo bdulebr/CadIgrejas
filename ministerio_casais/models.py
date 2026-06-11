@@ -25,6 +25,10 @@ class Casal(models.Model):
     endereco = models.TextField('Endereço', blank=True, null=True)
     data_cadastro = models.DateTimeField(auto_now_add=True)
 
+    foto_casal = models.ImageField('Foto do Casal', upload_to='casais/fotos/', blank=True, null=True)
+    foto_conjuge_1 = models.ImageField('Foto Cônjuge 1', upload_to='casais/fotos/', blank=True, null=True)
+    foto_conjuge_2 = models.ImageField('Foto Cônjuge 2', upload_to='casais/fotos/', blank=True, null=True)
+
     # Campo de Gamificação / Trilha de Noivos
     trilha_noivos_etapa = models.IntegerField('Etapa Trilha de Noivos', default=0, help_text="0: N/A, 1: Iniciado, 2: Curso Feito, 3: Aconselhamento, 4: Altar")
 
@@ -46,6 +50,14 @@ class Casal(models.Model):
 class HistoricoAconselhamentoCasal(models.Model):
     casal = models.ForeignKey(Casal, on_delete=models.CASCADE, related_name='historicos_aconselhamento')
     data_sessao = models.DateTimeField(default=timezone.now)
+
+    ATENDIMENTO_CHOICES = (
+        ('Casal', 'Casal'),
+        ('Apenas Cônjuge 1', 'Apenas Cônjuge 1'),
+        ('Apenas Cônjuge 2', 'Apenas Cônjuge 2'),
+    )
+    atendimento_para = models.CharField('Atendimento para', max_length=50, choices=ATENDIMENTO_CHOICES, default='Casal')
+
     pastor_conselheiro = models.CharField('Pastor / Conselheiro', max_length=100)
     observacoes = models.TextField('Observações da Sessão')
     nivel_crise = models.IntegerField('Nível de Crise (1 a 5)', default=1, help_text="1: Saudável, 5: Alerta Vermelho / Separação")
@@ -81,6 +93,7 @@ class MatriculaCursoCasal(models.Model):
 
     percentual_conclusao = models.IntegerField('Progresso (%)', default=0)
     aprovado = models.BooleanField('Aprovado / Certificado', default=False)
+    certificado_arquivo = models.FileField('Arquivo do Certificado', upload_to='casais/certificados/', blank=True, null=True)
 
     def __str__(self):
         return f"{self.casal.nomes_juntos} - {self.curso.nome}"

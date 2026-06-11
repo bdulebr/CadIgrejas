@@ -90,6 +90,14 @@ def cadastrar_casal(request):
             telefone_1=telefone_1,
             telefone_2=telefone_2
         )
+
+        if request.FILES.get('foto_casal'):
+            casal.foto_casal = request.FILES.get('foto_casal')
+        if request.FILES.get('foto_conjuge_1'):
+            casal.foto_conjuge_1 = request.FILES.get('foto_conjuge_1')
+        if request.FILES.get('foto_conjuge_2'):
+            casal.foto_conjuge_2 = request.FILES.get('foto_conjuge_2')
+
         if data_aniversario_casamento:
             casal.data_aniversario_casamento = data_aniversario_casamento
 
@@ -100,11 +108,13 @@ def cadastrar_casal(request):
     return redirect('dashboard_casais')
 
 @login_required
-def exportar_certificados(request, matricula_id):
+def exportar_relatorio_individual_casais(request, casal_id):
     if not check_permission(request.user):
         return HttpResponse("Acesso Negado.", status=403)
 
-    matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+    casal = get_object_or_404(Casal, id=casal_id)
+    historico = casal.historicos_aconselhamento.all().order_by('-data_sessao')
+    matriculas = casal.matriculas_cursos.all().order_by('-data_matricula')
 
     from core.models import ConfiguracaoSistema
     sys_config = ConfiguracaoSistema.objects.first()
@@ -113,8 +123,10 @@ def exportar_certificados(request, matricula_id):
     else:
         logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
 
-    html_str = render_to_string('ministerio_casais/pdf_certificado.html', {
-        'matricula': matricula,
+    html_str = render_to_string('ministerio_casais/pdf_relatorio_individual.html', {
+        'casal': casal,
+        'historico': historico,
+        'matriculas': matriculas,
         'data_geracao': timezone.now(),
         'logo_path': logo_path
     })
@@ -124,13 +136,27 @@ def exportar_certificados(request, matricula_id):
     pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result)
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="certificado_{matricula.casal.id}.pdf"'
+        response['Content-Disposition'] = f'inline; filename="dossie_casal_{casal.id}.pdf"'
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
 
+@login_required
+def upload_certificado(request, matricula_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+
+    matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+    if request.method == 'POST' and request.FILES.get('certificado_arquivo'):
+        matricula.certificado_arquivo = request.FILES.get('certificado_arquivo')
+        matricula.aprovado = True
+        matricula.percentual_conclusao = 100
+        matricula.save()
+        messages.success(request, 'Certificado anexado com sucesso!')
+    return redirect('perfil_casal', casal_id=matricula.casal.id)
+
 
 @login_required
-def kanban_casais(request):
+def painel_pastoral_casais(request):
     if not check_permission(request.user):
         return HttpResponse("Acesso Negado.", status=403)
 
@@ -146,7 +172,7 @@ def kanban_casais(request):
         'casais_casados': casais_casados,
         'casais_crise': casais_crise,
     }
-    return render(request, 'ministerio_casais/kanban.html', context)
+    return render(request, 'ministerio_casais/painel.html', context)
 
 @login_required
 def atualizar_status_casal(request, casal_id):
@@ -170,13 +196,20 @@ def nova_sessao_aconselhamento(request, casal_id):
         pastor = request.POST.get('pastor_conselheiro')
         nivel = request.POST.get('nivel_crise')
         obs = request.POST.get('observacoes')
+        data_sessao = request.POST.get('data_sessao')
+        atendimento_para = request.POST.get('atendimento_para', 'Casal')
 
-        HistoricoAconselhamentoCasal.objects.create(
+        historico = HistoricoAconselhamentoCasal.objects.create(
             casal=casal,
             pastor_conselheiro=pastor,
             nivel_crise=nivel,
-            observacoes=obs
+            observacoes=obs,
+            atendimento_para=atendimento_para
         )
+
+        if data_sessao:
+            historico.data_sessao = data_sessao
+            historico.save()
         # Se nivel de crise for alto (4 ou 5), muda o status do casal para 'Em Crise'
         if int(nivel) >= 4 and casal.status_relacionamento != 'Em Crise':
             casal.status_relacionamento = 'Em Crise'
@@ -201,13 +234,17 @@ def adicionar_curso(request):
         descricao = request.POST.get('descricao')
         valor = request.POST.get('valor_curso', 0.00)
         carga = request.POST.get('carga_horaria', 10)
+        data_inicio = request.POST.get('data_inicio')
 
-        CursoCasal.objects.create(
+        curso = CursoCasal(
             nome=nome,
             descricao=descricao,
             valor_curso=valor,
             carga_horaria=carga
         )
+        if data_inicio:
+            curso.data_inicio = data_inicio
+        curso.save()
         messages.success(request, 'Curso adicionado com sucesso!')
     return redirect('cursos_casais')
 
@@ -256,6 +293,14 @@ def editar_casal(request, casal_id):
         casal.email_2 = request.POST.get('email_2')
         casal.telefone_1 = request.POST.get('telefone_1')
         casal.telefone_2 = request.POST.get('telefone_2')
+
+        if request.FILES.get('foto_casal'):
+            casal.foto_casal = request.FILES.get('foto_casal')
+        if request.FILES.get('foto_conjuge_1'):
+            casal.foto_conjuge_1 = request.FILES.get('foto_conjuge_1')
+        if request.FILES.get('foto_conjuge_2'):
+            casal.foto_conjuge_2 = request.FILES.get('foto_conjuge_2')
+
         casal.save()
         messages.success(request, 'Casal atualizado com sucesso!')
     return redirect('perfil_casal', casal_id=casal.id)

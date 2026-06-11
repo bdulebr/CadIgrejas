@@ -1,109 +1,217 @@
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block title %}Ministério de Casais - Dashboard{% endblock %}
-{% block header_title %}Ministério de Casais{% endblock %}
+{% block title %}Ministério de Casais{% endblock %}
+
+{% block header_title %}
+<div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-500 to-rose-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+        <i data-lucide="heart" class="w-5 h-5 text-white"></i>
+    </div>
+    <span class="text-white font-bold tracking-tight">Ministério de Casais</span>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<!-- Botão Voltar -->
+<div class="mb-6">
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span class="font-medium text-sm">Voltar ao Início</span>
+    </a>
+</div>
 
-    <!-- Header Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Header / Actions -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div>
+        <h1 class="text-3xl font-black text-white tracking-tight">Gestão de Casais</h1>
+        <p class="text-gray-400 mt-1 text-sm">Acompanhamento pastoral, eventos e saúde dos casamentos.</p>
+    </div>
+    <div class="flex items-center gap-3 w-full sm:w-auto">
+        <button @click="$dispatch('open-modal', 'modal-cadastrar-casal')" class="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(225,29,72,0.3)] hover:shadow-[0_0_30px_rgba(225,29,72,0.5)] transition-all transform hover:-translate-y-0.5">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            <span>Novo Casal</span>
+        </button>
+        <a href="{% url 'exportar_relatorio_geral_casais' %}" class="flex-1 sm:flex-none px-6 py-3 bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl group">
+            <i data-lucide="file-text" class="w-5 h-5 text-gray-400 group-hover:text-pink-400 transition-colors"></i>
+            <span>Relatório</span>
+        </a>
+    </div>
+</div>
 
-        <div class="bg-gray-800/60 backdrop-blur-md border border-gray-700/50 rounded-2xl p-6 flex items-center justify-between shadow-xl">
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-pink-500/10 rounded-full blur-2xl group-hover:bg-pink-500/20 transition-all"></div>
+        <div class="flex justify-between items-start">
             <div>
                 <p class="text-sm font-medium text-gray-400 mb-1">Total de Casais</p>
-                <h3 class="text-3xl font-black text-white">{{ total_casais }}</h3>
+                <h3 class="text-4xl font-black text-white tracking-tight">{{ total_casais }}</h3>
             </div>
-            <div class="w-12 h-12 bg-rose-500/20 text-rose-400 rounded-xl flex items-center justify-center">
-                <i data-lucide="users" class="w-6 h-6"></i>
-            </div>
-        </div>
-
-        <div class="bg-gray-800/60 backdrop-blur-md border border-gray-700/50 rounded-2xl p-6 flex items-center justify-between shadow-xl">
-            <div>
-                <p class="text-sm font-medium text-gray-400 mb-1">Noivos na Trilha</p>
-                <h3 class="text-3xl font-black text-yellow-400">{{ noivos_na_trilha }}</h3>
-            </div>
-            <div class="w-12 h-12 bg-yellow-500/20 text-yellow-400 rounded-xl flex items-center justify-center">
-                <i data-lucide="map" class="w-6 h-6"></i>
-            </div>
-        </div>
-
-        <div class="bg-gray-800/60 backdrop-blur-md border border-gray-700/50 rounded-2xl p-6 flex items-center justify-between shadow-xl">
-            <div>
-                <p class="text-sm font-medium text-gray-400 mb-1">Bodas (Aniversários) Mês</p>
-                <h3 class="text-3xl font-black text-white">{{ bodas_mes }}</h3>
-            </div>
-            <div class="w-12 h-12 bg-pink-500/20 text-pink-400 rounded-xl flex items-center justify-center">
-                <i data-lucide="gift" class="w-6 h-6"></i>
-            </div>
-        </div>
-
-        <div class="bg-gray-800/60 backdrop-blur-md border border-rose-900/50 rounded-2xl p-6 flex items-center justify-between shadow-[0_0_20px_rgba(225,29,72,0.2)]">
-            <div>
-                <p class="text-sm font-medium text-rose-300 mb-1">Alertas Vermelhos</p>
-                <h3 class="text-3xl font-black text-rose-500">{{ alertas_vermelhos }}</h3>
-            </div>
-            <div class="w-12 h-12 bg-rose-500/20 text-rose-500 rounded-xl flex items-center justify-center animate-pulse">
-                <i data-lucide="siren" class="w-6 h-6"></i>
+            <div class="w-12 h-12 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center shadow-inner">
+                <i data-lucide="users" class="w-6 h-6 text-pink-400"></i>
             </div>
         </div>
     </div>
 
-    <!-- Lista de Casais -->
-    <div class="bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-4 shadow-2xl">
-        <div class="flex justify-between items-center mb-6 px-2">
-            <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                <i data-lucide="heart" class="w-5 h-5 text-rose-500"></i> Casais Cadastrados
-            </h2>
-            <div class="flex gap-3">
-                <a href="{% url 'exportar_relatorio_geral_casais' %}" target="_blank" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors flex items-center gap-2 border border-gray-700 font-medium">
-                    <i data-lucide="file-down" class="w-4 h-4 text-gray-400"></i> <span class="hidden sm:inline">Relatório</span>
-                </a>
-                <a href="{% url 'cursos_casais' %}" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors flex items-center gap-2 border border-gray-700 font-medium">
-                    <i data-lucide="book-open" class="w-4 h-4 text-purple-400"></i> <span class="hidden sm:inline">Cursos</span>
-                </a>
-                <a href="{% url 'kanban_casais' %}" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors flex items-center gap-2 border border-gray-700 font-medium">
-                    <i data-lucide="kanban" class="w-4 h-4 text-yellow-400"></i> <span class="hidden sm:inline">Kanban</span>
-                </a>
-                <button @click="$dispatch('open-modal', 'modal-cadastrar-casal')" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-medium shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all flex items-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Novo Casal</span>
-                </button>
+    <div class="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Alertas Vermelhos</p>
+                <h3 class="text-4xl font-black text-red-500 tracking-tight">{{ alertas_vermelhos }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-red-900/30 border border-red-500/30 flex items-center justify-center shadow-inner">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 animate-pulse"></i>
             </div>
         </div>
+        <p class="text-xs text-gray-500 mt-2">Nível 4 ou 5 nos últimos 30 dias.</p>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for casal in casais %}
-            <div class="bg-gray-800/80 border {% if casal.status_relacionamento == 'Em Crise' %}border-rose-500/50 shadow-rose-500/20{% else %}border-gray-700/50 hover:shadow-rose-500/10{% endif %} rounded-2xl p-5 shadow-lg transition-all">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-inner bg-rose-600">
-                            {{ casal.nome_conjuge_1|make_list|first|upper }}{{ casal.nome_conjuge_2|make_list|first|upper }}
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-white text-lg leading-tight">{{ casal.nomes_juntos }}</h4>
-                            <span class="text-xs px-2 py-0.5 rounded-full {% if casal.status_relacionamento == 'Em Crise' %}bg-rose-500/20 text-rose-400{% elif casal.status_relacionamento == 'Noivos' %}bg-yellow-500/20 text-yellow-400{% else %}bg-gray-700 text-gray-300{% endif %} font-bold">
-                                {{ casal.status_relacionamento }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div class="pt-4 border-t border-gray-700/50 flex justify-end">
-                    <a href="{% url 'perfil_casal' casal.id %}" class="px-4 py-2 bg-white/5 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg transition-colors font-medium text-sm">
-                        Ver Perfil
-                    </a>
-                </div>
+    <div class="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Bodas no Mês</p>
+                <h3 class="text-4xl font-black text-white tracking-tight">{{ bodas_mes }}</h3>
             </div>
-            {% empty %}
-            <div class="col-span-full py-12 text-center border border-gray-800 border-dashed rounded-2xl">
-                <i data-lucide="heart-off" class="w-12 h-12 text-gray-600 mx-auto mb-3"></i>
-                <h3 class="text-xl font-bold text-gray-400 mb-1">Nenhum casal cadastrado ainda.</h3>
+            <div class="w-12 h-12 rounded-xl bg-purple-900/30 border border-purple-500/30 flex items-center justify-center shadow-inner">
+                <i data-lucide="gift" class="w-6 h-6 text-purple-400"></i>
             </div>
-            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Cursos Ativos</p>
+                <h3 class="text-4xl font-black text-white tracking-tight">{{ total_cursos }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-blue-900/30 border border-blue-500/30 flex items-center justify-center shadow-inner">
+                <i data-lucide="book-open" class="w-6 h-6 text-blue-400"></i>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Atalhos -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <a href="{% url 'painel_pastoral_casais' %}" class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 hover:border-pink-500/50 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all group relative overflow-hidden flex items-center gap-6">
+        <div class="w-16 h-16 rounded-2xl bg-pink-500/20 flex items-center justify-center shrink-0 border border-pink-500/30 group-hover:scale-110 transition-transform">
+            <i data-lucide="trello" class="w-8 h-8 text-pink-400"></i>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold text-white mb-1 group-hover:text-pink-400 transition-colors">Painel Pastoral</h3>
+            <p class="text-gray-400 text-sm">Visualize e mova casais entre status em um quadro visual e interativo.</p>
+        </div>
+        <i data-lucide="chevron-right" class="w-6 h-6 text-gray-600 absolute right-6 group-hover:text-pink-400 transition-colors transform group-hover:translate-x-2"></i>
+    </a>
+
+    <a href="{% url 'cursos_casais' %}" class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 hover:border-purple-500/50 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all group relative overflow-hidden flex items-center gap-6">
+        <div class="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30 group-hover:scale-110 transition-transform">
+            <i data-lucide="graduation-cap" class="w-8 h-8 text-purple-400"></i>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold text-white mb-1 group-hover:text-purple-400 transition-colors">Gestão de Cursos</h3>
+            <p class="text-gray-400 text-sm">Cadastre cursos, gerencie matrículas e aprove certificados para casais.</p>
+        </div>
+        <i data-lucide="chevron-right" class="w-6 h-6 text-gray-600 absolute right-6 group-hover:text-purple-400 transition-colors transform group-hover:translate-x-2"></i>
+    </a>
+</div>
+
+<!-- Listagem de Casais -->
+<div class="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="list" class="w-5 h-5 text-gray-400"></i>
+            Diretório de Casais
+        </h3>
+        <div class="relative w-64">
+            <input type="text" placeholder="Buscar casal..." class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-pink-500 outline-none">
+            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-800/50 text-gray-400 text-xs uppercase tracking-wider">
+                    <th class="px-6 py-4 font-semibold">Casal</th>
+                    <th class="px-6 py-4 font-semibold">Status</th>
+                    <th class="px-6 py-4 font-semibold">Contato</th>
+                    <th class="px-6 py-4 font-semibold">Bodas</th>
+                    <th class="px-6 py-4 text-right font-semibold">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800/50">
+                {% for casal in casais %}
+                <tr class="hover:bg-gray-800/30 transition-colors group">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            {% if casal.foto_casal %}
+                                <img src="{{ casal.foto_casal.url }}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-700">
+                            {% else %}
+                                <div class="w-10 h-10 rounded-full bg-pink-500/20 text-pink-500 flex items-center justify-center font-bold text-sm border-2 border-pink-500/30">
+                                    {{ casal.primeiro_nome_1|first|upper }}{{ casal.primeiro_nome_2|first|upper }}
+                                </div>
+                            {% endif %}
+                            <div>
+                                <p class="text-white font-bold">{{ casal.nome_conjuge_1 }} & {{ casal.nome_conjuge_2 }}</p>
+                                <p class="text-xs text-gray-500">Cadastrado em {{ casal.data_cadastro|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if casal.status_relacionamento == 'Casados' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20">Casados</span>
+                        {% elif casal.status_relacionamento == 'Em Crise' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">Em Crise</span>
+                        {% elif casal.status_relacionamento == 'Noivos' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Noivos</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gray-500/10 text-gray-400 border border-gray-500/20">{{ casal.status_relacionamento }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex gap-2">
+                            {% if casal.telefone_1 %}
+                                <a href="https://wa.me/55{{ casal.telefone_1|slugify }}" target="_blank" class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-green-400 hover:bg-gray-700 transition-colors" title="{{ casal.primeiro_nome_1 }}">
+                                    <i data-lucide="phone" class="w-4 h-4"></i>
+                                </a>
+                            {% endif %}
+                            {% if casal.telefone_2 %}
+                                <a href="https://wa.me/55{{ casal.telefone_2|slugify }}" target="_blank" class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-green-400 hover:bg-gray-700 transition-colors" title="{{ casal.primeiro_nome_2 }}">
+                                    <i data-lucide="phone" class="w-4 h-4"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                        {{ casal.data_aniversario_casamento|date:"d M Y"|default:"Não informado" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                        <a href="{% url 'perfil_casal' casal.id %}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-pink-600 text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-colors border border-gray-700 hover:border-pink-500">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            Detalhes
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="users" class="w-8 h-8 text-gray-600"></i>
+                        </div>
+                        <p>Nenhum casal cadastrado ainda no ministério.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 {% include 'ministerio_casais/modal_cadastrar_casal.html' %}
+
 {% endblock %}

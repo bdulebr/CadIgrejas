@@ -168,14 +168,8 @@ def cadastrar_visitante(request):
             cadastrado_por=request.user
         )
 
-        # Registrar a primeira visita (Hoje)
-        VisitaCulto.objects.create(
-            visitante=visitante,
-            data_culto=timezone.now().date(),
-            nome_culto='Culto da Família',
-            modalidade='Presencial',
-            observacoes="Primeira visita registrada via cadastro rápido."
-        )
+        # Removido o cadastro automático (mock) de Visita Culto,
+        # as visitas devem ser registradas manualmente no perfil.
 
         # Enviar e-mail de boas-vindas assíncrono se possuir e-mail
         if email:
@@ -334,9 +328,9 @@ def adicionar_visita(request, visitante_id):
     visitante = get_object_or_404(Visitante, id=visitante_id)
     if request.method == 'POST':
         data_culto = request.POST.get('data_culto')
-        nome_culto = request.POST.get('nome_culto', 'Culto da Família')
+        nome_culto = request.POST.get('nome_culto')
         modalidade = request.POST.get('modalidade', 'Presencial')
-        observacoes = request.POST.get('observacoes')
+        observacoes = request.POST.get('observacoes', '')
 
         VisitaCulto.objects.create(
             visitante=visitante,
