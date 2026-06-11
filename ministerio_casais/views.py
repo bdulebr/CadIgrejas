@@ -11,8 +11,13 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 def check_permission(user):
-    # Regra Zero-Trust: Apenas Super Admin ou líder do ministério de casais pode ver
-    return user.nivel_hierarquico == 'super_admin' or user.departamento_responsavel and 'casal' in user.departamento_responsavel.nome.lower()
+    is_global = user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor'] or user.is_superuser
+    if is_global: return True
+    try:
+        depts_str = " ".join(user.departamentos_liderados.values_list('nome', flat=True)).lower()
+        return 'casal' in depts_str or 'família' in depts_str
+    except Exception:
+        return False
 
 @login_required
 def dashboard_casais(request):
