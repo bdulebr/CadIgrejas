@@ -35,6 +35,14 @@ class Casal(models.Model):
     def nomes_juntos(self):
         return f"{self.nome_conjuge_1} e {self.nome_conjuge_2}"
 
+    @property
+    def primeiro_nome_1(self):
+        return self.nome_conjuge_1.split()[0] if self.nome_conjuge_1 else ""
+
+    @property
+    def primeiro_nome_2(self):
+        return self.nome_conjuge_2.split()[0] if self.nome_conjuge_2 else ""
+
 class HistoricoAconselhamentoCasal(models.Model):
     casal = models.ForeignKey(Casal, on_delete=models.CASCADE, related_name='historicos_aconselhamento')
     data_sessao = models.DateTimeField(default=timezone.now)
