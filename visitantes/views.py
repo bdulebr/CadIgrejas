@@ -18,7 +18,11 @@ from xhtml2pdf import pisa
 
 def enviar_email_boas_vindas_background(nome, email, base_url):
     try:
-        html_message = render_to_string('visitantes/email_boas_vindas.html', {'nome': nome, 'base_url': base_url})
+        from core.models import ConfiguracaoSistema
+        sys_config = ConfiguracaoSistema.objects.first()
+        logo_url = base_url + sys_config.igreja_logo.url if sys_config and sys_config.igreja_logo else base_url + '/static/img/logo.jpg'
+
+        html_message = render_to_string('visitantes/email_boas_vindas.html', {'nome': nome, 'base_url': base_url, 'logo_url': logo_url})
         plain_message = strip_tags(html_message)
         send_mail(
             subject='Bem-vindo(a) à Palavra de Vida!',
@@ -33,7 +37,11 @@ def enviar_email_boas_vindas_background(nome, email, base_url):
 
 def enviar_email_novo_membro_background(nome, email, base_url):
     try:
-        html_message = render_to_string('visitantes/email_novo_membro.html', {'nome': nome, 'base_url': base_url})
+        from core.models import ConfiguracaoSistema
+        sys_config = ConfiguracaoSistema.objects.first()
+        logo_url = base_url + sys_config.igreja_logo.url if sys_config and sys_config.igreja_logo else base_url + '/static/img/logo.jpg'
+
+        html_message = render_to_string('visitantes/email_novo_membro.html', {'nome': nome, 'base_url': base_url, 'logo_url': logo_url})
         plain_message = strip_tags(html_message)
         send_mail(
             subject='Bem-vindo à Família Palavra de Vida Sede!',
@@ -347,7 +355,14 @@ def exportar_relatorio_geral_pdf(request):
         return HttpResponse("Acesso Negado", status=403)
 
     visitantes = Visitante.objects.all().order_by('-data_cadastro')
-    logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+
+    from core.models import ConfiguracaoSistema
+    sys_config = ConfiguracaoSistema.objects.first()
+    if sys_config and sys_config.igreja_logo:
+        logo_path = sys_config.igreja_logo.path
+    else:
+        logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+
     html_str = render_to_string('visitantes/pdf_relatorio_geral.html', {'visitantes': visitantes, 'data_geracao': timezone.now(), 'logo_path': logo_path})
 
     result = BytesIO()
@@ -369,12 +384,19 @@ def exportar_relatorio_individual_pdf(request, visitante_id):
     visitas = visitante.visitas.all().order_by('-data_culto')
     acompanhamentos = visitante.registros_acompanhamento.all().order_by('-data_contato')
 
+    from core.models import ConfiguracaoSistema
+    sys_config = ConfiguracaoSistema.objects.first()
+    if sys_config and sys_config.igreja_logo:
+        logo_path = sys_config.igreja_logo.path
+    else:
+        logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+
     html_str = render_to_string('visitantes/pdf_relatorio_individual.html', {
         'visitante': visitante,
         'visitas': visitas,
         'acompanhamentos': acompanhamentos,
         'data_geracao': timezone.now(),
-        'logo_path': os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+        'logo_path': logo_path
     })
 
     result = BytesIO()
