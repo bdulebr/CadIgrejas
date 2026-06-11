@@ -1,0 +1,418 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Perfil: {{ visitante.nome_completo }}{% endblock %}
+{% block header_title %}Perfil do Visitante{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'visitantes_dashboard' %}" class="text-sm text-gray-400 hover:text-white flex items-center gap-1 transition-colors">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Dashboard
+    </a>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+    <!-- COLUNA 1: INFO E PERFIL -->
+    <div class="xl:col-span-1 space-y-6">
+
+        <!-- Card Perfil Principal -->
+        <div class="bg-gray-800/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div>
+
+            <div class="flex flex-col items-center text-center">
+                <div class="w-24 h-24 rounded-full mb-4 flex items-center justify-center font-bold text-4xl text-white shadow-xl ring-4 ring-gray-900 {% if visitante.tipo == 'Novo Convertido' %}bg-green-500{% else %}bg-pink-500{% endif %}">
+                    {{ visitante.nome_completo|make_list|first|upper }}
+                </div>
+                <h2 class="text-2xl font-black text-white mb-1">{{ visitante.nome_completo }}</h2>
+                    {% if visitante.tornou_se_membro %}
+                        <span class="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30 uppercase tracking-wide">
+                            Membro Integrado
+                        </span>
+                    {% elif visitante.desistiu %}
+                        <span class="px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-bold rounded-full border border-orange-500/30 uppercase tracking-wide">
+                            Desistente / Arquivado
+                        </span>
+                    {% elif visitante.em_acompanhamento %}
+                        <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full border border-green-500/30 uppercase tracking-wide flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> Ativo
+                        </span>
+                    {% else %}
+                        <span class="px-3 py-1 bg-gray-500/20 text-gray-400 text-xs font-bold rounded-full border border-gray-500/30 uppercase tracking-wide">
+                            Inativo
+                        </span>
+                    {% endif %}
+
+                <div class="w-full space-y-3 text-left mt-4">
+                    {% if visitante.telefone %}
+                    <div class="flex items-center gap-3 text-gray-300 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
+                        <i data-lucide="phone" class="w-5 h-5 text-blue-400"></i>
+                        <a href="https://wa.me/55{{ visitante.telefone|slugify }}" target="_blank" class="hover:text-blue-400 font-medium">{{ visitante.telefone }}</a>
+                    </div>
+                    {% endif %}
+
+                    {% if visitante.email %}
+                    <div class="flex items-center gap-3 text-gray-300 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
+                        <i data-lucide="mail" class="w-5 h-5 text-purple-400"></i>
+                        <span class="break-all text-sm font-medium">{{ visitante.email }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if visitante.endereco %}
+                    <div class="flex gap-3 text-gray-300 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-red-400 flex-shrink-0"></i>
+                        <span class="text-sm">{{ visitante.endereco }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Relacionamentos Familiares -->
+        {% if visitante.familiar_vinculado %}
+        <div class="bg-gray-800/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+                Vínculo Familiar
+            </h3>
+            <div class="flex items-center gap-3 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50">
+                <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                    {{ visitante.familiar_vinculado.nome_completo|make_list|first|upper }}
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-white">{{ visitante.familiar_vinculado.nome_completo }}</p>
+                    <a href="{% url 'visitante_perfil' visitante.familiar_vinculado.id %}" class="text-xs text-blue-400 hover:text-blue-300">Ver Perfil</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Ações do Perfil -->
+        <div class="bg-gray-800/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-xl space-y-3">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i data-lucide="settings-2" class="w-5 h-5 text-gray-400"></i>
+                Ações
+            </h3>
+
+            {% if not visitante.tornou_se_membro %}
+            <button @click="$dispatch('open-modal', 'modal-editar-perfil')" class="w-full py-3 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="edit-3" class="w-5 h-5 text-blue-400"></i>
+                Editar Perfil
+            </button>
+            {% endif %}
+
+            <a href="{% url 'exportar_relatorio_individual_visitantes_pdf' visitante.id %}" target="_blank" class="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="file-text" class="w-5 h-5 text-red-400"></i>
+                Exportar Dossiê (PDF)
+            </a>
+
+            {% if not visitante.tornou_se_membro and not visitante.desistiu %}
+            <form action="{% url 'tornar_membro' visitante.id %}" method="POST" onsubmit="return confirm('Deseja marcar esta pessoa como Membro Integrado? Ela sairá do dashboard principal de visitantes e irá para o arquivo de membros.')">
+                {% csrf_token %}
+                <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 mt-2">
+                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                    Tornar Membro (Arquivar)
+                </button>
+            </form>
+
+            <form action="{% url 'desistencia_visitante' visitante.id %}" method="POST" onsubmit="return confirm('Tem certeza? Isso marcará a pessoa como Desistente e encerrará o acompanhamento, enviando-a para o Arquivo.')">
+                {% csrf_token %}
+                <button type="submit" class="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 mt-2">
+                    <i data-lucide="user-minus" class="w-5 h-5"></i>
+                    Desistência (Arquivar)
+                </button>
+            </form>
+            {% endif %}
+
+            <div class="pt-4 mt-4 border-t border-gray-700">
+                <form action="{% url 'excluir_visitante' visitante.id %}" method="POST" onsubmit="return confirm('CUIDADO! Isso irá excluir este visitante e TODO o seu histórico de forma permanente. Deseja continuar?')">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full py-3 bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white border border-red-800/50 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-lg mt-2">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        Excluir Permanentemente
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- COLUNA 2 e 3: TIMELINE / HISTÓRICO -->
+    <div class="xl:col-span-2 space-y-6">
+
+        <!-- Botões de Ação Rápida -->
+        <div class="grid grid-cols-2 gap-4">
+            <button @click="$dispatch('open-modal', 'modal-visita')" class="p-4 bg-gray-800/80 border border-gray-700/50 rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-700 transition-colors shadow-lg group">
+                <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                </div>
+                <span class="font-bold text-white">Registrar Visita</span>
+            </button>
+
+            <button @click="$dispatch('open-modal', 'modal-contato')" class="p-4 bg-gradient-to-r from-pink-600 to-purple-600 border border-pink-500/30 rounded-2xl flex items-center justify-center gap-2 hover:from-pink-500 hover:to-purple-500 transition-colors shadow-[0_0_20px_rgba(219,39,119,0.3)] group">
+                <div class="w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="message-square-plus" class="w-5 h-5"></i>
+                </div>
+                <span class="font-bold text-white">Registrar Contato</span>
+            </button>
+        </div>
+
+        <!-- Timeline -->
+        <div class="bg-gray-800/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-2xl min-h-[500px]">
+            <h3 class="text-xl font-bold text-white mb-6 border-b border-gray-700 pb-4 flex items-center gap-2">
+                <i data-lucide="history" class="w-5 h-5 text-gray-400"></i>
+                Diário de Acompanhamento (CRM)
+            </h3>
+
+            <div class="relative pl-6 sm:pl-8 border-l-2 border-gray-700 space-y-8 ml-2">
+                {% for item in timeline %}
+                    {% if item.tipo == 'visita' %}
+                    <!-- Bloco Visita Culto -->
+                    <div class="relative">
+                        <div class="absolute -left-[35px] sm:-left-[43px] w-8 h-8 rounded-full bg-gray-800 border-2 border-blue-500 flex items-center justify-center z-10 shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                            <i data-lucide="church" class="w-4 h-4 text-blue-400"></i>
+                        </div>
+                        <div class="bg-gray-900/60 border border-gray-700/50 p-4 rounded-xl hover:border-blue-500/50 transition-colors">
+                            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-2 gap-2">
+                                <h4 class="font-bold text-white flex items-center gap-2">
+                                    {{ item.obj.nome_culto }}
+                                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full {% if item.obj.modalidade == 'Presencial' %}bg-green-500/20 text-green-400{% else %}bg-purple-500/20 text-purple-400{% endif %}">{{ item.obj.modalidade }}</span>
+                                </h4>
+                                <span class="text-xs text-gray-400 font-medium bg-gray-800 px-2 py-1 rounded-md">{{ item.data|date:"d M Y" }}</span>
+                            </div>
+                            <p class="text-sm text-gray-300 italic">"{{ item.obj.observacoes|default:'Sem observações específicas registradas.' }}"</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Bloco Contato CRM -->
+                    <div class="relative">
+                        <div class="absolute -left-[35px] sm:-left-[43px] w-8 h-8 rounded-full bg-gray-800 border-2 border-pink-500 flex items-center justify-center z-10 shadow-[0_0_10px_rgba(219,39,119,0.5)]">
+                            {% if item.obj.meio_contato == 'WhatsApp' %}<i data-lucide="message-circle" class="w-4 h-4 text-pink-400"></i>
+                            {% elif item.obj.meio_contato == 'Ligação' %}<i data-lucide="phone-call" class="w-4 h-4 text-pink-400"></i>
+                            {% elif item.obj.meio_contato == 'Visita' %}<i data-lucide="home" class="w-4 h-4 text-pink-400"></i>
+                            {% else %}<i data-lucide="message-square" class="w-4 h-4 text-pink-400"></i>{% endif %}
+                        </div>
+                        <div class="bg-gray-900/60 border border-gray-700/50 p-4 rounded-xl hover:border-pink-500/50 transition-colors">
+                            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-3 gap-2">
+                                <div>
+                                    <h4 class="font-bold text-white flex items-center gap-2">
+                                        Contato via {{ item.obj.meio_contato }}
+                                    </h4>
+                                    <p class="text-[11px] text-gray-500 mt-0.5">Por: {{ item.obj.responsavel.get_full_name|default:item.obj.responsavel.username }}</p>
+                                </div>
+                                <span class="text-xs text-gray-400 font-medium bg-gray-800 px-2 py-1 rounded-md">{{ item.obj.data_contato|date:"d M Y, H:i" }}</span>
+                            </div>
+                            <div class="text-sm text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700/30">
+                                {{ item.obj.resumo_conversa|linebreaksbr }}
+                            </div>
+                            {% if item.obj.proximo_passo %}
+                            <div class="mt-3 text-xs bg-purple-900/20 text-purple-300 p-2 rounded border border-purple-500/20 flex gap-2">
+                                <i data-lucide="arrow-right-circle" class="w-4 h-4 shrink-0"></i>
+                                <span><strong>Próximo Passo:</strong> {{ item.obj.proximo_passo }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% empty %}
+                <div class="text-center py-10">
+                    <i data-lucide="ghost" class="w-12 h-12 text-gray-600 mx-auto mb-3"></i>
+                    <p class="text-gray-400">Nenhum histórico registrado ainda.</p>
+                </div>
+                {% endfor %}
+
+                <!-- Início / Cadastro -->
+                <div class="relative pt-4">
+                    <div class="absolute -left-[31px] sm:-left-[39px] w-6 h-6 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center z-10">
+                        <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 ml-4 italic">Cadastro inicial realizado em {{ visitante.data_cadastro|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Visita -->
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-visita') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="open" class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div x-show="open" class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <form action="{% url 'adicionar_visita' visitante.id %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2"><i data-lucide="calendar-plus" class="w-6 h-6 text-blue-500"></i> Registrar Visita no Culto</h3>
+                        <button type="button" @click="open = false" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Qual Culto/Evento *</label>
+                                <input type="text" name="nome_culto" required placeholder="Ex: Culto da Família" value="Culto da Família" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Modalidade *</label>
+                                <select name="modalidade" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-blue-500 outline-none">
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Live">Online / Live</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Data do Culto *</label>
+                            <input type="date" name="data_culto" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
+                            <textarea name="observacoes" rows="3" placeholder="Ex: Fez apelo, venho acompanhado da família..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-blue-500 outline-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 flex justify-end gap-3">
+                    <button type="button" @click="open = false" class="px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg">Salvar Visita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Contato CRM -->
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-contato') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="open" class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div x-show="open" class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <form action="{% url 'adicionar_acompanhamento' visitante.id %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2"><i data-lucide="message-square-plus" class="w-6 h-6 text-pink-500"></i> Novo Contato</h3>
+                        <button type="button" @click="open = false" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Data e Hora *</label>
+                                <input type="datetime-local" name="data_contato" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:ring-pink-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Meio de Contato *</label>
+                                <select name="meio_contato" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:ring-pink-500">
+                                    <option value="WhatsApp">WhatsApp</option>
+                                    <option value="Ligação">Ligação</option>
+                                    <option value="Presencial">Presencial (No Culto)</option>
+                                    <option value="Visita">Visita no Lar</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Resumo da Conversa *</label>
+                            <textarea name="resumo_conversa" required rows="4" placeholder="O que foi conversado? Como a pessoa está?" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:ring-pink-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Próximo Passo / Ação</label>
+                            <input type="text" name="proximo_passo" placeholder="Ex: Ligar semana que vem, Convidar para GC..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:ring-pink-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 flex justify-end gap-3">
+                    <button type="button" @click="open = false" class="px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-lg">Salvar Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Perfil -->
+<div x-data="{ open: false }"
+     @open-modal.window="if ($event.detail === 'modal-editar-perfil') open = true"
+     @keydown.escape.window="open = false"
+     x-show="open"
+     style="display: none;"
+     class="fixed inset-0 z-[99999] overflow-y-auto"
+     aria-labelledby="modal-title" role="dialog" aria-modal="true">
+
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="open" x-transition.opacity class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div x-show="open"
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+             class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+
+            <form action="{% url 'editar_visitante' visitante.id %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl leading-6 font-bold text-white flex items-center gap-2">
+                            <i data-lucide="edit-3" class="w-6 h-6 text-pink-500"></i>
+                            Editar Perfil
+                        </h3>
+                        <button type="button" @click="open = false" class="text-gray-400 hover:text-white transition-colors">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Nome Completo *</label>
+                            <input type="text" name="nome_completo" required value="{{ visitante.nome_completo }}" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Telefone (WhatsApp)</label>
+                                <input type="text" name="telefone" value="{{ visitante.telefone|default:'' }}" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Tipo</label>
+                                <select name="tipo" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none">
+                                    <option value="Visitante" {% if visitante.tipo == 'Visitante' %}selected{% endif %}>Visitante</option>
+                                    <option value="Novo Convertido" {% if visitante.tipo == 'Novo Convertido' %}selected{% endif %}>Novo Convertido</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">E-mail</label>
+                            <input type="email" name="email" value="{{ visitante.email|default:'' }}" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Bairro / Endereço</label>
+                            <input type="text" name="endereco" value="{{ visitante.endereco|default:'' }}" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-blue-400"></i> Familiar / Relacionamento</label>
+                            <select name="familiar_vinculado_id" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none">
+                                <option value="">Nenhum Vínculo</option>
+                                {% for d in departamentos %}<!-- Ignorando iteracao de todos p n sobrecarregar. Se o user quiser reatribuir familia na edicao, mostramos pelo menos os visitantes, mas como n temos no context, enviaremos apenas se ele for alterar para nulo ou manter -->
+                                {% endfor %}
+                                {% if visitante.familiar_vinculado %}
+                                    <option value="{{ visitante.familiar_vinculado.id }}" selected>{{ visitante.familiar_vinculado.nome_completo }}</option>
+                                {% endif %}
+                            </select>
+                            <p class="text-[11px] text-gray-500 mt-1">Para vincular a alguém novo, crie a ligação na hora do cadastro ou no menu administrativo por enquanto.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 border-t border-gray-700 flex justify-end gap-3">
+                    <button type="button" @click="open = false" class="px-4 py-2 bg-transparent border border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg font-medium transition-colors">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-lg font-medium transition-colors shadow-lg shadow-pink-600/30">Atualizar Perfil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

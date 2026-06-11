@@ -157,6 +157,11 @@
                 <i data-lucide="bar-chart-2" class="w-5 h-5 min-w-[20px] text-yellow-400 group-hover:text-yellow-300"></i>
                 <span x-show="sidebarOpen" class="whitespace-nowrap">Relatórios</span>
             </a>
+
+            <a href="{% url 'visitantes_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="CRM e Visitantes">
+                <i data-lucide="contact-2" class="w-5 h-5 min-w-[20px] text-yellow-400 group-hover:text-yellow-300"></i>
+                <span x-show="sidebarOpen" class="whitespace-nowrap">CRM Visitantes</span>
+            </a>
             {% endif %}
 
             {% if is_almoxarifado_team %}

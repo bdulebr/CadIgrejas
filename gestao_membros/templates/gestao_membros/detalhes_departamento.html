@@ -9,7 +9,7 @@
 {% block content %}
 <div class="min-h-screen bg-transparent p-8">
     <div class="max-w-7xl mx-auto space-y-6">
-        
+
         <!-- Header -->
         <div class="bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] flex justify-between items-start flex-wrap gap-4 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
@@ -25,7 +25,7 @@
                     <p class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">{{ dep.get_categoria_display|default:dep.categoria }}</p>
                     <h1 class="text-3xl font-extrabold text-white">{{ dep.nome }}</h1>
                     <p class="text-gray-400 mt-2 flex items-center gap-2">
-                        Código de Convite: 
+                        Código de Convite:
                         <span class="font-mono bg-gray-950/60 px-3 py-1 rounded-lg text-white font-bold tracking-widest border border-gray-700/50 shadow-inner">
                             {{ dep.id_unico_fixo }}
                         </span>
@@ -33,7 +33,7 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                {% if is_super %}
+                {% if is_super and not dep.is_system %}
                 <form method="POST" action="{% url 'excluir_departamento' dep.id %}" onsubmit="return confirm('Deseja realmente apagar este departamento? Isso não pode ser desfeito.')">
                     {% csrf_token %}
                     <button type="submit" class="px-5 py-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 rounded-xl font-bold transition-all">Apagar Setor</button>
@@ -44,10 +44,10 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             <!-- Coluna Esq: Info e Funções -->
             <div class="space-y-6 lg:col-span-1">
-                
+
                 <!-- Info Editor -->
                 {% if is_super or is_lider_master %}
                 <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
@@ -77,7 +77,7 @@
                         <button type="submit" class="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg">Salvar Modificações</button>
                     </form>
                 </div>
-                
+
                 <!-- Criar Nova Função -->
                 <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
                     <h3 class="font-bold text-white mb-2 flex items-center gap-2 border-b border-gray-800 pb-2">
@@ -112,19 +112,19 @@
                     </div>
                 </div>
                 {% endif %}
-                
+
             </div>
 
             <!-- Coluna Central: Configuração de Escalas -->
             <div class="lg:col-span-1 space-y-6">
-                
+
                 <div class="bg-gray-900/80 backdrop-blur-xl border border-blue-500/30 p-6 rounded-3xl shadow-[0_0_20px_rgba(59,130,246,0.1)] relative">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-t-3xl"></div>
                     <h3 class="font-bold text-white mb-2 flex items-center gap-2 border-b border-gray-800 pb-2">
                         <i data-lucide="calendar-cog" class="w-5 h-5 text-blue-400"></i> Configuração de Slots
                     </h3>
                     <p class="text-xs text-gray-400 mb-4">Defina quantas pessoas são necessárias por função para cada tipo de culto. Isso guiará o Motor Automático.</p>
-                    
+
                     {% if is_super or is_lider_master %}
                     <form method="POST" action="{% url 'salvar_configuracao_slot' dep.id %}" class="space-y-3 mb-6 bg-gray-950/40 p-4 rounded-2xl border border-gray-800">
                         {% csrf_token %}
@@ -229,7 +229,7 @@
                             </ul>
                         </div>
                     </div>
-                    
+
                     {% if is_super or is_lider_master %}
                     <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}" class="space-y-3 pt-4 border-t border-gray-800">
                         {% csrf_token %}

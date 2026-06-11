@@ -349,8 +349,11 @@ def detalhes_departamento(request, dep_id):
 def excluir_departamento(request, dep_id):
     dep = get_object_or_404(Departamento, id=dep_id)
     if request.method == 'POST':
-        dep.delete()
-        messages.success(request, 'Departamento excluído.')
+        if dep.is_system:
+            messages.error(request, 'Departamentos de sistema essenciais (como Almoxarifado, Escalas e CRM) não podem ser excluídos.')
+        else:
+            dep.delete()
+            messages.success(request, 'Departamento excluído.')
     return redirect('departamentos')
 
 @login_required

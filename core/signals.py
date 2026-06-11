@@ -107,7 +107,7 @@ from django.db.models.signals import post_migrate
 def injetar_templates_padrao(sender, **kwargs):
     if sender.name == 'core':
         from midia_lgpd.models import DocumentoTemplate
-        
+
         # Relatório Almoxarifado
         if not DocumentoTemplate.objects.filter(identificador_sistema='relatorio_almoxarifado').exists():
             html_almoxarifado = """
@@ -179,7 +179,7 @@ def criar_pasta_membro_pv_drive(sender, instance, created, **kwargs):
         except Exception as e:
             print(f"Erro ao criar PastaVirtual para Membro {instance.id}: {e}")
 
-@receiver(post_save, sender='core.Departamento')
+@receiver(post_save, sender='gestao_membros.Departamento')
 def criar_pasta_depto_pv_drive(sender, instance, created, **kwargs):
     if created:
         from midia_lgpd.models import PastaVirtual

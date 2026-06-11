@@ -34,6 +34,7 @@ class Departamento(models.Model):
     id_unico_fixo = models.CharField(max_length=20, unique=True, blank=True)
     nome = models.CharField(max_length=100)
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES)
+    is_system = models.BooleanField(default=False, help_text="Departamentos do sistema não podem ser excluídos e garantem o funcionamento de módulos cruciais.")
     logo = models.ImageField(upload_to='departamentos/logos/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'svg', 'webp'])])
 
     lideres = models.ManyToManyField(Membro, related_name='departamentos_liderados', blank=True)

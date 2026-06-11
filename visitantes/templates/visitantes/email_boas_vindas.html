@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bem-vindo(a) à Igreja</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px; color: #1f2937; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .header { background: linear-gradient(135deg, #db2777, #9333ea); padding: 30px 20px; text-align: center; color: #ffffff; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; line-height: 1.6; }
+        .content h2 { color: #db2777; font-size: 20px; margin-top: 0; }
+        .schedule { background-color: #fdf2f8; border-left: 4px solid #db2777; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .schedule ul { list-style: none; padding: 0; margin: 0; }
+        .schedule li { margin-bottom: 8px; font-weight: bold; color: #831843; }
+        .footer { background-color: #111827; color: #9ca3af; text-align: center; padding: 20px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ base_url }}/static/img/logo.jpg" alt="Logo Palavra de Vida" style="max-width: 150px; margin-bottom: 15px; border-radius: 8px;">
+            <h1>Alegrei-me quando me disseram: Vamos à Casa do Senhor!</h1>
+        </div>
+        <div class="content">
+            <h2>Olá, {{ nome }}!</h2>
+            <p>Ficamos extremamente felizes com a sua visita. Cremos que Deus tem um propósito especial para a sua vida e queremos que você se sinta em casa conosco!</p>
+
+            <p>Seja você um visitante ou alguém que tomou a melhor decisão da vida de caminhar com Jesus, saiba que estamos aqui para te apoiar em cada passo.</p>
+
+            <div class="schedule">
+                <p style="margin-top:0; color:#db2777; font-weight:bold;">Nossos Horários de Culto:</p>
+                <ul>
+                    <li>Domingo da Família: 09:30 às 11:30 e 19:30 às 21:30</li>
+                    <li>2° Domingo do Mês (Santa Ceia): 09:30 às 11:30 e 19:30 às 21:30</li>
+                    <li>Segunda-feira (Culto de Oração): 20:00 às 21:00</li>
+                    <li>Terça-feira (Atendimento Pastoral): 09:30 às 18:30</li>
+                    <li>Quarta-feira (Quarta Profética): 20:00 às 22:00</li>
+                    <li>Quinta-feira (Quinta do Saber): 19:30 às 20:30</li>
+                </ul>
+            </div>
+
+            <p>Se precisar de oração, aconselhamento ou apenas de amigos para conversar, não hesite em nos procurar. A igreja é a sua segunda família!</p>
+
+            <p style="margin-top: 30px;">Com amor em Cristo,<br><strong>Equipe Pastoral e Voluntários</strong></p>
+        </div>
+        <div class="footer">
+            <p>Você recebeu este e-mail pois nos visitou recentemente.</p>
+            <p>&copy; {% now "Y" %} Igreja Local. Todos os direitos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>
