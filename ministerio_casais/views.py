@@ -64,6 +64,39 @@ def perfil_casal(request, casal_id):
     return render(request, 'ministerio_casais/perfil.html', context)
 
 @login_required
+def cadastrar_casal(request):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+
+    if request.method == 'POST':
+        nome_conjuge_1 = request.POST.get('nome_conjuge_1')
+        nome_conjuge_2 = request.POST.get('nome_conjuge_2')
+        status_relacionamento = request.POST.get('status_relacionamento')
+        data_aniversario_casamento = request.POST.get('data_aniversario_casamento')
+        email_1 = request.POST.get('email_1')
+        email_2 = request.POST.get('email_2')
+        telefone_1 = request.POST.get('telefone_1')
+        telefone_2 = request.POST.get('telefone_2')
+
+        casal = Casal(
+            nome_conjuge_1=nome_conjuge_1,
+            nome_conjuge_2=nome_conjuge_2,
+            status_relacionamento=status_relacionamento,
+            email_1=email_1,
+            email_2=email_2,
+            telefone_1=telefone_1,
+            telefone_2=telefone_2
+        )
+        if data_aniversario_casamento:
+            casal.data_aniversario_casamento = data_aniversario_casamento
+
+        casal.save()
+        messages.success(request, 'Casal cadastrado com sucesso!')
+        return redirect('dashboard_casais')
+
+    return redirect('dashboard_casais')
+
+@login_required
 def exportar_certificados(request, matricula_id):
     if not check_permission(request.user):
         return HttpResponse("Acesso Negado.", status=403)
