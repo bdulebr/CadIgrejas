@@ -1001,9 +1001,11 @@ def bi_data_async(request, modulo):
     from django.template.loader import render_to_string
     from django.http import HttpResponse
 
-    hoje = datetime.date.today()
-    seis_meses_atras = hoje - datetime.timedelta(days=180)
-    inicio_mes_atual = hoje.replace(day=1)
+    from django.utils import timezone
+    agora = timezone.now()
+    hoje = agora.date()
+    seis_meses_atras = agora - datetime.timedelta(days=180)
+    inicio_mes_atual = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     # Validação de Segurança Secundária (HTMX)
     is_global = request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor'] or request.user.is_superuser
@@ -1051,7 +1053,8 @@ def bi_data_async(request, modulo):
         from django.db.models.functions import ExtractHour, ExtractWeekDay
 
         # 1. Faturamento Mensal, Semanal, Diário
-        inicio_semana = hoje - datetime.timedelta(days=hoje.weekday())
+        inicio_semana = agora - datetime.timedelta(days=agora.weekday())
+        inicio_semana = inicio_semana.replace(hour=0, minute=0, second=0, microsecond=0)
         faturamento_mes = Venda.objects.filter(data_venda__gte=inicio_mes_atual).aggregate(Sum('total'))['total__sum'] or 0
         faturamento_semana = Venda.objects.filter(data_venda__gte=inicio_semana).aggregate(Sum('total'))['total__sum'] or 0
         faturamento_hoje = Venda.objects.filter(data_venda__date=hoje).aggregate(Sum('total'))['total__sum'] or 0

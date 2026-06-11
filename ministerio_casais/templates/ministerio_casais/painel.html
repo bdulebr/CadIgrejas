@@ -194,7 +194,7 @@
                     formData.append('status', newStatus);
                     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-                    fetch(`/ministerio-casais/casal/${casalId}/atualizar-status/`, {
+                    fetch(`/casais/casal/${casalId}/atualizar-status/`, {
                         method: 'POST',
                         body: formData
                     }).then(response => {
