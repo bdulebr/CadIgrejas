@@ -1,0 +1,62 @@
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
+    <!-- Membros -->
+    <div class="bg-gray-800/80 backdrop-blur border border-white/10 p-6 rounded-2xl shadow-lg relative overflow-hidden group hover:border-white/30 transition-colors">
+        <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform"><i data-lucide="users" class="w-32 h-32"></i></div>
+        <h3 class="text-gray-400 font-bold mb-1">Membros Ativos</h3>
+        <p class="text-5xl font-black text-white">{{ total_membros }}</p>
+    </div>
+
+    <!-- Furos -->
+    <div class="bg-gray-800/80 backdrop-blur border border-orange-500/30 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform"><i data-lucide="calendar-off" class="w-32 h-32 text-orange-400"></i></div>
+        <h3 class="text-gray-400 font-bold mb-1">Taxa de Furos/Ausências (Mês Atual)</h3>
+        <p class="text-5xl font-black text-orange-400">{{ taxa_furos }}%</p>
+        <p class="text-sm text-gray-500 mt-2">Voluntários escalados que não confirmaram.</p>
+    </div>
+</div>
+
+<div class="bg-gray-800/80 backdrop-blur p-6 rounded-2xl border border-white/10 shadow-lg mt-6 animate-fade-in-up" style="animation-delay: 100ms;">
+    <h3 class="text-white font-bold mb-4">Curva de Crescimento Global (6 meses)</h3>
+    <div class="h-64 relative"><canvas id="chartMembrosCrescimento"></canvas></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 animate-fade-in-up" style="animation-delay: 200ms;">
+    <!-- Furos Dept -->
+    <div class="bg-gray-800/80 backdrop-blur p-6 rounded-2xl border border-white/10 shadow-lg">
+        <h3 class="text-white font-bold mb-4">Piores Departamentos (Rank Furos)</h3>
+        <div class="h-64 relative"><canvas id="chartMembrosFuros"></canvas></div>
+    </div>
+
+    <!-- Sobrecarga -->
+    <div class="bg-gray-800/80 backdrop-blur p-6 rounded-2xl border border-white/10 shadow-lg">
+        <h3 class="text-white font-bold mb-4">Alarme de Sobrecarga (Top 10 Burnout)</h3>
+        <ul class="space-y-3">
+            {% for vol in sobrecarga %}
+            <li class="flex justify-between items-center text-sm p-3 bg-red-900/20 border border-red-500/10 rounded-xl">
+                <span class="text-white font-medium"><i data-lucide="user-x" class="inline w-4 h-4 mr-2 text-red-400"></i>{{ vol.nome }}</span>
+                <span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full font-bold">{{ vol.qtd }} escalas no mês</span>
+            </li>
+            {% empty %}
+            <li class="text-green-400 font-bold text-sm p-3 bg-green-900/20 rounded-xl">Sistema de escalas com saúde perfeita. Nenhum membro sobrecarregado!</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    new Chart(document.getElementById('chartMembrosCrescimento').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: {{ labels_crescimento|safe }},
+            datasets: [{ label: 'Membros Ativos', data: {{ data_crescimento|safe }}, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: '#fff', pointRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: {color: '#9ca3af'}, grid: {color: 'rgba(255,255,255,0.05)'} }, x: { ticks: {color: '#9ca3af'}, grid: {display: false} } } }
+    });
+
+    new Chart(document.getElementById('chartMembrosFuros').getContext('2d'), {
+        type: 'bar',
+        data: { labels: {{ furos_dept_labels|safe }}, datasets: [{ label: 'Qtd Furos', data: {{ furos_dept_data|safe }}, backgroundColor: '#ef4444', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: {color: 'rgba(255,255,255,0.05)'}, ticks: {color: '#9ca3af'} }, y: { grid: {display: false}, ticks: {color: '#9ca3af'} } } }
+    });
+</script>

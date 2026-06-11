@@ -968,99 +968,253 @@ def bi_dashboard_geral(request):
         LogAuditoria.objects.create(usuario_acao=request.user, acao_realizada='ACESSO_NEGADO_BI', tabela_afetada='SEGURANCA', diferenca_json={'erro': 'Tentativa de acessar o BI Avançado sem permissão.'})
         return HttpResponseForbidden("Acesso restrito. Sua tentativa foi registrada.")
 
+    # RBAC Mapeamento
+    is_global = request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor'] or request.user.is_superuser
+
+    # Liderança de Departamentos
+    depts = request.user.departamentos_liderados.values_list('nome', flat=True)
+    depts_str = " ".join(depts).lower()
+
+    pode_ver_almoxarifado = is_global or 'almoxarifado' in depts_str or 'patrimônio' in depts_str
+    pode_ver_financeiro = is_global or 'financeiro' in depts_str or 'pdv' in depts_str or 'lanchonete' in depts_str
+    pode_ver_casais = is_global or 'casais' in depts_str or 'família' in depts_str
+    pode_ver_visitantes = is_global or 'visitante' in depts_str or 'integração' in depts_str
+    pode_ver_membros = is_global or 'escalas' in depts_str or 'louvor' in depts_str or request.user.lider_global_de_escalas
+
+    context = {
+        'pode_ver_almoxarifado': pode_ver_almoxarifado,
+        'pode_ver_financeiro': pode_ver_financeiro,
+        'pode_ver_casais': pode_ver_casais,
+        'pode_ver_visitantes': pode_ver_visitantes,
+        'pode_ver_membros': pode_ver_membros,
+        'is_global': is_global
+    }
+
+    return render(request, 'core/pages/bi_master.html', context)
+
+@login_required
+def bi_data_async(request, modulo):
     import datetime
     import json
     from django.db.models.functions import TruncMonth
-    from django.db.models import Count, Sum
-    from core.models import Membro
-    from visitantes.models import Visitante
-    from ministerio_casais.models import Casal
-    from escalas.models import Escala, CompetenciaEscala
-    from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
-    from pdv.models import Venda, Produto
+    from django.db.models import Count, Sum, Avg, F
+    from django.template.loader import render_to_string
+    from django.http import HttpResponse
 
     hoje = datetime.date.today()
     seis_meses_atras = hoje - datetime.timedelta(days=180)
     inicio_mes_atual = hoje.replace(day=1)
 
-    # ==========================================
-    # NÍVEL 1: SAÚDE ESPIRITUAL E RETENÇÃO (MAX)
-    # ==========================================
-    total_membros = Membro.objects.filter(is_active=True).count()
-    visitantes_total = Visitante.objects.count()
-    visitantes_convertidos = Visitante.objects.filter(tornou_se_membro=True).count()
-    taxa_conversao = round((visitantes_convertidos / visitantes_total * 100) if visitantes_total > 0 else 0, 1)
+    # Validação de Segurança Secundária (HTMX)
+    is_global = request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor'] or request.user.is_superuser
+    depts_str = " ".join(request.user.departamentos_liderados.values_list('nome', flat=True)).lower()
 
-    casais_total = Casal.objects.count()
-    casais_crise = Casal.objects.filter(status_relacionamento='em_crise').count()
-    taxa_crise_casais = round((casais_crise / casais_total * 100) if casais_total > 0 else 0, 1)
+    if modulo == 'almoxarifado':
+        if not (is_global or 'almoxarifado' in depts_str or 'patrimônio' in depts_str):
+            return HttpResponseForbidden()
 
-    evolucao_membros = Membro.objects.filter(is_active=True, date_joined__gte=seis_meses_atras) \
-        .annotate(mes=TruncMonth('date_joined')).values('mes').annotate(total=Count('id')).order_by('mes')
+        from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
 
-    MESES_BR = {1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun', 7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'}
-    meses_dict = {MESES_BR[m['mes'].month]: m['total'] for m in evolucao_membros if m['mes']}
+        # 1. Custo Presumido do Estoque Total
+        estoque_total = ItemAlmoxarifado.objects.aggregate(total=Sum('valor_estimado'))['total'] or 0
 
-    labels_crescimento = []
-    data_crescimento = []
-    for i in range(5, -1, -1):
-        d = hoje.replace(day=1) - datetime.timedelta(days=30 * i)
-        mes_nome = MESES_BR[d.month]
-        labels_crescimento.append(mes_nome)
-        data_crescimento.append(meses_dict.get(mes_nome, 0))
+        # 2. Painel de Depreciação (Itens danificados nos últimos 30 dias)
+        trinta_dias_atras = hoje - datetime.timedelta(days=30)
+        depreciados = ItemAlmoxarifado.objects.filter(status_item='danificado', data_aquisicao__gte=trinta_dias_atras).count()
+        total_itens = ItemAlmoxarifado.objects.count()
+        taxa_depreciacao = round((depreciados / total_itens * 100) if total_itens > 0 else 0, 2)
 
-    # ==========================================
-    # NÍVEL 2: SAÚDE DO VOLUNTARIADO E ESCALAS
-    # ==========================================
-    comp_atual = CompetenciaEscala.objects.filter(mes_ano__icontains=hoje.strftime('%Y-%m')).first()
-    furos_escalas = 0
-    taxa_furos = 0
-    sobrecarga = []
-    if comp_atual:
-        escalas_mes = Escala.objects.filter(competencia=comp_atual)
-        furos_escalas = escalas_mes.filter(status_confirmacao__in=['recusada', 'ausente']).count()
-        total_escalas = escalas_mes.count()
-        taxa_furos = round((furos_escalas / total_escalas * 100) if total_escalas > 0 else 0, 1)
+        # 3. Top 10 Gargalos de Retirada (Curva ABC)
+        abc_almox_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(total=Count('item')).order_by('-total')[:10]
+        abc_almox_labels = [item['item__nome'] for item in abc_almox_raw if item['item__nome']]
+        abc_almox_data = [item['total'] for item in abc_almox_raw if item['total']]
 
-        # Voluntários Escalados > 3 vezes no mesmo mês
-        sobrecarga_raw = escalas_mes.values('membro_escalado__first_name', 'membro_escalado__last_name').annotate(total=Count('id')).filter(total__gt=3).order_by('-total')[:5]
-        sobrecarga = [{'nome': f"{s['membro_escalado__first_name']} {s['membro_escalado__last_name']}", 'qtd': s['total']} for s in sobrecarga_raw]
+        # 4. Índice de Retenção (Departamentos que mais demoram a devolver)
+        # Aproximação: Itens atualmente emprestados por departamento
+        retidos_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada', devolvido=False).values('membro_solicitante__departamentos_ativos__nome').annotate(total=Count('id')).order_by('-total')[:5]
+        retidos_data = [{'depto': r['membro_solicitante__departamentos_ativos__nome'] or 'Indefinido', 'qtd': r['total']} for r in retidos_raw]
 
-    # ==========================================
-    # NÍVEL 3: SAÚDE MATERIAL (PDV E ALMOXARIFADO)
-    # ==========================================
-    faturamento_mes = Venda.objects.filter(data_venda__gte=inicio_mes_atual).aggregate(Sum('total'))['total__sum'] or 0
+        context = {
+            'estoque_total': float(estoque_total),
+            'taxa_depreciacao': taxa_depreciacao,
+            'abc_almox_labels': json.dumps(abc_almox_labels),
+            'abc_almox_data': json.dumps(abc_almox_data),
+            'retidos_data': retidos_data
+        }
+        return render(request, 'core/partials/bi/almoxarifado.html', context)
 
-    # Curva ABC PDV (Top 5 Produtos mais rentáveis)
-    abc_pdv_raw = Venda.objects.filter(data_venda__gte=seis_meses_atras).values('itens__produto__nome').annotate(receita=Sum('itens__valor_total')).order_by('-receita')[:5]
-    abc_pdv_labels = [p['itens__produto__nome'] for p in abc_pdv_raw if p['itens__produto__nome']]
-    abc_pdv_data = [float(p['receita']) for p in abc_pdv_raw if p['receita']]
+    elif modulo == 'financeiro':
+        if not (is_global or 'financeiro' in depts_str or 'pdv' in depts_str or 'lanchonete' in depts_str):
+            return HttpResponseForbidden()
 
-    # Gargalos Almoxarifado (Itens mais retirados/danificados)
-    abc_almox_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(total=Count('item')).order_by('-total')[:5]
-    abc_almox_labels = [item['item__nome'] for item in abc_almox_raw if item['item__nome']]
-    abc_almox_data = [item['total'] for item in abc_almox_raw if item['total']]
+        from pdv.models import Venda
+        from django.db.models.functions import ExtractHour, ExtractWeekDay
 
-    context = {
-        # Nível 1
-        'total_membros': total_membros,
-        'taxa_conversao_visitantes': taxa_conversao,
-        'taxa_crise_casais': taxa_crise_casais,
-        'chart_labels': json.dumps(labels_crescimento),
-        'chart_data': json.dumps(data_crescimento),
+        # 1. Faturamento Mensal, Semanal, Diário
+        inicio_semana = hoje - datetime.timedelta(days=hoje.weekday())
+        faturamento_mes = Venda.objects.filter(data_venda__gte=inicio_mes_atual).aggregate(Sum('total'))['total__sum'] or 0
+        faturamento_semana = Venda.objects.filter(data_venda__gte=inicio_semana).aggregate(Sum('total'))['total__sum'] or 0
+        faturamento_hoje = Venda.objects.filter(data_venda__date=hoje).aggregate(Sum('total'))['total__sum'] or 0
 
-        # Nível 2
-        'taxa_furos': taxa_furos,
-        'sobrecarga_voluntarios': sobrecarga,
+        # 2. Ticket Médio
+        ticket_medio = Venda.objects.filter(data_venda__gte=inicio_mes_atual).aggregate(Avg('total'))['total__avg'] or 0
 
-        # Nível 3
-        'faturamento_mes': float(faturamento_mes),
-        'abc_pdv_labels': json.dumps(abc_pdv_labels),
-        'abc_pdv_data': json.dumps(abc_pdv_data),
-        'abc_almox_labels': json.dumps(abc_almox_labels),
-        'abc_almox_data': json.dumps(abc_almox_data),
-    }
-    return render(request, 'core/pages/bi_master.html', context)
+        # 3. Top 10 Produtos Rentáveis (Curva ABC Expandida)
+        abc_pdv_raw = Venda.objects.filter(data_venda__gte=seis_meses_atras).values('itens__produto__nome').annotate(receita=Sum('itens__valor_total')).order_by('-receita')[:10]
+        abc_pdv_labels = [p['itens__produto__nome'] for p in abc_pdv_raw if p['itens__produto__nome']]
+        abc_pdv_data = [float(p['receita']) for p in abc_pdv_raw if p['receita']]
+
+        # 4. Horários de Pico (Heatmap)
+        heatmap_raw = Venda.objects.filter(data_venda__gte=seis_meses_atras).annotate(hora=ExtractHour('data_venda')).values('hora').annotate(total=Count('id')).order_by('hora')
+        horas = [f"{h['hora']}h" for h in heatmap_raw if h['hora'] is not None]
+        horas_qtd = [h['total'] for h in heatmap_raw if h['total'] is not None]
+
+        context = {
+            'faturamento_mes': float(faturamento_mes),
+            'faturamento_semana': float(faturamento_semana),
+            'faturamento_hoje': float(faturamento_hoje),
+            'ticket_medio': float(ticket_medio),
+            'abc_pdv_labels': json.dumps(abc_pdv_labels),
+            'abc_pdv_data': json.dumps(abc_pdv_data),
+            'horas': json.dumps(horas),
+            'horas_qtd': json.dumps(horas_qtd)
+        }
+        return render(request, 'core/partials/bi/financeiro.html', context)
+
+    elif modulo == 'casais':
+        if not (is_global or 'casais' in depts_str or 'família' in depts_str):
+            return HttpResponseForbidden()
+
+        from ministerio_casais.models import Casal, MatriculaCurso
+
+        # 1. Pirâmide Etária do Casamento (Anos de Casado)
+        casais = Casal.objects.all()
+        anos_casados = {'0-5': 0, '6-10': 0, '11-20': 0, '20+': 0}
+        for c in casais:
+            if c.data_aniversario_casamento:
+                anos = (hoje - c.data_aniversario_casamento).days / 365
+                if anos <= 5: anos_casados['0-5'] += 1
+                elif anos <= 10: anos_casados['6-10'] += 1
+                elif anos <= 20: anos_casados['11-20'] += 1
+                else: anos_casados['20+'] += 1
+
+        # 2. Status Relacional
+        status_raw = Casal.objects.values('status_relacionamento').annotate(total=Count('id'))
+        status_labels = [s['status_relacionamento'] for s in status_raw]
+        status_data = [s['total'] for s in status_raw]
+
+        # 3. Casais em Crise vs Total
+        casais_total = Casal.objects.count()
+        casais_crise = Casal.objects.filter(status_relacionamento='em_crise').count()
+        taxa_crise_casais = round((casais_crise / casais_total * 100) if casais_total > 0 else 0, 1)
+
+        # 4. Trilha de Casais (Matrículas Concluídas vs Abandonadas)
+        concluidas = MatriculaCurso.objects.filter(status='concluido').count()
+        abandonos = MatriculaCurso.objects.filter(status='desistente').count()
+
+        context = {
+            'piramide_labels': json.dumps(list(anos_casados.keys())),
+            'piramide_data': json.dumps(list(anos_casados.values())),
+            'status_labels': json.dumps(status_labels),
+            'status_data': json.dumps(status_data),
+            'taxa_crise': taxa_crise_casais,
+            'concluidas': concluidas,
+            'abandonos': abandonos
+        }
+        return render(request, 'core/partials/bi/casais.html', context)
+
+    elif modulo == 'visitantes':
+        if not (is_global or 'visitante' in depts_str or 'integração' in depts_str):
+            return HttpResponseForbidden()
+
+        from visitantes.models import Visitante
+
+        # 1. Taxa de Conversão
+        visitantes_total = Visitante.objects.count()
+        visitantes_convertidos = Visitante.objects.filter(tornou_se_membro=True).count()
+        taxa_conversao = round((visitantes_convertidos / visitantes_total * 100) if visitantes_total > 0 else 0, 1)
+
+        # 2. Origem do Visitante
+        origem_raw = Visitante.objects.values('tipo').annotate(total=Count('id'))
+        origem_labels = [o['tipo'] for o in origem_raw]
+        origem_data = [o['total'] for o in origem_raw]
+
+        # 3. Mapa de Bairros (Demografia)
+        bairros_raw = Visitante.objects.values('bairro').annotate(total=Count('id')).order_by('-total')[:10]
+        bairro_labels = [b['bairro'] or 'N/I' for b in bairros_raw]
+        bairro_data = [b['total'] for b in bairros_raw]
+
+        context = {
+            'visitantes_total': visitantes_total,
+            'taxa_conversao': taxa_conversao,
+            'origem_labels': json.dumps(origem_labels),
+            'origem_data': json.dumps(origem_data),
+            'bairro_labels': json.dumps(bairro_labels),
+            'bairro_data': json.dumps(bairro_data)
+        }
+        return render(request, 'core/partials/bi/visitantes.html', context)
+
+    elif modulo == 'membros':
+        if not (is_global or 'escalas' in depts_str or 'louvor' in depts_str or request.user.lider_global_de_escalas):
+            return HttpResponseForbidden()
+
+        from core.models import Membro
+        from escalas.models import Escala, CompetenciaEscala
+        from gestao_membros.models import Departamento
+
+        # 1. Total de Membros Ativos
+        total_membros = Membro.objects.filter(is_active=True).count()
+
+        # 2. Curva de Crescimento (Últimos 6 meses)
+        evolucao_membros = Membro.objects.filter(is_active=True, date_joined__gte=seis_meses_atras)             .annotate(mes=TruncMonth('date_joined')).values('mes').annotate(total=Count('id')).order_by('mes')
+
+        MESES_BR = {1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun', 7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'}
+        meses_dict = {MESES_BR[m['mes'].month]: m['total'] for m in evolucao_membros if m['mes'] is not None}
+
+        labels_crescimento = []
+        data_crescimento = []
+        for i in range(5, -1, -1):
+            d = hoje.replace(day=1) - datetime.timedelta(days=30 * i)
+            mes_nome = MESES_BR[d.month]
+            labels_crescimento.append(mes_nome)
+            data_crescimento.append(meses_dict.get(mes_nome, 0))
+
+        # 3. Voluntariado: Furos por Departamento (Mês Atual)
+        comp_atual = CompetenciaEscala.objects.filter(mes_ano__icontains=hoje.strftime('%Y-%m')).first()
+        furos_dept_labels = []
+        furos_dept_data = []
+        sobrecarga = []
+        taxa_furos = 0
+
+        if comp_atual:
+            escalas_mes = Escala.objects.filter(competencia=comp_atual)
+
+            # Furos
+            furos_raw = escalas_mes.filter(status_confirmacao__in=['recusada', 'ausente']).values('culto__departamento__nome').annotate(total=Count('id')).order_by('-total')[:5]
+            furos_dept_labels = [f['culto__departamento__nome'] or 'Geral' for f in furos_raw]
+            furos_dept_data = [f['total'] for f in furos_raw]
+
+            total_escalas = escalas_mes.count()
+            furos_total = sum(furos_dept_data)
+            taxa_furos = round((furos_total / total_escalas * 100) if total_escalas > 0 else 0, 1)
+
+            # Sobrecarga (Top 10)
+            sobrecarga_raw = escalas_mes.values('membro_escalado__first_name', 'membro_escalado__last_name').annotate(total=Count('id')).filter(total__gt=3).order_by('-total')[:10]
+            sobrecarga = [{'nome': f"{s['membro_escalado__first_name']} {s['membro_escalado__last_name']}", 'qtd': s['total']} for s in sobrecarga_raw]
+
+        context = {
+            'total_membros': total_membros,
+            'labels_crescimento': json.dumps(labels_crescimento),
+            'data_crescimento': json.dumps(data_crescimento),
+            'furos_dept_labels': json.dumps(furos_dept_labels),
+            'furos_dept_data': json.dumps(furos_dept_data),
+            'taxa_furos': taxa_furos,
+            'sobrecarga': sobrecarga
+        }
+        return render(request, 'core/partials/bi/membros.html', context)
+
+    return HttpResponse("")
+
 
 from django.http import JsonResponse
 from midia_lgpd.models import DocumentoTemplate
@@ -1270,67 +1424,99 @@ def ai_insights_bi(request):
         if not client:
             return HttpResponse('<div class="p-4 bg-red-900/50 text-red-200 rounded-lg">Erro: Chave do Groq não configurada.</div>')
 
-        # Coletar estatísticas massivas para o BI
+        modulo = request.GET.get('modulo', 'geral')
+        import json
         import datetime
         from django.utils import timezone
         from django.db.models import Count, Sum
-        from core.models import Membro
-        from visitantes.models import Visitante
-        from ministerio_casais.models import Casal
-        from escalas.models import Escala, CompetenciaEscala
-        from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
-        from pdv.models import Venda
 
         hoje = timezone.now().date()
-        seis_meses_atras = hoje - datetime.timedelta(days=180)
-        inicio_mes = hoje.replace(day=1)
+        context_data = {}
+        papel = "Cientista de Dados (Data Scientist) Sênior e Diretor Executivo"
+        foco = "GARGALOS OPERACIONAIS cruciais na saúde da igreja (pessoas, finanças e escalas)"
 
-        visitantes_total = Visitante.objects.count()
-        visitantes_conv = Visitante.objects.filter(tornou_se_membro=True).count()
-        taxa_conv = round((visitantes_conv / visitantes_total * 100) if visitantes_total > 0 else 0, 1)
+        if modulo == 'almoxarifado':
+            from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
+            estoque_total = ItemAlmoxarifado.objects.aggregate(total=Sum('valor_estimado'))['total'] or 0
+            depreciados = ItemAlmoxarifado.objects.filter(status_item='danificado').count()
+            retiradas = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(t=Count('item')).order_by('-t')[:3]
+            context_data = {
+                'valor_estoque_presumido': float(estoque_total),
+                'itens_danificados_total': depreciados,
+                'top_3_itens_mais_retirados': [f"{i['item__nome']} ({i['t']}x)" for i in retiradas]
+            }
+            papel = "Diretor Executivo de Logística e Almoxarifado"
+            foco = "GARGALOS NO ESTOQUE (depreciação, extravios, itens críticos)"
 
-        casais_total = Casal.objects.count()
-        casais_crise = Casal.objects.filter(status_relacionamento='em_crise').count()
-        taxa_crise = round((casais_crise / casais_total * 100) if casais_total > 0 else 0, 1)
+        elif modulo == 'financeiro':
+            from pdv.models import Venda
+            inicio_mes = hoje.replace(day=1)
+            faturamento = Venda.objects.filter(data_venda__gte=inicio_mes).aggregate(Sum('total'))['total__sum'] or 0
+            ticket = Venda.objects.filter(data_venda__gte=inicio_mes).aggregate(Avg=Sum('total')/Count('id'))['Avg'] or 0
+            context_data = {
+                'faturamento_mes_atual': float(faturamento),
+                'ticket_medio': float(ticket),
+            }
+            papel = "CFO / Diretor Financeiro Executivo"
+            foco = "GARGALOS DE RECEITA E RENTABILIDADE"
 
-        comp_atual = CompetenciaEscala.objects.filter(mes_ano__icontains=hoje.strftime('%Y-%m')).first()
-        furos = 0
-        if comp_atual:
-            furos = Escala.objects.filter(competencia=comp_atual, status_confirmacao__in=['recusada', 'ausente']).count()
+        elif modulo == 'casais':
+            from ministerio_casais.models import Casal
+            crise = Casal.objects.filter(status_relacionamento='em_crise').count()
+            total = Casal.objects.count()
+            context_data = {
+                'casais_cadastrados': total,
+                'casais_em_crise': crise,
+                'taxa_crise': f"{round((crise/total*100) if total else 0, 1)}%"
+            }
+            papel = "Diretor do Ministério de Famílias / Psicólogo Pastoral"
+            foco = "CRISE NOS CASAMENTOS E PREVENÇÃO DE DIVÓRCIOS"
 
-        faturamento = Venda.objects.filter(data_venda__gte=inicio_mes).aggregate(Sum('total'))['total__sum'] or 0
+        elif modulo == 'visitantes':
+            from visitantes.models import Visitante
+            visitantes_total = Visitante.objects.count()
+            visitantes_conv = Visitante.objects.filter(tornou_se_membro=True).count()
+            context_data = {
+                'total_visitantes': visitantes_total,
+                'visitantes_convertidos_em_membros': visitantes_conv,
+                'taxa_conversao': f"{round((visitantes_conv/visitantes_total*100) if visitantes_total else 0, 1)}%"
+            }
+            papel = "Diretor de CRM e Integração de Novos Membros"
+            foco = "FALHAS NO FUNIL DE CONVERSÃO E EVASÃO DE VISITANTES"
 
-        abc_almox_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(total=Count('item')).order_by('-total')[:3]
-        itens_criticos = [f"{i['item__nome']} ({i['total']} retiradas)" for i in abc_almox_raw]
+        elif modulo == 'membros':
+            from core.models import Membro
+            from escalas.models import Escala, CompetenciaEscala
+            comp_atual = CompetenciaEscala.objects.filter(mes_ano__icontains=hoje.strftime('%Y-%m')).first()
+            furos = Escala.objects.filter(competencia=comp_atual, status_confirmacao__in=['recusada', 'ausente']).count() if comp_atual else 0
+            context_data = {
+                'membros_ativos': Membro.objects.filter(is_active=True).count(),
+                'furos_em_escalas_neste_mes': furos
+            }
+            papel = "Diretor de RH Voluntário"
+            foco = "SOBRECARGA DE VOLUNTÁRIOS E FUROS NAS ESCALAS"
 
-        import json
-        context_data = {
-            'membros_ativos': Membro.objects.filter(is_active=True).count(),
-            'taxa_conversao_visitantes_membros': f"{taxa_conv}%",
-            'casais_em_crise_cadastrados': f"{taxa_crise}% do total",
-            'furos_escalas_este_mes': furos,
-            'faturamento_pdv_mes_atual': float(faturamento),
-            'itens_almoxarifado_mais_retirados': itens_criticos
-        }
+        else: # geral
+            context_data = {'status': 'Visão Geral ativada. Liderança global.'}
 
         prompt = f"""
-        Você é um Cientista de Dados (Data Scientist) Sênior contratado pela Diretoria Executiva da Igreja PV Enseada.
-        Abaixo estão os dados reais de Business Intelligence processados hoje.
+        Você é um {papel} contratado pela Diretoria da Igreja PV Enseada.
+        Abaixo estão os dados do seu departamento processados hoje.
 
-        Sua missão: Identifique GARGALOS OPERACIONAIS cruciais nestes dados (ex: muitos furos em escala, baixa conversão de visitantes, ou alta taxa de casais em crise) e proponha 3 PLANOS DE AÇÃO executivos curtos.
+        Sua missão: Identifique {foco} cruciais nestes dados e proponha 3 PLANOS DE AÇÃO curtos e executivos.
 
         Regra Estrita:
-        1. Responda DIRETAMENTE com código HTML pronto (usando classes Tailwind: bg-gray-800, text-red-400 para alertas, text-blue-300 para ações). NÃO USE blocos de código ```html.
-        2. Seja cirúrgico, sem rodeios ou saudações muito longas. Fale como um executivo.
+        1. Responda DIRETAMENTE com código HTML pronto (usando classes Tailwind: bg-gray-800, text-red-400 para alertas, text-blue-300 para ações, flex, gap-2). NÃO USE blocos de código ```html.
+        2. Seja cirúrgico, fale como um executivo Sênior do departamento.
 
-        Dados JSON brutos:
+        Dados JSON:
         {json.dumps(context_data)}
         """
 
         response = client.chat.completions.create(
             model='llama-3.3-70b-versatile',
             messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.4 # Menor para respostas mais analíticas e cravadas
+            temperature=0.3
         )
 
         html_response = response.choices[0].message.content.replace('```html', '').replace('```', '').strip()

@@ -5,6 +5,14 @@
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    /* Ocultar barra de rolagem mas permitir scroll */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .tab-active { background-color: rgba(59, 130, 246, 0.2); border-color: #3b82f6; color: white; }
+    .tab-inactive { background-color: rgba(31, 41, 55, 0.5); border-color: rgba(255,255,255,0.1); color: #9ca3af; }
+</style>
 {% endblock extra_head %}
 
 {% block content %}
@@ -14,9 +22,9 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 bg-gray-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-lg">
             <div>
                 <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                    Business Intelligence Avançado
+                    Business Intelligence RBAC
                 </h1>
-                <p class="text-gray-400 font-medium">Análise de Dados Pastoral & Operacional</p>
+                <p class="text-gray-400 font-medium">Painel Analítico Segmentado por Liderança</p>
             </div>
 
             <div class="flex gap-2">
@@ -29,202 +37,105 @@
             </div>
         </div>
 
-        <!-- CÉREBRO IA: INSIGHTS E GARGALOS -->
+        <!-- ABAS DEPARTAMENTAIS (RBAC) -->
+        <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar mb-6" id="bi-tabs">
+
+            {% if pode_ver_membros %}
+            <button onclick="loadTab(this, 'membros')" class="bi-tab tab-active whitespace-nowrap px-6 py-3 rounded-xl font-bold border-b-4 shadow-lg transition-all flex items-center gap-2">
+                <i data-lucide="users" class="w-5 h-5"></i> Voluntariado & Escalas
+            </button>
+            {% endif %}
+
+            {% if pode_ver_financeiro %}
+            <button onclick="loadTab(this, 'financeiro')" class="bi-tab tab-inactive whitespace-nowrap px-6 py-3 rounded-xl font-bold border-b-4 shadow-lg transition-all flex items-center gap-2">
+                <i data-lucide="wallet" class="w-5 h-5"></i> Financeiro (PDV)
+            </button>
+            {% endif %}
+
+            {% if pode_ver_almoxarifado %}
+            <button onclick="loadTab(this, 'almoxarifado')" class="bi-tab tab-inactive whitespace-nowrap px-6 py-3 rounded-xl font-bold border-b-4 shadow-lg transition-all flex items-center gap-2">
+                <i data-lucide="package" class="w-5 h-5"></i> Almoxarifado
+            </button>
+            {% endif %}
+
+            {% if pode_ver_casais %}
+            <button onclick="loadTab(this, 'casais')" class="bi-tab tab-inactive whitespace-nowrap px-6 py-3 rounded-xl font-bold border-b-4 shadow-lg transition-all flex items-center gap-2">
+                <i data-lucide="heart" class="w-5 h-5"></i> Casais & Família
+            </button>
+            {% endif %}
+
+            {% if pode_ver_visitantes %}
+            <button onclick="loadTab(this, 'visitantes')" class="bi-tab tab-inactive whitespace-nowrap px-6 py-3 rounded-xl font-bold border-b-4 shadow-lg transition-all flex items-center gap-2">
+                <i data-lucide="map-pin" class="w-5 h-5"></i> Integração & CRM
+            </button>
+            {% endif %}
+
+        </div>
+
+        <!-- CÉREBRO IA: INSIGHTS E GARGALOS (CARREGADO VIA HTMX DE ACORDO COM A ABA) -->
         <div class="mb-10 bg-gradient-to-br from-indigo-900/60 to-purple-900/60 backdrop-blur-xl border border-indigo-500/30 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
             <div class="absolute -right-10 -top-10 opacity-20 text-purple-300">
                 <i data-lucide="brain-circuit" class="w-64 h-64"></i>
             </div>
             <div class="relative z-10">
                 <h2 class="text-2xl font-black text-white mb-2 flex items-center gap-2">
-                    <i data-lucide="sparkles" class="w-6 h-6 text-yellow-400"></i> AI Executive Data Scientist
+                    <i data-lucide="sparkles" class="w-6 h-6 text-yellow-400"></i> AI Executive Consultant
                 </h2>
-                <p class="text-indigo-200 mb-6 font-medium">Analisando os gargalos em tempo real via LPU Neural...</p>
+                <p class="text-indigo-200 mb-6 font-medium">Analisando gargalos departamentais em tempo real via LPU Neural...</p>
 
-                <div id="ai-insights-container" hx-get="{% url 'ai_insights_bi' %}" hx-trigger="load" class="min-h-[150px]">
+                <div id="ai-insights-container" class="min-h-[150px]">
                     <div class="flex items-center gap-3 text-indigo-300 font-bold animate-pulse">
                         <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
-                        Processando DataFrames e gerando Planos de Ação...
+                        Aguardando seleção do módulo...
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- NÍVEL 1: SAÚDE ESPIRITUAL (Membros, Casais, Visitantes) -->
-        <h3 class="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Nível 1: Saúde Espiritual e Retenção</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <!-- Crescimento -->
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-blue-500/30 shadow-lg relative overflow-hidden group hover:border-blue-500/60 transition-colors">
-                <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform"><i data-lucide="users" class="w-32 h-32"></i></div>
-                <h3 class="text-gray-400 font-bold mb-1">Membros Ativos (Rebanho)</h3>
-                <p class="text-5xl font-black text-white">{{ total_membros }}</p>
-            </div>
-
-            <!-- Conversão -->
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-emerald-500/30 shadow-lg relative overflow-hidden group hover:border-emerald-500/60 transition-colors">
-                <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform"><i data-lucide="filter" class="w-32 h-32"></i></div>
-                <h3 class="text-gray-400 font-bold mb-1">Taxa de Integração (Visitantes)</h3>
-                <p class="text-5xl font-black text-emerald-400">{{ taxa_conversao_visitantes }}%</p>
-                <p class="text-xs text-gray-500 mt-2">Visitantes convertidos em membros</p>
-            </div>
-
-            <!-- Casais -->
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-rose-500/30 shadow-lg relative overflow-hidden group hover:border-rose-500/60 transition-colors">
-                <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform"><i data-lucide="heart-crack" class="w-32 h-32"></i></div>
-                <h3 class="text-gray-400 font-bold mb-1">Casais em Crise</h3>
-                <p class="text-5xl font-black text-rose-400">{{ taxa_crise_casais }}%</p>
-                <p class="text-xs text-gray-500 mt-2">Atenção pastoral necessária</p>
-            </div>
-        </div>
-
-        <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-lg mb-10">
-            <h3 class="text-lg font-bold text-white mb-4">Curva de Crescimento (Últimos 6 meses)</h3>
-            <div class="h-64">
-                <canvas id="chartCrescimento"></canvas>
-            </div>
-        </div>
-
-        <!-- NÍVEL 2: VOLUNTARIADO E ESCALAS -->
-        <h3 class="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Nível 2: Saúde do Voluntariado (Escalas)</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-orange-500/30 shadow-lg">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-gray-400 font-bold">Taxa de Furos/Ausências (Mês Atual)</h3>
-                    <i data-lucide="calendar-off" class="w-8 h-8 text-orange-400 opacity-50"></i>
-                </div>
-                <p class="text-5xl font-black text-orange-400">{{ taxa_furos }}%</p>
-                <p class="text-sm text-gray-500 mt-2">Voluntários escalados que não confirmaram ou faltaram.</p>
-            </div>
-
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-red-500/30 shadow-lg">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-gray-400 font-bold">Alerta de Sobrecarga (Top 5)</h3>
-                    <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 opacity-50"></i>
-                </div>
-                <ul class="space-y-3">
-                    {% for vol in sobrecarga_voluntarios %}
-                    <li class="flex justify-between items-center text-sm">
-                        <span class="text-white font-medium">{{ vol.nome }}</span>
-                        <span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full font-bold">{{ vol.qtd }} escalas no mês</span>
-                    </li>
-                    {% empty %}
-                    <li class="text-green-400 font-bold text-sm">Nenhum voluntário sobrecarregado este mês!</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-
-        <!-- NÍVEL 3: SAÚDE MATERIAL E FINANCEIRA -->
-        <h3 class="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Nível 3: Saúde Financeira e Material</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-green-500/30 shadow-lg flex flex-col justify-center">
-                <h3 class="text-gray-400 font-bold mb-2">Faturamento Lanchonete (Mês Atual)</h3>
-                <p class="text-4xl font-black text-green-400">R$ {{ faturamento_mes|floatformat:2 }}</p>
-            </div>
-
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-lg">
-                <h3 class="text-gray-400 font-bold mb-4 text-center">Curva ABC: Produtos PDV</h3>
-                <div class="h-48 relative">
-                    <canvas id="chartPDV"></canvas>
+        <!-- CONTAINER DO B.I. ASSÍNCRONO -->
+        <div id="bi-content-container" class="min-h-[400px]">
+            <div class="flex justify-center items-center py-20">
+                <div class="flex flex-col items-center gap-4 text-gray-500">
+                    <i data-lucide="bar-chart-2" class="w-16 h-16 opacity-50"></i>
+                    <p class="font-bold">Iniciando o motor de dados...</p>
                 </div>
             </div>
-
-            <div class="bg-gray-900/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-lg">
-                <h3 class="text-gray-400 font-bold mb-4 text-center">Gargalo: Itens mais retirados</h3>
-                <div class="h-48 relative">
-                    <canvas id="chartAlmoxarifado"></canvas>
-                </div>
-            </div>
-
         </div>
 
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Gráfico de Crescimento (Linha)
-    const ctxCrescimento = document.getElementById('chartCrescimento').getContext('2d');
-    new Chart(ctxCrescimento, {
-        type: 'line',
-        data: {
-            labels: {{ chart_labels|safe }},
-            datasets: [{
-                label: 'Membros Ativos',
-                data: {{ chart_data|safe }},
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#fff',
-                pointRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                x: { ticks: { color: '#9ca3af' }, grid: { display: false } }
-            }
-        }
-    });
+    function loadTab(btn, modulo) {
+        // Atualiza UI das Abas
+        document.querySelectorAll('.bi-tab').forEach(t => {
+            t.classList.remove('tab-active');
+            t.classList.add('tab-inactive');
+        });
+        btn.classList.remove('tab-inactive');
+        btn.classList.add('tab-active');
 
-    // 2. Gráfico ABC PDV (Doughnut)
-    const ctxPDV = document.getElementById('chartPDV').getContext('2d');
-    new Chart(ctxPDV, {
-        type: 'doughnut',
-        data: {
-            labels: {{ abc_pdv_labels|safe }},
-            datasets: [{
-                data: {{ abc_pdv_data|safe }},
-                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444'],
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { color: '#9ca3af', font: {size: 10} } }
-            },
-            cutout: '70%'
-        }
-    });
+        // Loader nos containers
+        document.getElementById('bi-content-container').innerHTML = `<div class="flex justify-center items-center py-20"><div class="flex flex-col items-center gap-4 text-blue-400"><i data-lucide="loader-2" class="w-16 h-16 animate-spin"></i><p class="font-bold">Processando DataFrames de ${modulo.toUpperCase()}...</p></div></div>`;
+        document.getElementById('ai-insights-container').innerHTML = `<div class="flex items-center gap-3 text-indigo-300 font-bold animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>Recalculando Planos de Ação LPU...</div>`;
+        lucide.createIcons();
 
-    // 3. Gráfico Gargalo Almoxarifado (Polar Area)
-    const ctxAlmox = document.getElementById('chartAlmoxarifado').getContext('2d');
-    new Chart(ctxAlmox, {
-        type: 'polarArea',
-        data: {
-            labels: {{ abc_almox_labels|safe }},
-            datasets: [{
-                data: {{ abc_almox_data|safe }},
-                backgroundColor: [
-                    'rgba(239, 68, 68, 0.7)',
-                    'rgba(245, 158, 11, 0.7)',
-                    'rgba(59, 130, 246, 0.7)',
-                    'rgba(16, 185, 129, 0.7)',
-                    'rgba(139, 92, 246, 0.7)'
-                ],
-                borderWidth: 1,
-                borderColor: '#111827'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { color: '#9ca3af', font: {size: 10} } }
-            },
-            scales: {
-                r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } }
-            }
+        // Carrega o HTMX para os Dados (Partial View)
+        htmx.ajax('GET', `/bi/data/${modulo}/`, '#bi-content-container');
+
+        // Carrega o HTMX para a I.A (Contextualizada)
+        htmx.ajax('GET', `/bi/ai-insights/?modulo=${modulo}`, '#ai-insights-container');
+    }
+
+    // Auto-carregar a primeira aba permitida
+    document.addEventListener("DOMContentLoaded", function() {
+        const firstTab = document.querySelector('.bi-tab');
+        if (firstTab) {
+            firstTab.click();
+        } else {
+            document.getElementById('bi-content-container').innerHTML = `<div class="p-8 text-center text-red-400 font-bold bg-red-900/20 rounded-xl">Seu cargo não possui acesso a nenhum painel analítico.</div>`;
+            document.getElementById('ai-insights-container').innerHTML = `Acesso negado.`;
         }
     });
-});
 </script>
 {% endblock content %}

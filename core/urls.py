@@ -31,6 +31,7 @@ urlpatterns = [
     path('sysadmin/', views.sysadmin_dashboard, name='sysadmin_dashboard'),
     path('pesquisa/', views.pesquisa_global_api, name='pesquisa_global_api'),
     path('bi/', views.bi_dashboard_geral, name='bi_dashboard_geral'),
+    path('bi/data/<str:modulo>/', views.bi_data_async, name='bi_data_async'),
     path('sysadmin/toggle-manutencao/', views.sysadmin_toggle_manutencao, name='sysadmin_toggle_manutencao'),
     path('sysadmin/toggle-email/', views.sysadmin_toggle_email, name='sysadmin_toggle_email'),
     path('sysadmin/backup/baixar/', views.sysadmin_baixar_backup, name='sysadmin_baixar_backup'),
