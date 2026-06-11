@@ -964,90 +964,103 @@ def pesquisa_global_api(request):
 @login_required
 def bi_dashboard_geral(request):
     if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente', 'pastor', 'lider', 'sub_lider'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
+        from core.models import LogAuditoria
+        LogAuditoria.objects.create(usuario_acao=request.user, acao_realizada='ACESSO_NEGADO_BI', tabela_afetada='SEGURANCA', diferenca_json={'erro': 'Tentativa de acessar o BI Avançado sem permissão.'})
+        return HttpResponseForbidden("Acesso restrito. Sua tentativa foi registrada.")
 
-    # Dados Gerais (Geral)
-    total_membros = Membro.objects.filter(is_active=True).count()
-
-    # Dados dinâmicos de evolução de membros baseados no date_joined
     import datetime
+    import json
     from django.db.models.functions import TruncMonth
-    from django.db.models import Count
+    from django.db.models import Count, Sum
+    from core.models import Membro
+    from visitantes.models import Visitante
+    from ministerio_casais.models import Casal
+    from escalas.models import Escala, CompetenciaEscala
+    from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
+    from pdv.models import Venda, Produto
 
-    seis_meses_atras = datetime.date.today() - datetime.timedelta(days=180)
-    evolucao = Membro.objects.filter(is_active=True, date_joined__gte=seis_meses_atras) \
-        .annotate(mes=TruncMonth('date_joined')) \
-        .values('mes') \
-        .annotate(total=Count('id')) \
-        .order_by('mes')
-
-    MESES_BR = {
-        1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
-        7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
-    }
-
-    meses_dict = {MESES_BR[m['mes'].month]: m['total'] for m in evolucao if m['mes']}
-
-    # Gera os últimos 6 meses para o gráfico
-    labels = []
-    data = []
     hoje = datetime.date.today()
+    seis_meses_atras = hoje - datetime.timedelta(days=180)
+    inicio_mes_atual = hoje.replace(day=1)
+
+    # ==========================================
+    # NÍVEL 1: SAÚDE ESPIRITUAL E RETENÇÃO (MAX)
+    # ==========================================
+    total_membros = Membro.objects.filter(is_active=True).count()
+    visitantes_total = Visitante.objects.count()
+    visitantes_convertidos = Visitante.objects.filter(tornou_se_membro=True).count()
+    taxa_conversao = round((visitantes_convertidos / visitantes_total * 100) if visitantes_total > 0 else 0, 1)
+
+    casais_total = Casal.objects.count()
+    casais_crise = Casal.objects.filter(status_relacionamento='em_crise').count()
+    taxa_crise_casais = round((casais_crise / casais_total * 100) if casais_total > 0 else 0, 1)
+
+    evolucao_membros = Membro.objects.filter(is_active=True, date_joined__gte=seis_meses_atras) \
+        .annotate(mes=TruncMonth('date_joined')).values('mes').annotate(total=Count('id')).order_by('mes')
+
+    MESES_BR = {1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun', 7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'}
+    meses_dict = {MESES_BR[m['mes'].month]: m['total'] for m in evolucao_membros if m['mes']}
+
+    labels_crescimento = []
+    data_crescimento = []
     for i in range(5, -1, -1):
         d = hoje.replace(day=1) - datetime.timedelta(days=30 * i)
         mes_nome = MESES_BR[d.month]
-        labels.append(mes_nome)
-        data.append(meses_dict.get(mes_nome, 0))
+        labels_crescimento.append(mes_nome)
+        data_crescimento.append(meses_dict.get(mes_nome, 0))
+
+    # ==========================================
+    # NÍVEL 2: SAÚDE DO VOLUNTARIADO E ESCALAS
+    # ==========================================
+    comp_atual = CompetenciaEscala.objects.filter(mes_ano__icontains=hoje.strftime('%Y-%m')).first()
+    furos_escalas = 0
+    taxa_furos = 0
+    sobrecarga = []
+    if comp_atual:
+        escalas_mes = Escala.objects.filter(competencia=comp_atual)
+        furos_escalas = escalas_mes.filter(status_confirmacao__in=['recusada', 'ausente']).count()
+        total_escalas = escalas_mes.count()
+        taxa_furos = round((furos_escalas / total_escalas * 100) if total_escalas > 0 else 0, 1)
+
+        # Voluntários Escalados > 3 vezes no mesmo mês
+        sobrecarga_raw = escalas_mes.values('membro_escalado__first_name', 'membro_escalado__last_name').annotate(total=Count('id')).filter(total__gt=3).order_by('-total')[:5]
+        sobrecarga = [{'nome': f"{s['membro_escalado__first_name']} {s['membro_escalado__last_name']}", 'qtd': s['total']} for s in sobrecarga_raw]
+
+    # ==========================================
+    # NÍVEL 3: SAÚDE MATERIAL (PDV E ALMOXARIFADO)
+    # ==========================================
+    faturamento_mes = Venda.objects.filter(data_venda__gte=inicio_mes_atual).aggregate(Sum('total'))['total__sum'] or 0
+
+    # Curva ABC PDV (Top 5 Produtos mais rentáveis)
+    abc_pdv_raw = Venda.objects.filter(data_venda__gte=seis_meses_atras).values('itens__produto__nome').annotate(receita=Sum('itens__valor_total')).order_by('-receita')[:5]
+    abc_pdv_labels = [p['itens__produto__nome'] for p in abc_pdv_raw if p['itens__produto__nome']]
+    abc_pdv_data = [float(p['receita']) for p in abc_pdv_raw if p['receita']]
+
+    # Gargalos Almoxarifado (Itens mais retirados/danificados)
+    abc_almox_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(total=Count('item')).order_by('-total')[:5]
+    abc_almox_labels = [item['item__nome'] for item in abc_almox_raw if item['item__nome']]
+    abc_almox_data = [item['total'] for item in abc_almox_raw if item['total']]
 
     context = {
+        # Nível 1
         'total_membros': total_membros,
-        'chart_labels': json.dumps(labels),
-        'chart_data': json.dumps(data)
+        'taxa_conversao_visitantes': taxa_conversao,
+        'taxa_crise_casais': taxa_crise_casais,
+        'chart_labels': json.dumps(labels_crescimento),
+        'chart_data': json.dumps(data_crescimento),
+
+        # Nível 2
+        'taxa_furos': taxa_furos,
+        'sobrecarga_voluntarios': sobrecarga,
+
+        # Nível 3
+        'faturamento_mes': float(faturamento_mes),
+        'abc_pdv_labels': json.dumps(abc_pdv_labels),
+        'abc_pdv_data': json.dumps(abc_pdv_data),
+        'abc_almox_labels': json.dumps(abc_almox_labels),
+        'abc_almox_data': json.dumps(abc_almox_data),
     }
-    return render(request, 'core/pages/bi_dashboard.html', context)
-
-@login_required
-def bi_almoxarifado(request):
-    if request.user.nivel_hierarquico not in ['super_admin', 'lider'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
-
-    from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
-    from django.db.models import Count
-    import json
-
-    total_ativos = ItemAlmoxarifado.objects.count()
-    emprestados = ItemAlmoxarifado.objects.filter(status_item='emprestado').count()
-
-    # Agrupamento para a Curva ABC (Quais itens mais tem retiradas)
-    ativos_agrupados = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(total=Count('item')).order_by('-total')[:5]
-    abc_labels = [item['item__nome'] for item in ativos_agrupados]
-    abc_data = [item['total'] for item in ativos_agrupados]
-
-    context = {
-        'total_ativos': total_ativos,
-        'emprestados': emprestados,
-        'abc_labels': json.dumps(abc_labels),
-        'abc_data': json.dumps(abc_data)
-    }
-    return render(request, 'core/pages/bi_almoxarifado.html', context)
-
-@login_required
-def bi_escalas(request):
-    if request.user.nivel_hierarquico not in ['super_admin', 'lider'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
-
-    from escalas.models import Escala, CompetenciaEscala
-    total_escalas = Escala.objects.count()
-
-    # Preenchimento
-    taxa_labels = ['Mês Atual']
-    taxa_data = [100] # Simplificação, mas real
-
-    context = {
-        'total_escalas': total_escalas,
-        'taxa_labels': json.dumps(taxa_labels),
-        'taxa_data': json.dumps(taxa_data)
-    }
-    return render(request, 'core/pages/bi_escalas.html', context)
+    return render(request, 'core/pages/bi_master.html', context)
 
 from django.http import JsonResponse
 from midia_lgpd.models import DocumentoTemplate
@@ -1257,49 +1270,74 @@ def ai_insights_bi(request):
         if not client:
             return HttpResponse('<div class="p-4 bg-red-900/50 text-red-200 rounded-lg">Erro: Chave do Groq não configurada.</div>')
 
-        # Coletar estatísticas globais
-        from core.models import Membro
-        from gestao_membros.models import Departamento
-        from escalas.models import CompetenciaEscala
-        from almoxarifado.models import Ativo, Emprestimo
+        # Coletar estatísticas massivas para o BI
+        import datetime
         from django.utils import timezone
+        from django.db.models import Count, Sum
+        from core.models import Membro
+        from visitantes.models import Visitante
+        from ministerio_casais.models import Casal
+        from escalas.models import Escala, CompetenciaEscala
+        from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
+        from pdv.models import Venda
 
         hoje = timezone.now().date()
-        total_membros = Membro.objects.filter(is_active=True).count()
-        membros_inativos = Membro.objects.filter(is_active=False).count()
-        total_deptos = Departamento.objects.count()
-        escalas_ativas = CompetenciaEscala.objects.filter(status='publicada').count()
-        ativos = Ativo.objects.count()
+        seis_meses_atras = hoje - datetime.timedelta(days=180)
+        inicio_mes = hoje.replace(day=1)
+
+        visitantes_total = Visitante.objects.count()
+        visitantes_conv = Visitante.objects.filter(tornou_se_membro=True).count()
+        taxa_conv = round((visitantes_conv / visitantes_total * 100) if visitantes_total > 0 else 0, 1)
+
+        casais_total = Casal.objects.count()
+        casais_crise = Casal.objects.filter(status_relacionamento='em_crise').count()
+        taxa_crise = round((casais_crise / casais_total * 100) if casais_total > 0 else 0, 1)
+
+        comp_atual = CompetenciaEscala.objects.filter(mes_ano__icontains=hoje.strftime('%Y-%m')).first()
+        furos = 0
+        if comp_atual:
+            furos = Escala.objects.filter(competencia=comp_atual, status_confirmacao__in=['recusada', 'ausente']).count()
+
+        faturamento = Venda.objects.filter(data_venda__gte=inicio_mes).aggregate(Sum('total'))['total__sum'] or 0
+
+        abc_almox_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('item__nome').annotate(total=Count('item')).order_by('-total')[:3]
+        itens_criticos = [f"{i['item__nome']} ({i['total']} retiradas)" for i in abc_almox_raw]
 
         import json
         context_data = {
-            'membros_ativos': total_membros,
-            'membros_inativos': membros_inativos,
-            'total_departamentos': total_deptos,
-            'escalas_publicadas': escalas_ativas,
-            'itens_patrimonio': ativos
+            'membros_ativos': Membro.objects.filter(is_active=True).count(),
+            'taxa_conversao_visitantes_membros': f"{taxa_conv}%",
+            'casais_em_crise_cadastrados': f"{taxa_crise}% do total",
+            'furos_escalas_este_mes': furos,
+            'faturamento_pdv_mes_atual': float(faturamento),
+            'itens_almoxarifado_mais_retirados': itens_criticos
         }
 
         prompt = f"""
-        Você é um Diretor de Inteligência de Negócios (BI) e Estratégia de uma Igreja.
-        Analise o resumo de dados operacionais abaixo e retorne um pequeno relatório de insights em HTML (sem usar tags Markdown como ```html).
-        Use classes TailwindCSS (text-blue-400, font-bold, bg-gray-800, p-4, rounded-lg) para formatar a resposta.
-        Dê 3 insights valiosos de gestão para o pastor/diretoria baseados nestes números:
+        Você é um Cientista de Dados (Data Scientist) Sênior contratado pela Diretoria Executiva da Igreja PV Enseada.
+        Abaixo estão os dados reais de Business Intelligence processados hoje.
 
+        Sua missão: Identifique GARGALOS OPERACIONAIS cruciais nestes dados (ex: muitos furos em escala, baixa conversão de visitantes, ou alta taxa de casais em crise) e proponha 3 PLANOS DE AÇÃO executivos curtos.
+
+        Regra Estrita:
+        1. Responda DIRETAMENTE com código HTML pronto (usando classes Tailwind: bg-gray-800, text-red-400 para alertas, text-blue-300 para ações). NÃO USE blocos de código ```html.
+        2. Seja cirúrgico, sem rodeios ou saudações muito longas. Fale como um executivo.
+
+        Dados JSON brutos:
         {json.dumps(context_data)}
         """
 
         response = client.chat.completions.create(
             model='llama-3.3-70b-versatile',
             messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.7
+            temperature=0.4 # Menor para respostas mais analíticas e cravadas
         )
 
-        html_response = response.choices[0].message.content.replace('```html', '').replace('```', '')
+        html_response = response.choices[0].message.content.replace('```html', '').replace('```', '').strip()
         return HttpResponse(html_response)
 
     except Exception as e:
-        return HttpResponse(f'<div class="p-4 bg-red-900/50 text-red-200 rounded-lg">Erro ao conectar com a LPU Groq: {str(e)}</div>')
+        return HttpResponse(f'<div class="p-4 bg-red-900/50 text-red-200 rounded-lg">Erro ao conectar com a LPU: {str(e)}</div>')
 
 from .models import NotificacaoGlobal
 from django.http import JsonResponse
@@ -1427,16 +1465,16 @@ import threading
 def sysadmin_rodar_spider(request):
     if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
         return HttpResponseForbidden("Acesso restrito.")
-        
+
     def run_spider_thread(user_id):
         try:
             call_command('run_spider', user_id=user_id)
         except Exception as e:
             print(f"Erro ao rodar spider: {e}")
-            
+
     thread = threading.Thread(target=run_spider_thread, args=(request.user.id,))
     thread.start()
-    
+
     messages.success(request, 'O Spider Test End-to-End foi iniciado em segundo plano. O resultado aparecerá nos logs abaixo em alguns instantes.')
     return HttpResponseRedirect(reverse('sysadmin'))
 
@@ -1444,10 +1482,10 @@ def sysadmin_rodar_spider(request):
 def sysadmin_baixar_log_spider(request, log_id):
     if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
         return HttpResponseForbidden("Acesso restrito.")
-        
+
     from core.models import SpiderTestLog
     from django.http import HttpResponse
-    
+
     log = get_object_or_404(SpiderTestLog, id=log_id)
     response = HttpResponse(log.log_texto, content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename="spider_log_{log.id}_{log.data_execucao.strftime("%Y%m%d%H%M")}.txt"'
