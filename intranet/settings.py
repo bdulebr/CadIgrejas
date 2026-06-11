@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'escalas',
     'almoxarifado',
     'pdv',
+    'visitantes',
 ]
 
 MIDDLEWARE = [
