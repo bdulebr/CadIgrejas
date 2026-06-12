@@ -24,6 +24,11 @@ class Casal(models.Model):
 
     endereco = models.TextField('Endereço', blank=True, null=True)
     data_cadastro = models.DateTimeField(auto_now_add=True)
+    arquivado = models.BooleanField('Arquivado/Saiu', default=False)
+
+    # Autenticação para o Portal do Aluno
+    senha = models.CharField('Senha de Acesso', max_length=128, blank=True, null=True)
+    precisa_trocar_senha = models.BooleanField('Trocar Senha no Próximo Login', default=True)
 
     foto_casal = models.ImageField('Foto do Casal', upload_to='casais/fotos/', blank=True, null=True)
     foto_conjuge_1 = models.ImageField('Foto Cônjuge 1', upload_to='casais/fotos/', blank=True, null=True)
@@ -68,13 +73,51 @@ class HistoricoAconselhamentoCasal(models.Model):
 class CursoCasal(models.Model):
     nome = models.CharField('Nome do Curso', max_length=150)
     descricao = models.TextField('Descrição')
-    valor_curso = models.DecimalField('Valor do Curso', max_digits=10, decimal_places=2, default=0.00)
-    carga_horaria = models.IntegerField('Carga Horária (Horas)', default=10)
-    data_inicio = models.DateField('Data de Início', blank=True, null=True)
-    data_fim = models.DateField('Data de Término', blank=True, null=True)
 
     def __str__(self):
         return self.nome
+
+class TurmaCurso(models.Model):
+    STATUS_TURMA = (
+        ('Aberta', 'Aberta (Matrículas Abertas)'),
+        ('Em Andamento', 'Em Andamento'),
+        ('Concluída', 'Concluída'),
+    )
+    curso = models.ForeignKey(CursoCasal, on_delete=models.CASCADE, related_name='turmas')
+    nome_turma = models.CharField('Nome/Número da Turma', max_length=100)
+    status = models.CharField('Status da Turma', max_length=50, choices=STATUS_TURMA, default='Aberta')
+
+    # Configurações Movidas do Curso
+    valor_curso = models.DecimalField('Valor do Material/Inscrição', max_digits=10, decimal_places=2, default=0.00)
+    carga_horaria = models.IntegerField('Carga Horária Total (Horas)', default=10)
+    dias_semana = models.CharField('Dias da Semana', max_length=150, blank=True, null=True, help_text="Ex: Segunda, Quarta")
+    emite_certificado = models.BooleanField('Emite Certificado?', default=False)
+    compra_camiseta = models.BooleanField('Requer Camiseta?', default=False)
+    duracao_aula_horas = models.IntegerField('Duração por Aula (Horas)', default=2)
+
+    # Regras de Aprovação
+    limite_faltas = models.IntegerField('Limite Máximo de Faltas', default=3, help_text="Quantidade de faltas permitidas antes da reprovação")
+    percentual_presenca_minimo = models.IntegerField('Percentual de Presença Mínimo (%)', default=75, help_text="Se atingir as duas regras (A e B), o aluno reprova por falta")
+
+    def __str__(self):
+        return f"{self.curso.nome} - {self.nome_turma}"
+
+from django.conf import settings
+class ProfessorTurma(models.Model):
+    turma = models.ForeignKey(TurmaCurso, on_delete=models.CASCADE, related_name='professores')
+    professor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='turmas_lecionadas')
+
+    def __str__(self):
+        return f"{self.professor.get_full_name() or self.professor.username} - {self.turma}"
+
+class AulaTurma(models.Model):
+    turma = models.ForeignKey(TurmaCurso, on_delete=models.CASCADE, related_name='aulas')
+    titulo = models.CharField('Título/Tema da Aula', max_length=150)
+    data_aula = models.DateField('Data da Aula')
+    realizada = models.BooleanField('Aula Realizada / Chamada Feita', default=False)
+
+    def __str__(self):
+        return f"{self.titulo} - {self.turma.nome_turma}"
 
 class MatriculaCursoCasal(models.Model):
     STATUS_PAGAMENTO = (
@@ -84,9 +127,17 @@ class MatriculaCursoCasal(models.Model):
         ('Bolsa Integral', 'Bolsa Integral'),
     )
 
-    curso = models.ForeignKey(CursoCasal, on_delete=models.CASCADE, related_name='matriculas')
+    STATUS_MATRICULA = (
+        ('Ativa', 'Ativa'),
+        ('Aprovado', 'Aprovado'),
+        ('Reprovado por Falta', 'Reprovado por Falta'),
+        ('Desistente', 'Desistente'),
+    )
+
+    turma = models.ForeignKey(TurmaCurso, on_delete=models.CASCADE, related_name='matriculas', null=True, blank=True)
     casal = models.ForeignKey(Casal, on_delete=models.CASCADE, related_name='matriculas_cursos')
     data_matricula = models.DateTimeField(auto_now_add=True)
+    status_matricula = models.CharField('Status da Matrícula', max_length=50, choices=STATUS_MATRICULA, default='Ativa')
 
     status_pagamento = models.CharField('Status Financeiro', max_length=50, choices=STATUS_PAGAMENTO, default='Pendente')
     valor_pago = models.DecimalField('Valor Pago', max_digits=10, decimal_places=2, default=0.00)
@@ -95,8 +146,68 @@ class MatriculaCursoCasal(models.Model):
     aprovado = models.BooleanField('Aprovado / Certificado', default=False)
     certificado_arquivo = models.FileField('Arquivo do Certificado', upload_to='casais/certificados/', blank=True, null=True)
 
+    # Autenticação Option B (Link Mágico)
+    token_acesso = models.CharField('Token Mágico de Acesso', max_length=100, blank=True, null=True, unique=True)
+
     def __str__(self):
-        return f"{self.casal.nomes_juntos} - {self.curso.nome}"
+        return f"{self.casal.nomes_juntos} - {self.turma.curso.nome} ({self.turma.nome_turma})"
+
+class PresencaAula(models.Model):
+    aula = models.ForeignKey(AulaTurma, on_delete=models.CASCADE, related_name='presencas')
+    matricula = models.ForeignKey(MatriculaCursoCasal, on_delete=models.CASCADE, related_name='historico_presenca')
+    presente = models.BooleanField('Presente?', default=True)
+    justificada = models.BooleanField('Falta Justificada/Abonada?', default=False)
+    observacao = models.CharField('Observação', max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        status = "Presente" if self.presente else ("Falta Justificada" if self.justificada else "Falta")
+        return f"{self.matricula.casal.nomes_juntos} - {self.aula.titulo} - {status}"
+
+class PostagemCurso(models.Model):
+    TIPO_CHOICES = (
+        ('Aviso', 'Aviso'),
+        ('Material', 'Material de Estudo (Download)'),
+        ('Tarefa', 'Tarefa / Atividade (Requer Envio)'),
+    )
+    turma = models.ForeignKey(TurmaCurso, on_delete=models.CASCADE, related_name='postagens')
+    titulo = models.CharField('Título da Postagem', max_length=200)
+    descricao = models.TextField('Descrição / Conteúdo', blank=True, null=True)
+    tipo = models.CharField('Tipo', max_length=50, choices=TIPO_CHOICES, default='Aviso')
+    alunos_especificos = models.ManyToManyField('MatriculaCursoCasal', blank=True, related_name='postagens_diretas', help_text="Se vazio, vai para todos da turma.")
+    arquivo = models.FileField('Arquivo Anexo', upload_to='casais/cursos/materiais/', blank=True, null=True)
+    data_postagem = models.DateTimeField(auto_now_add=True)
+    data_limite = models.DateTimeField('Data Limite de Entrega (Para Tarefas)', blank=True, null=True)
+
+    def __str__(self):
+        return f"[{self.get_tipo_display()}] {self.titulo} - {self.turma.nome_turma}"
+
+class EntregaAtividadeAluno(models.Model):
+    postagem = models.ForeignKey(PostagemCurso, on_delete=models.CASCADE, related_name='entregas')
+    matricula = models.ForeignKey(MatriculaCursoCasal, on_delete=models.CASCADE, related_name='entregas_tarefas')
+    arquivo_enviado = models.FileField('Arquivo Enviado', upload_to='casais/cursos/entregas/')
+    comentario_aluno = models.TextField('Comentário do Aluno', blank=True, null=True)
+    data_entrega = models.DateTimeField(auto_now_add=True)
+    nota = models.DecimalField('Nota (Opcional)', max_digits=5, decimal_places=2, blank=True, null=True)
+
+    def __str__(self):
+        return f"Entrega de {self.matricula.casal.nomes_juntos} - {self.postagem.titulo}"
+
+class PagamentoCursoCasal(models.Model):
+    FORMAS_PAGAMENTO = (
+        ('Dinheiro', 'Dinheiro'),
+        ('PIX', 'PIX'),
+        ('Cartão de Crédito', 'Cartão de Crédito'),
+        ('Cartão de Débito', 'Cartão de Débito'),
+        ('Transferência', 'Transferência'),
+    )
+    matricula = models.ForeignKey(MatriculaCursoCasal, on_delete=models.CASCADE, related_name='historico_pagamentos')
+    valor_pago = models.DecimalField('Valor do Pagamento', max_digits=10, decimal_places=2)
+    forma_pagamento = models.CharField('Forma de Pagamento', max_length=50, choices=FORMAS_PAGAMENTO)
+    data_pagamento = models.DateTimeField('Data do Pagamento', auto_now_add=True)
+    observacoes = models.TextField('Observações', blank=True, null=True)
+
+    def __str__(self):
+        return f"Pagamento de R$ {self.valor_pago} - {self.matricula.casal.nomes_juntos}"
 
 class EventoCasal(models.Model):
     titulo = models.CharField('Título do Evento', max_length=150)

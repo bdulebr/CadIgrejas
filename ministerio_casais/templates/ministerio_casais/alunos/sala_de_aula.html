@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala de Aula - {{ turma.curso.nome }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- AlpineJS for modals -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#3b82f6', 600: '#2563eb' },
+                        gray: { 800: '#1f2937', 900: '#111827' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 min-h-screen text-gray-200 font-sans">
+
+    <!-- Topbar -->
+    <header class="bg-gray-800/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'portal_aluno' %}" class="p-2 bg-gray-700/50 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-bold text-white leading-tight">{{ turma.curso.nome }}</h1>
+                    <p class="text-xs text-gray-400">{{ turma.nome_turma }}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:block text-right">
+                    <p class="text-xs text-gray-400">Professor(es)</p>
+                    <p class="text-sm font-semibold text-white">
+                        {% for prof in turma.professores.all %}
+                            {{ prof.professor.get_full_name|default:prof.professor.username }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            Líder do Departamento
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Header Banner -->
+        <div class="h-48 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-800 mb-8 relative overflow-hidden shadow-lg flex items-end p-6">
+            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#fff 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
+            <div class="relative z-10 w-full flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white mb-1">{{ turma.curso.nome }}</h2>
+                    <p class="text-blue-200 font-medium">{{ turma.nome_turma }}</p>
+                </div>
+                <div class="hidden sm:flex bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white border border-white/30">
+                    <i data-lucide="users" class="w-5 h-5 mr-2"></i>
+                    <span class="font-bold">Mural da Turma</span>
+                </div>
+            </div>
+        </div>
+
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl text-sm font-medium {% if message.tags == 'error' %}bg-red-500/10 text-red-400 border border-red-500/20{% else %}bg-green-500/10 text-green-400 border border-green-500/20{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Feed/Mural -->
+        <div class="space-y-6">
+            {% for postagem in postagens %}
+
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-sm hover:border-gray-600 transition-colors">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                        {% if postagem.tipo == 'Material' %}
+                            <i data-lucide="book" class="w-6 h-6 text-brand-400"></i>
+                        {% elif postagem.tipo == 'Tarefa' %}
+                            <i data-lucide="clipboard-list" class="w-6 h-6 text-yellow-400"></i>
+                        {% else %}
+                            <i data-lucide="message-square" class="w-6 h-6 text-gray-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-lg font-bold text-white">{{ postagem.titulo }}</h3>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">{{ postagem.data_postagem|date:"d M Y" }}</span>
+                        </div>
+                        <p class="text-sm text-gray-400">Postou um novo material</p>
+                    </div>
+                </div>
+
+                {% if postagem.descricao %}
+                <div class="text-gray-300 text-sm mb-6 whitespace-pre-line pl-16">
+                    {{ postagem.descricao }}
+                </div>
+                {% endif %}
+
+                <!-- Arquivo Anexo -->
+                {% if postagem.arquivo %}
+                <div class="pl-16 mb-4">
+                    <a href="{{ postagem.arquivo.url }}" target="_blank" class="inline-flex items-center gap-3 p-3 bg-gray-900 border border-gray-700 rounded-xl hover:border-brand-500 hover:bg-gray-700/50 transition-colors group w-full sm:w-auto">
+                        <div class="p-2 bg-red-500/10 text-red-400 rounded-lg group-hover:bg-red-500/20 transition-colors">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex flex-col pr-4">
+                            <span class="text-sm font-semibold text-white group-hover:text-brand-400 transition-colors">Material Anexado</span>
+                            <span class="text-xs text-gray-500">Clique para abrir/baixar</span>
+                        </div>
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Área de Entrega de Tarefas -->
+                {% if postagem.tipo == 'Tarefa' %}
+                <div class="pl-16 mt-6 border-t border-gray-700 pt-4" x-data="{ openUpload: false }">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-white">Seu Trabalho</span>
+                            {% if postagem.data_limite %}
+                            <span class="text-xs text-red-400">Data de entrega: {{ postagem.data_limite|date:"d/m/Y H:i" }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if postagem.entrega_aluno %}
+                            <!-- Já Entregue -->
+                            <div class="flex items-center gap-4 bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-lg">
+                                <div class="flex items-center gap-2 text-green-400">
+                                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                    <span class="text-sm font-bold text-green-400">Entregue</span>
+                                </div>
+                                <a href="{{ postagem.entrega_aluno.arquivo_enviado.url }}" target="_blank" class="text-xs text-white underline hover:text-blue-300">Ver Arquivo</a>
+                            </div>
+                        {% else %}
+                            <!-- Pendente -->
+                            <button @click="openUpload = true" class="bg-white text-gray-900 hover:bg-gray-200 font-bold py-2 px-4 rounded-lg text-sm transition-colors flex items-center gap-2 shadow-sm">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                Adicionar Trabalho
+                            </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- Modal de Upload (AlpineJS) -->
+                    <div x-show="openUpload" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div @click.away="openUpload = false" class="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                            <button @click="openUpload = false" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                            <h3 class="text-xl font-bold text-white mb-4">Enviar Tarefa</h3>
+                            <p class="text-sm text-gray-400 mb-6">{{ postagem.titulo }}</p>
+
+                            <form action="{% url 'enviar_tarefa_aluno' postagem.id %}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                                {% csrf_token %}
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Arquivo da Atividade</label>
+                                    <input type="file" name="arquivo" required
+                                           class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-600 file:text-white hover:file:bg-brand-500 file:cursor-pointer cursor-pointer">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Comentário (Opcional)</label>
+                                    <textarea name="comentario" rows="3" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Adicione um comentário para o professor..."></textarea>
+                                </div>
+
+                                <div class="pt-2">
+                                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-brand-500/25">
+                                        Entregar Atividade
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% empty %}
+            <div class="py-16 text-center border border-dashed border-gray-700 rounded-2xl bg-gray-800/50">
+                <div class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="wind" class="w-8 h-8 text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Mural Vazio</h3>
+                <p class="text-gray-400">Ainda não há postagens nesta turma.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

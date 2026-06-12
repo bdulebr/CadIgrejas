@@ -201,10 +201,7 @@
                     <i data-lucide="cloud" class="w-5 h-5 text-gray-400 group-hover:text-blue-400"></i>
                     <span x-show="sidebarOpen" class="whitespace-nowrap">PV Drive</span>
                 </a>
-                <a href="{% url 'painel_documentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
-                    <i data-lucide="file-signature" class="w-5 h-5 text-gray-400 group-hover:text-blue-400"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap">Assinaturas e Docs</span>
-                </a>
+
                 <a href="{% url 'departamentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
                     <i data-lucide="network" class="w-5 h-5 text-gray-400 group-hover:text-purple-400"></i>
                     <span x-show="sidebarOpen" class="whitespace-nowrap">Departamentos</span>
@@ -385,7 +382,7 @@
         {% endif %}
 
         <!-- Área de Cards e Dashboards -->
-        <div class="p-8 space-y-6 flex-grow relative z-0">
+        <div class="p-8 space-y-6 flex-grow relative">
         {% block content %}
         {% endblock content %}
             </div>

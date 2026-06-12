@@ -33,7 +33,4 @@ urlpatterns = [
     path('drive/compartilhamento/<int:permissao_id>/cancelar/', views.cancelar_compartilhamento, name='cancelar_compartilhamento'),
 
     # Documentos Avançados
-    path('documentos/', views.painel_documentos, name='painel_documentos'),
-    path('documentos/enviar/', views.enviar_documento, name='enviar_documento'),
-    path('documentos/assinar/<uuid:token>/', views.assinar_documento_externo, name='assinar_documento_externo'),
 ]

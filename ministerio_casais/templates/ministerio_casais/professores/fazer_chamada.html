@@ -1,0 +1,79 @@
+{% extends 'core/base.html' %}
+{% block title %}Chamada - {{ aula.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'diario_classe_turma' turma.id %}" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Fazer Chamada</h1>
+            <p class="text-gray-400 mt-1">{{ aula.titulo }} - {{ aula.data_aula|date:"d/m/Y" }}</p>
+        </div>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-sm">
+        <div class="flex justify-between items-end mb-6 pb-4 border-b border-gray-800">
+            <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="users" class="w-5 h-5 text-orange-400"></i> Lista de Alunos
+                </h3>
+                <p class="text-sm text-gray-400 mt-1">Marque quem FALTOU desmarcando a presença.</p>
+            </div>
+            <div class="text-sm text-gray-400 bg-gray-800 px-3 py-1 rounded-lg border border-gray-700">
+                Total: <strong>{{ presencas.count }}</strong>
+            </div>
+        </div>
+
+        <form action="{% url 'fazer_chamada_aula' aula.id %}" method="POST">
+            {% csrf_token %}
+            <div class="space-y-3 mb-8">
+                {% for p in presencas %}
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-800/30 border border-gray-700/50 rounded-xl hover:bg-gray-800/50 transition-colors gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center font-bold">
+                            {{ p.matricula.casal.nome_conjuge_1|first|upper }}
+                        </div>
+                        <div>
+                            <h4 class="text-md font-bold text-white">{{ p.matricula.casal.nomes_juntos }}</h4>
+                            <p class="text-xs text-gray-500">
+                                Status: <span class="{% if p.matricula.status_matricula == 'Ativa' %}text-green-400{% else %}text-red-400{% endif %} font-semibold">{{ p.matricula.status_matricula }}</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-gray-900 p-2 rounded-lg border border-gray-700">
+                        <!-- Switch de Falta -->
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <span class="text-sm font-bold text-gray-400 group-hover:text-gray-300">Faltou?</span>
+                            <div class="relative">
+                                <!-- checkbox oculto -->
+                                <input type="checkbox" name="falta_{{ p.id }}" class="peer sr-only" {% if not p.presente %}checked{% endif %}>
+                                <!-- track do toggle -->
+                                <div class="block bg-gray-700 w-10 h-6 rounded-full peer-checked:bg-red-500 transition-colors"></div>
+                                <!-- bolinha do toggle -->
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+
+                        <div class="w-px h-6 bg-gray-700"></div>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="justificada_{{ p.id }}" class="w-4 h-4 rounded bg-gray-800 border-gray-600 text-yellow-500 focus:ring-yellow-500" {% if p.justificada %}checked{% endif %}>
+                            <span class="text-xs text-gray-400">Justificada</span>
+                        </label>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-gray-500 py-4">Nenhum aluno ativo nesta turma.</p>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="w-full sm:w-auto ml-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-orange-900/20">
+                <i data-lucide="check-circle" class="w-5 h-5"></i> Salvar Chamada e Enviar Alertas
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

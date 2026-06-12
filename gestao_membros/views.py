@@ -647,7 +647,6 @@ def remover_configuracao_slot(request, config_id):
 # MÓDULO DE RECURSOS HUMANOS (RH LIDERANÇA)
 # ==============================================================================
 from .models import AvaliacaoMembro, Ocorrencia, AcaoDisciplinar
-from midia_lgpd.models import DocumentoTemplate
 import json
 from django.template import Context, Template
 from intranet.services.pdf_service import gerar_pdf
@@ -787,7 +786,7 @@ def rh_gerar_pdf_disciplina(request, acao_id):
 
     # Try to fetch template based on type
     nome_acao = f"carta_{acao.tipo}"
-    template_doc = DocumentoTemplate.objects.filter(identificador_sistema=nome_acao).first()
+    template_doc = None
 
     if not template_doc:
         messages.error(request, 'O Template de PDF para esta ação não está cadastrado no sistema (SysAdmin).')

@@ -106,51 +106,9 @@ from django.db.models.signals import post_migrate
 @receiver(post_migrate)
 def injetar_templates_padrao(sender, **kwargs):
     if sender.name == 'core':
-        from midia_lgpd.models import DocumentoTemplate
 
         # Relatório Almoxarifado
-        if not DocumentoTemplate.objects.filter(identificador_sistema='relatorio_almoxarifado').exists():
-            html_almoxarifado = """
-            <style>
-                body { font-family: Helvetica, sans-serif; }
-                h1 { color: #333; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-            </style>
-            <h1>Relatório de Movimentações - Almoxarifado</h1>
-            <p>Gerado em: {{ data_geracao|date:"d/m/Y H:i:s" }}</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Item</th>
-                        <th>Tipo</th>
-                        <th>Qtd</th>
-                        <th>Responsável</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for mov in movimentacoes %}
-                    <tr>
-                        <td>{{ mov.data_hora|date:"d/m/Y H:i" }}</td>
-                        <td>{{ mov.item.nome }}</td>
-                        <td>{{ mov.get_tipo_display }}</td>
-                        <td>{{ mov.quantidade }}</td>
-                        <td>{{ mov.responsavel_movimento.get_full_name|default:mov.responsavel_movimento.username }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            """
-            DocumentoTemplate.objects.create(
-                titulo="Relatório de Almoxarifado Padrão",
-                identificador_sistema="relatorio_almoxarifado",
-                tipo_documento="pdf_lgpd",
-                descricao="Template PDF oficial para o livro razão do Almoxarifado.",
-                conteudo_base=html_almoxarifado,
-                ativo=True
-            )
+
             print("Template 'relatorio_almoxarifado' injetado com sucesso no DB.")
 
 # =========================================================

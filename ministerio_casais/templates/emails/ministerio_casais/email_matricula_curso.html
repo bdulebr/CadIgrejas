@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px;">
+        <h2 style="color: #6b21a8; text-align: center;">Bem-vindo(a) à Turma!</h2>
+
+        <p>Olá, <strong>{{ nome_aluno }}</strong>!</p>
+
+        <p>Você foi matriculado(a) com sucesso na turma <strong>{{ turma }}</strong> do curso <strong>{{ curso }}</strong>.</p>
+
+        <p>Para acessar a sua Sala de Aula Virtual e ver os materiais, cronograma e tarefas, clique no botão abaixo. <strong>Este é um link mágico e exclusivo para você, não compartilhe com ninguém:</strong></p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ link_acesso }}" style="background-color: #9333ea; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Acessar Sala de Aula</a>
+        </div>
+
+        <p>Se o botão não funcionar, copie e cole este link no seu navegador:</p>
+        <p style="font-size: 12px; color: #666; word-break: break-all;">{{ link_acesso }}</p>
+
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="font-size: 12px; color: #999; text-align: center;">
+            Ministério de Casais<br>
+            Palavra de Vida Enseada
+        </p>
+    </div>
+</body>
+</html>

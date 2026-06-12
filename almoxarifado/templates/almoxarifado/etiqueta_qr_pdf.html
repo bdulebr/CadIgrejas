@@ -12,21 +12,22 @@
             font-family: Arial, Helvetica, sans-serif;
             margin: 0;
             padding: 0;
-            color: #000;
+            color: #1f2937;
         }
         .container {
             width: 100%;
             height: 100%;
-            border: 2px solid #000;
+            border: 2px solid #1e3a8a;
             box-sizing: border-box;
             padding: 10px;
             text-align: center;
         }
         .header {
-            border-bottom: 2px solid #000;
+            border-bottom: 2px solid #1e3a8a;
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
+        .logo { max-height: 40px; margin-bottom: 5px; }
         .titulo {
             font-size: 24px;
             font-weight: bold;
@@ -65,22 +66,25 @@
 <body>
     <div class="container">
         <div class="header">
+            {% if logo_path %}
+            <img src="{{ logo_path }}" alt="Logo PV" class="logo">
+            {% endif %}
             <h1 class="titulo">{{ item.nome }}</h1>
             <p class="patrimonio">PATRIMÔNIO ID: <b>{{ item.id_unico }}</b></p>
         </div>
-        
+
         <div class="qr-container">
             <div class="qr-box">
                 <img src="data:image/png;base64,{{ qr_retirar_b64 }}" class="qr-image">
                 <p class="qr-label">1. RETIRAR ITEM</p>
             </div>
-            
+
             <div class="qr-box">
                 <img src="data:image/png;base64,{{ qr_devolver_b64 }}" class="qr-image">
                 <p class="qr-label">2. DEVOLVER ITEM</p>
             </div>
         </div>
-        
+
         <div class="footer">
             Ao ler o QR Code com a câmera do celular, o sistema registrará a movimentação automaticamente.<br>
             Igreja Palavra de Vida Enseada - Gestão Zero-Trust

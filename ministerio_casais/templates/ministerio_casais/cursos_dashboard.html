@@ -14,11 +14,17 @@
 
 {% block content %}
 <!-- Botão Voltar -->
-<div class="mb-6">
+<div class="mb-6 flex justify-between items-center">
     <a href="{% url 'dashboard_casais' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
         <span class="font-medium text-sm">Voltar ao Painel</span>
     </a>
+
+    <div class="relative z-10">
+        <a href="{% url 'gestao_financeira_cursos' %}" class="flex items-center gap-2 px-5 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-white font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+            <i data-lucide="wallet" class="w-5 h-5 text-green-400"></i> Gestão Financeira
+        </a>
+    </div>
 </div>
 
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -26,7 +32,7 @@
         <h1 class="text-3xl font-black text-white tracking-tight">Cursos e Treinamentos</h1>
         <p class="text-gray-400 mt-1 text-sm">Gerencie turmas, conteúdos e certificados do Ministério de Casais.</p>
     </div>
-    <button @click="$dispatch('open-modal', 'modal-novo-curso')" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all transform hover:-translate-y-0.5">
+    <button x-data @click="$dispatch('open-modal', 'modal-novo-curso')" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all transform hover:-translate-y-0.5">
         <i data-lucide="plus-circle" class="w-5 h-5"></i>
         <span>Novo Curso</span>
     </button>
@@ -37,35 +43,60 @@
     <div class="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-purple-500/30 transition-all flex flex-col">
         <div class="absolute -right-8 -top-8 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all z-0"></div>
         <div class="relative z-10 flex-1 flex flex-col">
+
             <div class="flex justify-between items-start mb-4">
                 <div class="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
                     <i data-lucide="book" class="w-6 h-6"></i>
                 </div>
-                <div class="text-right">
-                    <span class="text-xl font-black text-white tracking-tight">R$ {{ curso.valor_curso }}</span>
-                    <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Custo do Material</p>
+                <div class="text-right flex flex-col items-end gap-2">
+                    <div>
+                        <span class="text-xl font-black text-white tracking-tight">R$ {{ curso.valor_curso }}</span>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Custo do Material</p>
+                    </div>
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                        <button x-data @click="$dispatch('open-modal', 'modal-editar-curso-{{ curso.id }}')" class="p-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/40 transition-colors" title="Editar">
+                            <i data-lucide="edit" class="w-4 h-4"></i>
+                        </button>
+                        <button x-data @click="$dispatch('open-modal', 'modal-excluir-curso-{{ curso.id }}')" class="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/40 transition-colors" title="Excluir">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
+            </div> <!-- Close flex justify-between -->
+
+            <div class="mb-4 flex-1">
+                <h3 class="text-2xl font-bold text-white mb-2">{{ curso.nome }}</h3>
+                <p class="text-sm text-gray-400 line-clamp-2 mb-3">{{ curso.descricao }}</p>
+                {% if curso.dias_semana %}
+                <div class="flex items-center gap-2 text-sm text-purple-400 bg-purple-500/10 w-fit px-3 py-1.5 rounded-lg border border-purple-500/20">
+                    <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                    <span class="font-semibold">{{ curso.dias_semana }}</span>
+                </div>
+                {% endif %}
             </div>
 
-            <h3 class="text-xl font-bold text-white mb-2">{{ curso.nome }}</h3>
-            <p class="text-gray-400 text-sm mb-4 line-clamp-3">{{ curso.descricao }}</p>
-
-            <div class="mt-auto space-y-2">
-                <div class="flex items-center justify-between text-sm text-gray-300 bg-gray-800/50 p-3 rounded-xl border border-gray-700/50">
-                    <span class="flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-purple-400"></i> Carga Horária</span>
-                    <span class="font-bold">{{ curso.carga_horaria }}h</span>
-                </div>
-                <div class="flex items-center justify-between text-sm text-gray-300 bg-gray-800/50 p-3 rounded-xl border border-gray-700/50">
-                    <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-purple-400"></i> Matrículas</span>
-                    <span class="font-bold">{{ curso.matriculas.count }}</span>
-                </div>
-                <div class="flex items-center justify-between text-sm text-gray-300 bg-gray-800/50 p-3 rounded-xl border border-gray-700/50">
-                    <span class="flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-purple-400"></i> Data de Início</span>
-                    <span class="font-bold">{{ curso.data_inicio|date:"d/m/Y"|default:"A definir" }}</span>
-                </div>
+            <div class="flex gap-2 mb-2">
+                {% if curso.emite_certificado %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30"><i data-lucide="award" class="w-3 h-3 inline"></i> Certificado</span>
+                {% endif %}
+                {% if curso.compra_camiseta %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"><i data-lucide="shirt" class="w-3 h-3 inline"></i> Requer Camiseta</span>
+                {% endif %}
             </div>
-        </div>
-    </div>
+
+            <!-- Botão Gestão de Turmas -->
+            <div class="mt-4 pt-4 border-t border-gray-800">
+                <a href="{% url 'gestao_turmas_curso' curso.id %}" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 rounded-xl text-purple-300 font-bold transition-all group">
+                    <i data-lucide="users" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                    Gerenciar Turmas e Professores
+                </a>
+            </div>
+
+    </div> <!-- Fechamento do Card -->
+
+
+
     {% empty %}
     <div class="col-span-full py-16 text-center text-gray-500 bg-gray-900/30 rounded-3xl border border-gray-800 border-dashed">
         <div class="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -84,44 +115,80 @@
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         <div x-show="open" class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
             <form action="{% url 'adicionar_curso' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="px-6 py-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Nome do Curso</label>
+                            <input type="text" name="nome" required placeholder="Ex: Casados para Sempre" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Descrição</label>
+                            <textarea name="descricao" rows="3" placeholder="Do que se trata o curso?" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none"></textarea>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-900 border-t border-gray-800 flex justify-end gap-3 rounded-b-2xl">
+                        <button type="button" onclick="closeModal('modalNovoCurso')" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancelar</button>
+                        <button type="submit" class="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-purple-900/20 transition-all">Salvar Curso</button>
+                    </div>
+                </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modais de Edição e Exclusão (Renderizados FORA do Grid Principal) -->
+{% for curso in cursos %}
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-editar-curso-{{ curso.id }}') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="open" class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div x-show="open" class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full relative z-[100000]">
+            <form action="{% url 'editar_curso' curso.id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="px-6 py-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Nome do Curso</label>
+                            <input type="text" name="nome" required value="{{ curso.nome }}" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Descrição</label>
+                            <textarea name="descricao" rows="3" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">{{ curso.descricao }}</textarea>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-900 border-t border-gray-800 flex justify-end gap-3 rounded-b-2xl">
+                        <button type="button" onclick="closeModal('modalEditar{{ curso.id }}')" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancelar</button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-lg transition-all">Salvar Alterações</button>
+                    </div>
+                </form>
+        </div>
+    </div>
+</div>
+
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-excluir-curso-{{ curso.id }}') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="open" class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div x-show="open" class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full relative z-[100000]">
+            <form action="{% url 'excluir_curso' curso.id %}" method="POST">
                 {% csrf_token %}
                 <div class="px-6 py-6 border-b border-gray-800">
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i data-lucide="book-plus" class="w-5 h-5 text-purple-500"></i> Cadastrar Novo Curso
+                    <h3 class="text-xl font-bold text-rose-500 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i> Confirmar Exclusão
                     </h3>
                 </div>
-                <div class="px-6 py-6 space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Nome do Curso</label>
-                        <input type="text" name="nome" required placeholder="Ex: Casados para Sempre" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Descrição</label>
-                        <textarea name="descricao" rows="3" placeholder="Do que se trata o curso?" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none"></textarea>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Custo do Material (R$)</label>
-                            <input type="number" step="0.01" name="valor_curso" required value="0.00" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Carga Horária (Horas)</label>
-                            <input type="number" name="carga_horaria" required value="10" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Data de Início</label>
-                        <input type="date" name="data_inicio" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-                        <p class="text-xs text-gray-500 mt-1">Lembretes automáticos por e-mail serão enviados um dia antes desta data.</p>
-                    </div>
+                <div class="px-6 py-6 text-gray-300">
+                    <p>Tem certeza que deseja excluir o curso <strong>{{ curso.nome }}</strong>?</p>
+                    <p class="text-xs text-rose-400 mt-2 bg-rose-500/10 p-2 rounded border border-rose-500/30">
+                        <strong>Aviso:</strong> A exclusão do curso removerá permanentemente as matrículas associadas a ele no banco de dados.
+                    </p>
                 </div>
                 <div class="px-6 py-4 bg-gray-800/50 flex justify-end gap-3 border-t border-gray-800">
                     <button type="button" @click="open = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancelar</button>
-                    <button type="submit" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg font-bold shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all">Salvar Curso</button>
+                    <button type="submit" class="px-6 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold transition-all">Sim, Excluir</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+{% endfor %}
 
 {% endblock %}

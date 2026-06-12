@@ -29,7 +29,6 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
         return True # Retorna True para não quebrar a lógica das rotinas
 
     try:
-        from midia_lgpd.models import DocumentoTemplate
         from core.models import ConfiguracaoSistema
         from django.template import Template, Context
 
@@ -37,7 +36,7 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
         acao = template_name.replace('.html', '')
         identificador = f"email_{acao}"
 
-        template_dinamico = DocumentoTemplate.objects.filter(identificador_sistema=identificador, ativo=True).first()
+        template_dinamico = None
 
         # Injeta variáveis globais como IGREJA_NOME, IGREJA_LOGO
         config_sys = ConfiguracaoSistema.objects.first()

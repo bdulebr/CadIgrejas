@@ -17,10 +17,10 @@ def notificar_lideres_background(item, movimentacao):
     lideres = get_lideres_almoxarifado()
     acao = "RETIRADO" if movimentacao.tipo == 'retirada' else "DEVOLVIDO/ADICIONADO"
     titulo = f"Aviso Almoxarifado: Item {acao}"
-    
+
     cond_texto = f" | Condição: {item.get_condicao_fisica_display()}" if item.condicao_fisica else ""
     val_texto = f" | Valor: R$ {item.valor_monetario}" if item.valor_monetario else ""
-    
+
     mensagem = f"O item '{item.nome}' teve uma {movimentacao.get_tipo_display()} registrada por {movimentacao.nome_digitado}. Qtd: {movimentacao.quantidade}{cond_texto}{val_texto}."
 
     for lider in lideres:
@@ -113,13 +113,13 @@ def painel_inventario(request):
     from datetime import timedelta
 
     itens = ItemAlmoxarifado.objects.all().order_by('-id')
-    
+
     # Motor de Vencimentos (Alerta Zero-Trust)
     hoje = timezone.now().date()
     limite = hoje + timedelta(days=15)
     itens_vencendo = itens.filter(tipo_item='consumo', data_vencimento__lte=limite, quantidade_estoque__gt=0).order_by('data_vencimento')
     alerta_vencimento = False
-    
+
     if itens_vencendo.exists():
         alerta_vencimento = True
         try:
@@ -142,7 +142,7 @@ def painel_inventario(request):
     # Dash info
     ultimas_retiradas = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').order_by('-data_hora')[:5]
     ultimas_devolucoes = MovimentacaoAlmoxarifado.objects.filter(tipo='devolucao').order_by('-data_hora')[:5]
-    
+
     categorias = CategoriaItem.objects.prefetch_related('subcategorias').all().order_by('nome')
 
     # Para montar os options na view
@@ -180,29 +180,32 @@ def livro_almoxarifado(request):
 def exportar_livro_pdf(request):
     from xhtml2pdf import pisa
     from io import BytesIO
-    from django.http import HttpResponse
+    from django.http import HttpResponse, HttpResponseForbidden
     from django.template.loader import render_to_string
-    from midia_lgpd.models import DocumentoTemplate
 
     if not can_edit_almoxarifado(request.user):
         return HttpResponse("Acesso Negado", status=403)
 
     # Tenta pegar um template customizado do banco de dados (modulo de midia/LGPD)
-    template_db = DocumentoTemplate.objects.filter(identificador_sistema='relatorio_almoxarifado').first()
+    template_db = None
 
     movimentacoes = MovimentacaoAlmoxarifado.objects.all().order_by('-data_hora')
+
+    import os
+    from django.conf import settings
+    logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
 
     if template_db:
         from django.template import Template, Context
         t = Template(template_db.conteudo_base)
-        html_str = t.render(Context({'movimentacoes': movimentacoes, 'data_geracao': timezone.now()}))
+        html_str = t.render(Context({'movimentacoes': movimentacoes, 'data_geracao': timezone.now(), 'logo_path': logo_path}))
     else:
         # Fallback local
-        html_str = render_to_string('almoxarifado/pdf_livro_fallback.html', {'movimentacoes': movimentacoes})
+        html_str = render_to_string('almoxarifado/pdf_livro_fallback.html', {'movimentacoes': movimentacoes, 'logo_path': logo_path})
 
     result = BytesIO()
     pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result)
-    
+
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = 'inline; filename="livro_almoxarifado.pdf"'
@@ -230,7 +233,7 @@ def cadastrar_item_almoxarifado(request):
         localizacao = request.POST.get('localizacao', '').strip()
         destino = request.POST.get('destino_uso', '').strip()
         observacao = request.POST.get('observacao', '').strip()
-        
+
         valor_str = request.POST.get('valor_monetario', '')
         valor_monetario = float(valor_str) if valor_str else None
         status_pagamento = request.POST.get('status_pagamento', 'nao_se_aplica')
@@ -240,7 +243,7 @@ def cadastrar_item_almoxarifado(request):
         anexos = request.FILES.getlist('anexos_multiplos')
 
         id_unico_manual = request.POST.get('id_unico', '').strip()
-        
+
         categoria = CategoriaItem.objects.filter(id=categoria_id).first() if categoria_id else None
         valor_monetario = request.POST.get('valor_monetario')
         status_pagamento = request.POST.get('status_pagamento', 'nao_se_aplica')
@@ -341,13 +344,13 @@ def gerenciar_categorias(request):
 
     if request.method == 'POST':
         action = request.POST.get('action')
-        
+
         if action == 'add':
             nome = request.POST.get('nome')
             if nome:
                 CategoriaItem.objects.create(nome=nome)
                 messages.success(request, f"Categoria '{nome}' criada.")
-        
+
         elif action == 'edit':
             cat_id = request.POST.get('cat_id')
             nome = request.POST.get('nome')
@@ -355,13 +358,13 @@ def gerenciar_categorias(request):
             cat.nome = nome
             cat.save()
             messages.success(request, "Categoria atualizada.")
-            
+
         elif action == 'delete':
             cat_id = request.POST.get('cat_id')
             cat = get_object_or_404(CategoriaItem, id=cat_id)
             cat.delete()
             messages.success(request, "Categoria apagada.")
-            
+
         elif action == 'add_sub':
             cat_id = request.POST.get('cat_id')
             nome = request.POST.get('nome')
@@ -369,13 +372,13 @@ def gerenciar_categorias(request):
             if nome:
                 SubcategoriaItem.objects.create(nome=nome, categoria=cat)
                 messages.success(request, f"Subcategoria '{nome}' adicionada a {cat.nome}.")
-                
+
         elif action == 'delete_sub':
             sub_id = request.POST.get('sub_id')
             sub = get_object_or_404(SubcategoriaItem, id=sub_id)
             sub.delete()
             messages.success(request, "Subcategoria apagada.")
-            
+
         return redirect('gerenciar_categorias_almoxarifado')
 
     return render(request, 'almoxarifado/gerenciar_categorias.html', {'categorias': categorias})
@@ -387,7 +390,7 @@ def editar_item_almoxarifado(request, item_id):
 
         item = get_object_or_404(ItemAlmoxarifado, id=item_id)
     categorias = CategoriaItem.objects.all()
-    
+
     if request.method == 'POST':
         item.nome = request.POST.get('nome', '').strip()
         categoria_id = request.POST.get('categoria')
@@ -395,23 +398,23 @@ def editar_item_almoxarifado(request, item_id):
         subcategoria = SubcategoriaItem.objects.filter(id=subcategoria_id).first() if subcategoria_id else None
         item.tipo_item = request.POST.get('tipo_item', 'permanente')
         item.quantidade_estoque = int(request.POST.get('quantidade', item.quantidade_estoque))
-        
+
         data_vencimento = request.POST.get('data_vencimento')
         if data_vencimento:
             item.data_vencimento = data_vencimento
-            
+
         item.origem = request.POST.get('origem', 'desconhecido')
         item.fornecedor_doador = request.POST.get('fornecedor_doador', '').strip()
         item.localizacao = request.POST.get('localizacao', '').strip()
         item.destino_uso = request.POST.get('destino_uso', '').strip()
         item.observacao = request.POST.get('observacao', '').strip()
-        
+
         valor_str = request.POST.get('valor_monetario', '')
         item.valor_monetario = float(valor_str) if valor_str else None
         item.status_pagamento = request.POST.get('status_pagamento', 'nao_se_aplica')
         item.condicao_fisica = request.POST.get('condicao_fisica', 'nova')
         item.status_item = request.POST.get('status_item', 'disponivel')
-        
+
         # Auditoria Zero-Trust Log (se o status foi para descartado)
         if item.status_item == 'descartado':
             item.quantidade_estoque = 0
@@ -419,19 +422,19 @@ def editar_item_almoxarifado(request, item_id):
         foto = request.FILES.get('foto_item')
         if foto:
             item.foto_item = foto
-            
+
         item.save()
         messages.success(request, f"Item {item.id_unico} atualizado com sucesso.")
         return redirect('painel_inventario')
-        
+
     origens_choices = ItemAlmoxarifado.ORIGEM_CHOICES
     tipos_choices = ItemAlmoxarifado.TIPO_CHOICES
     status_choices = ItemAlmoxarifado.STATUS_CHOICES
     pagamento_choices = ItemAlmoxarifado.PAGAMENTO_CHOICES
     condicao_choices = ItemAlmoxarifado.CONDICAO_CHOICES
-        
+
     return render(request, 'almoxarifado/editar_item.html', {
-        'item': item, 
+        'item': item,
         'categorias': categorias,
         'origens_choices': origens_choices,
         'tipos_choices': tipos_choices,
@@ -448,12 +451,12 @@ from io import BytesIO
 def imprimir_etiqueta_qr(request, item_id):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")
-        
+
     item = get_object_or_404(ItemAlmoxarifado, id=item_id)
-    
+
     # URL completa (Ex: https://pve.com.br/almoxarifado/qr/retirar/123/)
     base_url = request.build_absolute_uri('/')[:-1]
-    
+
     url_retirar = f"{base_url}/almoxarifado/qr/retirar/{item.id_unico}/"
     qr_ret = qrcode.QRCode(version=1, box_size=10, border=4)
     qr_ret.add_data(url_retirar)
@@ -471,22 +474,27 @@ def imprimir_etiqueta_qr(request, item_id):
     buf_dev = BytesIO()
     img_dev.save(buf_dev, format="PNG")
     qr_devolver_b64 = base64.b64encode(buf_dev.getvalue()).decode()
-    
+
+    import os
+    from django.conf import settings
+    logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+
     return render(request, 'almoxarifado/etiqueta_qr_pdf.html', {
-        'item': item, 
+        'item': item,
         'qr_retirar_b64': qr_retirar_b64,
-        'qr_devolver_b64': qr_devolver_b64
+        'qr_devolver_b64': qr_devolver_b64,
+        'logo_path': logo_path
     })
 
 @login_required
 def imprimir_todos_qrs(request):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")
-        
+
     itens = ItemAlmoxarifado.objects.all()
     itens_qr = []
     base_url = request.build_absolute_uri('/')[:-1]
-    
+
     for item in itens:
         url_retirar = f"{base_url}/almoxarifado/qr/retirar/{item.id_unico}/"
         qr_ret = qrcode.QRCode(version=1, box_size=10, border=4)
@@ -505,13 +513,13 @@ def imprimir_todos_qrs(request):
         buf_dev = BytesIO()
         img_dev.save(buf_dev, format="PNG")
         qr_devolver_b64 = base64.b64encode(buf_dev.getvalue()).decode()
-        
+
         itens_qr.append({
-            'item': item, 
+            'item': item,
             'qr_retirar_b64': qr_retirar_b64,
             'qr_devolver_b64': qr_devolver_b64
         })
-        
+
     return render(request, 'almoxarifado/todas_etiquetas_qr.html', {'itens_qr': itens_qr})
 
 # ==========================================
@@ -519,19 +527,19 @@ def imprimir_todos_qrs(request):
 # ==========================================
 
 def scanner_generico(request, tipo):
-    # Renderiza o scanner genérico. Quando um QR Code é lido, 
+    # Renderiza o scanner genérico. Quando um QR Code é lido,
     # ele redirecionará para a rota específica do item lido via JS.
     return render(request, 'almoxarifado/scanner_qr_generico.html', {'tipo': tipo})
 
 def baixar_qr_generico(request, tipo):
     import qrcode
-    from django.http import HttpResponse
+    from django.http import HttpResponse, HttpResponseForbidden
     from django.urls import reverse
-    
+
     # Gera a URL absoluta para a rota do Scanner Genérico
     url_relativa = reverse('scanner_retirada_generico' if tipo == 'retirada' else 'scanner_devolucao_generico')
     url_absoluta = request.build_absolute_uri(url_relativa)
-    
+
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -541,7 +549,7 @@ def baixar_qr_generico(request, tipo):
     qr.add_data(url_absoluta)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
-    
+
     response = HttpResponse(content_type="image/png")
     img.save(response, "PNG")
     response['Content-Disposition'] = f'attachment; filename="QR_Geral_{tipo.capitalize()}.png"'
@@ -550,7 +558,7 @@ def baixar_qr_generico(request, tipo):
 # ==========================================
 # API DE AUTO-SERVIÇO (CARRINHO E APROVAÇÕES)
 # ==========================================
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 import json
 
@@ -577,23 +585,23 @@ def finalizar_carrinho(request):
             nome_usuario = data.get('nome')
             email_usuario = data.get('email')
             itens = data.get('itens', []) # [{'id_unico': '...', 'quantidade': 1}, ...]
-            
+
             if not itens:
                 return JsonResponse({'sucesso': False, 'mensagem': 'Carrinho vazio'}, status=400)
-                
+
             movimentacoes_criadas = []
             itens_pendentes = 0
-            
+
             for item_data in itens:
                 try:
                     item = ItemAlmoxarifado.objects.get(id_unico=item_data['id_unico'])
                     qtd = int(item_data['quantidade'])
-                    
+
                     status_aprov = 'aprovado'
                     if item.exige_aprovacao and tipo_acao == 'retirada':
                         status_aprov = 'pendente'
                         itens_pendentes += 1
-                        
+
                     mov = MovimentacaoAlmoxarifado.objects.create(
                         item=item,
                         tipo=tipo_acao,
@@ -603,7 +611,7 @@ def finalizar_carrinho(request):
                         status_aprovacao=status_aprov,
                         observacao="Registrado via Auto-Atendimento (Carrinho)"
                     )
-                    
+
                     if status_aprov == 'aprovado':
                         # Baixa imediata no estoque
                         if tipo_acao == 'retirada':
@@ -611,20 +619,20 @@ def finalizar_carrinho(request):
                         else:
                             item.quantidade_estoque += qtd
                         item.save()
-                        
+
                     movimentacoes_criadas.append(mov.id)
                 except ItemAlmoxarifado.DoesNotExist:
                     continue
-                    
+
             # Aciona Notificacao e possivel envio de PDF
             from .tasks import processar_pos_carrinho_background
             import threading
             threading.Thread(target=processar_pos_carrinho_background, args=(movimentacoes_criadas,)).start()
-            
+
             msg = "Operação registrada com sucesso!"
             if itens_pendentes > 0:
                 msg += f" {itens_pendentes} item(ns) estão aguardando liberação do gestor."
-                
+
             return JsonResponse({'sucesso': True, 'mensagem': msg})
         except Exception as e:
             return JsonResponse({'sucesso': False, 'mensagem': str(e)}, status=500)
@@ -638,7 +646,7 @@ def finalizar_carrinho(request):
 def painel_aprovacoes_almoxarifado(request):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")
-        
+
     movs_pendentes = MovimentacaoAlmoxarifado.objects.filter(status_aprovacao='pendente').order_by('data_hora')
     return render(request, 'almoxarifado/fila_aprovacoes.html', {'movimentacoes': movs_pendentes})
 
@@ -646,17 +654,17 @@ def painel_aprovacoes_almoxarifado(request):
 def processar_aprovacao(request, mov_id, acao):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")
-        
+
     mov = get_object_or_404(MovimentacaoAlmoxarifado, id=mov_id)
     if mov.status_aprovacao != 'pendente':
         messages.warning(request, "Esta movimentação já foi processada.")
         return redirect('painel_aprovacoes_almoxarifado')
-        
+
     if acao == 'aprovar':
         mov.status_aprovacao = 'aprovado'
         mov.observacao += f" [Aprovado por {request.user.first_name}]"
         mov.save()
-        
+
         # Efetiva baixa/entrada no estoque real
         item = mov.item
         if mov.tipo == 'retirada':
@@ -664,19 +672,19 @@ def processar_aprovacao(request, mov_id, acao):
         else:
             item.quantidade_estoque += mov.quantidade
         item.save()
-        
+
         # Gera e envia PDF Termo Cautela se necessário
         if mov.email_digitado:
             from .tasks import gerar_e_enviar_pdf_termo
             import threading
             threading.Thread(target=gerar_e_enviar_pdf_termo, args=([mov], mov.email_digitado, mov.nome_digitado)).start()
-            
+
         messages.success(request, f"Movimentação de {item.nome} APROVADA.")
-        
+
     elif acao == 'rejeitar':
         mov.status_aprovacao = 'rejeitado'
         mov.observacao += f" [Rejeitado por {request.user.first_name}]"
         mov.save()
         messages.error(request, f"Movimentação de {mov.item.nome} REJEITADA.")
-        
+
     return redirect('painel_aprovacoes_almoxarifado')

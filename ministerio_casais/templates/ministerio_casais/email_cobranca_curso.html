@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Lembrete de Pagamento do Curso</title>
+</head>
+<body style="font-family: 'Inter', Arial, sans-serif; background-color: #f3f4f6; padding: 20px; color: #111827;">
+    <div style="max-w: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #1e40af; padding: 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Lembrete de Pagamento</h1>
+        </div>
+
+        <div style="padding: 30px;">
+            <p style="font-size: 16px; color: #4b5563; margin-top: 0;">Graça e Paz, <strong>{{ casal.nomes_juntos }}</strong>!</p>
+
+            <p style="font-size: 16px; color: #4b5563; line-height: 1.5;">
+                Gostaríamos de lembrar amigavelmente sobre o investimento pendente referente ao material do curso <strong>{{ curso.nome }}</strong>.
+            </p>
+
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 25px 0; border-radius: 4px;">
+                <p style="margin: 0; font-size: 14px; color: #1e3a8a;"><strong>Resumo:</strong></p>
+                <p style="margin: 5px 0 0 0; font-size: 20px; color: #1d4ed8; font-weight: bold;">Saldo Restante: R$ {{ saldo_devedor|floatformat:2 }}</p>
+            </div>
+
+            <p style="font-size: 16px; color: #4b5563; line-height: 1.5;">
+                O acerto deste valor é muito importante para podermos continuar mantendo a qualidade dos nossos materiais e do Ministério de Casais.
+            </p>
+
+            <p style="font-size: 16px; color: #4b5563; line-height: 1.5;">
+                Por favor, procure a liderança responsável no próximo encontro ou faça a transferência e nos envie o comprovante.
+            </p>
+
+            <p style="font-size: 14px; color: #6b7280; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                Caso já tenha realizado o pagamento nas últimas horas, por favor desconsidere este e-mail.
+            </p>
+        </div>
+
+        <div style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <p style="margin: 0; font-size: 12px; color: #9ca3af;">IntranetPV - Ministério de Casais</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -8,13 +8,17 @@
         h1 { text-align: center; color: #1e3a8a; }
         p { text-align: center; color: #555; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f3f4f6; color: #374151; }
+        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+        th { background-color: #eff6ff; color: #1e3a8a; }
         tr:nth-child(even) { background-color: #f9fafb; }
         .hash { font-family: monospace; font-size: 9px; color: #6b7280; word-break: break-all; }
+        .logo { max-height: 70px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
     </style>
 </head>
 <body>
+    {% if logo_path %}
+    <img src="{{ logo_path }}" alt="Logo PV" class="logo">
+    {% endif %}
     <h1>LIVRO DE REGISTROS - ALMOXARIFADO</h1>
     <p>Auditoria Zero-Trust - Relatório Gerado em: {% now "d/m/Y H:i:s" %}</p>
 

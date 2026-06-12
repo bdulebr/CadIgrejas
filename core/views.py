@@ -334,7 +334,7 @@ def logout_view(request):
 def sysadmin_dashboard(request):
 
     from core.models import ConfiguracaoSistema, LinkRapido, EmailLog
-    from midia_lgpd.models import DocumentoTemplate
+
     import psutil
     import os
     import platform
@@ -387,7 +387,7 @@ def sysadmin_dashboard(request):
     }
 
     # Templates e Links
-    templates = DocumentoTemplate.objects.all()
+    templates = []
     links_rapidos = LinkRapido.objects.all()
 
     # Email Logs
@@ -881,7 +881,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from core.models import Membro
-from midia_lgpd.models import DocumentoTemplate
+
 
 @login_required
 def pesquisa_global_api(request):
@@ -1220,82 +1220,9 @@ def bi_data_async(request, modulo):
 
 
 from django.http import JsonResponse
-from midia_lgpd.models import DocumentoTemplate
 
-@login_required
-@user_passes_test(is_super_admin)
-def sysadmin_templates_list(request):
-    # Redireciona de volta para o sysadmin dashboard na aba de templates
-    return redirect('/sysadmin/')
 
-@login_required
-@user_passes_test(is_super_admin)
-def sysadmin_template_editor(request, template_id=None):
 
-    template_doc = None
-    if template_id:
-        template_doc = get_object_or_404(DocumentoTemplate, id=template_id)
-
-    context = {
-        'template': template_doc,
-        'is_new': template_doc is None
-    }
-    return render(request, 'core/pages/sysadmin_template_editor.html', context)
-
-@login_required
-@csrf_exempt
-@user_passes_test(is_super_admin)
-def sysadmin_template_salvar(request, template_id=None):
-
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            nome_acao = data.get('nome_acao')
-            tipo = data.get('tipo', 'email')
-            assunto = data.get('assunto_padrao', '')
-            html = data.get('html_content', '')
-            css = data.get('css_content', '')
-            components = data.get('components_json', {})
-
-            if not nome_acao:
-                return JsonResponse({"error": "Nome da ação é obrigatório"}, status=400)
-
-            if template_id:
-                t = get_object_or_404(DocumentoTemplate, id=template_id)
-            else:
-                # Se for novo, checa se a acao ja existe
-                if DocumentoTemplate.objects.filter(identificador_sistema=nome_acao).exists():
-                    return JsonResponse({"error": "Já existe um template para esta ação."}, status=400)
-                t = DocumentoTemplate()
-
-            t.identificador_sistema = nome_acao
-            t.titulo = nome_acao
-            t.tipo_documento = tipo
-            t.descricao = assunto
-            t.html_canva = html
-            t.css_canva = css
-            t.json_canva = components
-            if not t.id:
-                t.criado_por = request.user
-            t.save()
-
-            return JsonResponse({"success": True, "template_id": t.id})
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    return JsonResponse({"error": "Método não permitido."}, status=405)
-
-@login_required
-@csrf_exempt
-@user_passes_test(is_super_admin)
-def sysadmin_template_deletar(request, template_id):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("Acesso restrito.")
-
-    t = get_object_or_404(DocumentoTemplate, id=template_id)
-    t.delete()
-    messages.success(request, 'Template excluído com sucesso.')
-    return redirect('/sysadmin/')
 
 
 from django.contrib.auth.views import PasswordResetView

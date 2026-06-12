@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.utils import timezone
-from .models import Casal, HistoricoAconselhamentoCasal, CursoCasal, MatriculaCursoCasal, EventoCasal, PresencaEventoCasal
+from .models import Casal, HistoricoAconselhamentoCasal, CursoCasal, MatriculaCursoCasal, EventoCasal, PresencaEventoCasal, TurmaCurso
 import os
 from django.conf import settings
 from io import BytesIO
@@ -24,23 +24,17 @@ def dashboard_casais(request):
     if not check_permission(request.user):
         return HttpResponse("Acesso Negado. Este módulo contém informações confidenciais.", status=403)
 
-    casais = Casal.objects.all().order_by('-data_cadastro')
-
-    # Termômetro (Crise vs Saudável)
-    # Vamos contar quantos aconselhamentos tiveram nivel >= 4 nos ultimos 30 dias
-    trinta_dias_atras = timezone.now() - timezone.timedelta(days=30)
-    alertas_vermelhos = HistoricoAconselhamentoCasal.objects.filter(nivel_crise__gte=4, data_sessao__gte=trinta_dias_atras).values('casal').distinct().count()
-
-    # Aniversários de Casamento (Bodas) no mês atual
-    mes_atual = timezone.now().month
-    bodas_mes = Casal.objects.filter(data_aniversario_casamento__month=mes_atual).count()
-
-    # Cursos e Eventos
-    total_cursos = CursoCasal.objects.count()
+    casais = Casal.objects.filter(arquivado=False).order_by('-data_cadastro')
     total_casais = casais.count()
 
-    # Trilha de Noivos ativos
-    noivos_na_trilha = Casal.objects.filter(status_relacionamento='Noivos', trilha_noivos_etapa__gt=0).count()
+    trinta_dias_atras = timezone.now() - timezone.timedelta(days=30)
+    alertas_vermelhos = HistoricoAconselhamentoCasal.objects.filter(nivel_crise__gte=4, data_sessao__gte=trinta_dias_atras, casal__arquivado=False).values('casal').distinct().count()
+
+    mes_atual = timezone.now().month
+    bodas_mes = casais.filter(data_aniversario_casamento__month=mes_atual).count()
+
+    total_cursos = CursoCasal.objects.count()
+    noivos_na_trilha = casais.filter(status_relacionamento='Noivos', trilha_noivos_etapa__gt=0).count()
 
     context = {
         'casais': casais,
@@ -53,6 +47,53 @@ def dashboard_casais(request):
     return render(request, 'ministerio_casais/dashboard.html', context)
 
 @login_required
+def matricular_casal(request, casal_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+    casal = get_object_or_404(Casal, id=casal_id)
+    if request.method == 'POST':
+        turma_id = request.POST.get('turma_id')
+        status_pagamento = request.POST.get('status_pagamento', 'Pendente')
+
+        turma = get_object_or_404(TurmaCurso, id=turma_id)
+        MatriculaCursoCasal.objects.create(
+            turma=turma,
+            casal=casal,
+            status_pagamento=status_pagamento
+        )
+
+        # Disparar Email de Matrícula em Background
+        import threading
+        from intranet.services.gmail_service import enviar_email_html
+        emails_destino = []
+        if casal.email_1: emails_destino.append(casal.email_1)
+        if casal.email_2: emails_destino.append(casal.email_2)
+
+        if emails_destino:
+            assunto = f"Você foi matriculado no curso: {turma.curso.nome}!"
+            contexto_email = {'casal': casal, 'curso': turma.curso}
+
+            def enviar_background(emails, ass, ctx):
+                for e in emails:
+                    try:
+                        enviar_email_html(e, ass, 'ministerio_casais/email_matricula_curso.html', ctx)
+                    except Exception as err:
+                        print(f"Erro ao enviar email matricula: {err}")
+
+            threading.Thread(target=enviar_background, args=(emails_destino, assunto, contexto_email)).start()
+
+        from core.models import LogAuditoria
+        LogAuditoria.objects.create(
+            usuario_acao=request.user,
+            acao_realizada="MATRICULAR_CURSO",
+            tabela_afetada="MatriculaCursoCasal",
+            diferenca_json={"registro_afetado_id": casal.id, "turma": turma.nome_turma, "curso": turma.curso.nome, "status_pagamento": status_pagamento}
+        )
+
+        messages.success(request, f'Casal matriculado na {turma.nome_turma} do curso {turma.curso.nome}. E-mail de notificação enviado!')
+    return redirect('perfil_casal', casal_id=casal.id)
+
+@login_required
 def perfil_casal(request, casal_id):
     if not check_permission(request.user):
         return HttpResponse("Acesso Negado.", status=403)
@@ -61,13 +102,13 @@ def perfil_casal(request, casal_id):
     historico = casal.historicos_aconselhamento.all().order_by('-data_sessao')
     matriculas = casal.matriculas_cursos.all()
 
-    cursos_disponiveis = CursoCasal.objects.exclude(matriculas__casal=casal)
+    turmas_disponiveis = TurmaCurso.objects.exclude(matriculas__casal=casal).filter(status='Aberta').select_related('curso')
 
     context = {
         'casal': casal,
         'historico': historico,
         'matriculas': matriculas,
-        'cursos_disponiveis': cursos_disponiveis,
+        'turmas_disponiveis': turmas_disponiveis,
     }
     return render(request, 'ministerio_casais/perfil.html', context)
 
@@ -165,11 +206,11 @@ def painel_pastoral_casais(request):
     if not check_permission(request.user):
         return HttpResponse("Acesso Negado.", status=403)
 
-    # Busca casais por status para o Kanban
-    casais_namorados = Casal.objects.filter(status_relacionamento='Namorados').order_by('-data_cadastro')
-    casais_noivos = Casal.objects.filter(status_relacionamento='Noivos').order_by('-data_cadastro')
-    casais_casados = Casal.objects.filter(status_relacionamento='Casados').order_by('-data_cadastro')
-    casais_crise = Casal.objects.filter(status_relacionamento='Em Crise').order_by('-data_cadastro')
+    # Busca casais por status para o Kanban (ignorando arquivados)
+    casais_namorados = Casal.objects.filter(status_relacionamento='Namorados', arquivado=False).order_by('-data_cadastro')
+    casais_noivos = Casal.objects.filter(status_relacionamento='Noivos', arquivado=False).order_by('-data_cadastro')
+    casais_casados = Casal.objects.filter(status_relacionamento='Casados', arquivado=False).order_by('-data_cadastro')
+    casais_crise = Casal.objects.filter(status_relacionamento='Em Crise', arquivado=False).order_by('-data_cadastro')
 
     context = {
         'casais_namorados': casais_namorados,
@@ -240,12 +281,17 @@ def adicionar_curso(request):
         valor = request.POST.get('valor_curso', 0.00)
         carga = request.POST.get('carga_horaria', 10)
         data_inicio = request.POST.get('data_inicio')
+        dias_semana_list = request.POST.getlist('dias_semana')
+        dias_semana_str = ", ".join(dias_semana_list) if dias_semana_list else ""
 
         curso = CursoCasal(
             nome=nome,
             descricao=descricao,
             valor_curso=valor,
-            carga_horaria=carga
+            carga_horaria=carga,
+            dias_semana=dias_semana_str,
+            emite_certificado=request.POST.get('emite_certificado') == 'on',
+            compra_camiseta=request.POST.get('compra_camiseta') == 'on'
         )
         if data_inicio:
             curso.data_inicio = data_inicio
@@ -253,23 +299,7 @@ def adicionar_curso(request):
         messages.success(request, 'Curso adicionado com sucesso!')
     return redirect('cursos_casais')
 
-@login_required
-def matricular_casal(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
-    casal = get_object_or_404(Casal, id=casal_id)
-    if request.method == 'POST':
-        curso_id = request.POST.get('curso_id')
-        status_pagamento = request.POST.get('status_pagamento', 'Pendente')
 
-        curso = get_object_or_404(CursoCasal, id=curso_id)
-        MatriculaCursoCasal.objects.create(
-            curso=curso,
-            casal=casal,
-            status_pagamento=status_pagamento
-        )
-        messages.success(request, f'Casal matriculado em {curso.nome}.')
-    return redirect('perfil_casal', casal_id=casal.id)
 
 @login_required
 def aprovar_matricula(request, matricula_id):
@@ -279,7 +309,29 @@ def aprovar_matricula(request, matricula_id):
     matricula.aprovado = True
     matricula.percentual_conclusao = 100
     matricula.save()
-    messages.success(request, 'Matrícula aprovada! Certificado já pode ser gerado.')
+
+    # Disparar Email de Conclusão e Certificado em Background
+    import threading
+    from intranet.services.gmail_service import enviar_email_html
+    casal = matricula.casal
+    emails_destino = []
+    if casal.email_1: emails_destino.append(casal.email_1)
+    if casal.email_2: emails_destino.append(casal.email_2)
+
+    if emails_destino:
+        assunto = f"Parabéns! Curso Concluído: {matricula.curso.nome}"
+        contexto_email = {'casal': casal, 'curso': matricula.curso}
+
+        def enviar_background_conclusao(emails, ass, ctx):
+            for e in emails:
+                try:
+                    enviar_email_html(e, ass, 'ministerio_casais/email_curso_concluido.html', ctx)
+                except Exception as err:
+                    print(f"Erro ao enviar email de conclusão: {err}")
+
+        threading.Thread(target=enviar_background_conclusao, args=(emails_destino, assunto, contexto_email)).start()
+
+    messages.success(request, 'Matrícula aprovada! E-mail de conclusão disparado e certificado já pode ser gerado.')
     return redirect('perfil_casal', casal_id=matricula.casal.id)
 
 @login_required
@@ -336,5 +388,253 @@ def relatorio_geral_casais(request):
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="relatorio_geral_casais.pdf"'
+        return response
+    return HttpResponse("Erro ao gerar PDF", status=500)
+
+@login_required
+def editar_curso(request, curso_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+    curso = get_object_or_404(CursoCasal, id=curso_id)
+    if request.method == 'POST':
+        curso.nome = request.POST.get('nome', curso.nome)
+        curso.descricao = request.POST.get('descricao', curso.descricao)
+        curso.valor_curso = request.POST.get('valor_curso', curso.valor_curso)
+        curso.carga_horaria = request.POST.get('carga_horaria', curso.carga_horaria)
+
+        data_inicio = request.POST.get('data_inicio')
+        if data_inicio:
+            curso.data_inicio = data_inicio
+
+        dias_semana_list = request.POST.getlist('dias_semana')
+        if 'dias_semana' in request.POST:
+            curso.dias_semana = ", ".join(dias_semana_list)
+
+        curso.emite_certificado = request.POST.get('emite_certificado') == 'on'
+        curso.compra_camiseta = request.POST.get('compra_camiseta') == 'on'
+
+        curso.save()
+        messages.success(request, 'Curso editado com sucesso!')
+    return redirect('cursos_casais')
+
+@login_required
+def excluir_curso(request, curso_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+    curso = get_object_or_404(CursoCasal, id=curso_id)
+    if request.method == 'POST':
+        curso.delete()
+        messages.success(request, 'Curso excluído com sucesso!')
+    return redirect('cursos_casais')
+
+@login_required
+def arquivar_casal(request, casal_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+    casal = get_object_or_404(Casal, id=casal_id)
+    if request.method == 'POST':
+        casal.arquivado = True
+        casal.save()
+
+        from core.models import LogAuditoria
+        LogAuditoria.objects.create(
+            usuario_acao=request.user,
+            acao_realizada="ARQUIVAR_CASAL",
+            tabela_afetada="Casal",
+            diferenca_json={"registro_afetado_id": casal.id, "status": "Arquivado (Saiu da Igreja/Foi Embora)"}
+        )
+
+        messages.success(request, 'Casal arquivado com sucesso.')
+    return redirect('dashboard_casais')
+
+@login_required
+def excluir_casal(request, casal_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+    casal = get_object_or_404(Casal, id=casal_id)
+    if request.method == 'POST':
+        casal_id_bkp = casal.id
+        casal_nome = casal.nomes_juntos
+        casal.delete()
+
+        from core.models import LogAuditoria
+        LogAuditoria.objects.create(
+            usuario_acao=request.user,
+            acao_realizada="EXCLUIR_CASAL",
+            tabela_afetada="Casal",
+            diferenca_json={"registro_afetado_id": casal_id_bkp, "nomes": casal_nome, "status": "Excluido definitivamente"}
+        )
+
+        messages.success(request, 'Casal excluído permanentemente da base de dados.')
+    return redirect('dashboard_casais')
+
+@login_required
+def desfazer_aprovacao_matricula(request, matricula_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+    matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+    if request.method == 'POST':
+        matricula.aprovado = False
+        matricula.percentual_conclusao = 0
+        matricula.save()
+        messages.success(request, 'Aprovação desfeita com sucesso.')
+    return redirect('perfil_casal', casal_id=matricula.casal.id)
+
+from django.db.models import Sum, F
+from .models import PagamentoCursoCasal
+
+@login_required
+def gestao_financeira_cursos(request):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+
+    cursos = CursoCasal.objects.all().prefetch_related('turmas__matriculas', 'turmas__matriculas__casal')
+
+    # Resumo Geral
+    total_esperado = sum(t.valor_curso * t.matriculas.count() for c in cursos for t in c.turmas.all())
+    total_arrecadado = PagamentoCursoCasal.objects.aggregate(total=Sum('valor_pago'))['total'] or 0
+    inadimplencia = total_esperado - total_arrecadado
+
+    # Detalhamento por matricula
+    matriculas = MatriculaCursoCasal.objects.select_related('turma__curso', 'casal').prefetch_related('historico_pagamentos').order_by('-data_matricula')
+
+    for m in matriculas:
+        m.total_pago = sum(p.valor_pago for p in m.historico_pagamentos.all())
+        # Proteção caso a turma não esteja selecionada em dados sujos antigos
+        curso_valor = m.turma.valor_curso if m.turma else 0
+        m.saldo_devedor = curso_valor - m.total_pago
+        if m.saldo_devedor <= 0:
+            m.status_calc = 'Pago'
+        elif m.total_pago > 0:
+            m.status_calc = 'Parcial'
+        else:
+            m.status_calc = 'Pendente'
+
+    context = {
+        'total_esperado': total_esperado,
+        'total_arrecadado': total_arrecadado,
+        'inadimplencia': inadimplencia,
+        'matriculas': matriculas,
+    }
+    return render(request, 'ministerio_casais/gestao_financeira_cursos.html', context)
+
+@login_required
+def registrar_pagamento_curso(request, matricula_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+
+    if request.method == 'POST':
+        matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+        valor = request.POST.get('valor_pago')
+        forma = request.POST.get('forma_pagamento')
+        obs = request.POST.get('observacoes', '')
+
+        if valor and forma:
+            try:
+                valor_decimal = float(valor.replace(',', '.'))
+                PagamentoCursoCasal.objects.create(
+                    matricula=matricula,
+                    valor_pago=valor_decimal,
+                    forma_pagamento=forma,
+                    observacoes=obs
+                )
+
+                # Atualizar o valor_pago na model MatriculaCursoCasal tambem
+                matricula.valor_pago = sum(p.valor_pago for p in matricula.historico_pagamentos.all())
+
+                curso_valor = matricula.turma.valor_curso if matricula.turma else 0
+                if matricula.valor_pago >= curso_valor:
+                    matricula.status_pagamento = 'Pago'
+                elif matricula.valor_pago > 0:
+                    matricula.status_pagamento = 'Pendente' # parcial
+
+                matricula.save()
+
+                messages.success(request, 'Pagamento registrado com sucesso!')
+            except ValueError:
+                messages.error(request, 'Valor de pagamento inválido.')
+
+    return redirect('gestao_financeira_cursos')
+
+@login_required
+def disparar_cobranca_curso(request, matricula_id):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+
+    if request.method == 'POST':
+        matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+
+        curso_valor = matricula.turma.valor_curso if matricula.turma else 0
+        saldo_devedor = curso_valor - sum(p.valor_pago for p in matricula.historico_pagamentos.all())
+
+        if saldo_devedor > 0:
+            import threading
+            from intranet.services.gmail_service import enviar_email_html
+
+            casal = matricula.casal
+            emails_destino = []
+            if casal.email_1: emails_destino.append(casal.email_1)
+            if casal.email_2: emails_destino.append(casal.email_2)
+
+            if emails_destino and matricula.turma:
+                assunto = f"Lembrete de Pagamento: Curso {matricula.turma.curso.nome}"
+                contexto_email = {'casal': casal, 'curso': matricula.turma.curso, 'saldo_devedor': saldo_devedor}
+
+                for email in emails_destino:
+                    thread = threading.Thread(
+                        target=enviar_email_html,
+                        args=(assunto, email, 'ministerio_casais/email_cobranca_curso.html', contexto_email)
+                    )
+                    thread.start()
+
+                messages.success(request, f'Cobrança enviada para {", ".join(emails_destino)}')
+            else:
+                messages.warning(request, 'O casal não possui e-mails cadastrados ou a matrícula não tem turma vinculada.')
+        else:
+            messages.info(request, 'Esta matrícula não possui saldo devedor.')
+
+    return redirect('gestao_financeira_cursos')
+
+@login_required
+def pdf_relatorio_financeiro_cursos(request):
+    if not check_permission(request.user):
+        return HttpResponse("Acesso Negado.", status=403)
+
+    cursos = CursoCasal.objects.all().prefetch_related('turmas__matriculas', 'turmas__matriculas__casal')
+
+    # Resumo
+    total_esperado = sum(t.valor_curso * t.matriculas.count() for c in cursos for t in c.turmas.all())
+    total_arrecadado = PagamentoCursoCasal.objects.aggregate(total=Sum('valor_pago'))['total'] or 0
+    inadimplencia = total_esperado - total_arrecadado
+
+    matriculas = MatriculaCursoCasal.objects.select_related('turma__curso', 'casal').prefetch_related('historico_pagamentos').order_by('-data_matricula')
+
+    for m in matriculas:
+        m.total_pago = sum(p.valor_pago for p in m.historico_pagamentos.all())
+        curso_valor = m.turma.valor_curso if m.turma else 0
+        m.saldo_devedor = curso_valor - m.total_pago
+        if m.saldo_devedor <= 0:
+            m.status_calc = 'Pago'
+        elif m.total_pago > 0:
+            m.status_calc = 'Parcial'
+        else:
+            m.status_calc = 'Pendente'
+
+    html_str = render_to_string('ministerio_casais/pdf_financeiro_cursos.html', {
+        'total_esperado': total_esperado,
+        'total_arrecadado': total_arrecadado,
+        'inadimplencia': inadimplencia,
+        'matriculas': matriculas,
+        'hoje': timezone.now()
+    })
+
+    from io import BytesIO
+    import xhtml2pdf.pisa as pisa
+
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="relatorio_financeiro_cursos.pdf"'
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)

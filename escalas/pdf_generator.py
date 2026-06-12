@@ -3,7 +3,6 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from django.conf import settings
 from .models import CompetenciaEscala, Escala
-from midia_lgpd.models import DocumentoTemplate
 from core.models import ConfiguracaoSistema
 
 def gerar_pdf_competencia(competencia_id):
@@ -16,7 +15,7 @@ def gerar_pdf_competencia(competencia_id):
     config_sys = ConfiguracaoSistema.objects.first()
 
     # 1. Obter o template do banco
-    template_doc = DocumentoTemplate.objects.filter(identificador_sistema='pdf_escala_padrao', ativo=True).first()
+    template_doc = None
     if not template_doc:
         print("Template de PDF da Escala não encontrado no banco de dados!")
         return False

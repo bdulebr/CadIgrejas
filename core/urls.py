@@ -47,12 +47,6 @@ urlpatterns = [
     path('sysadmin/toggle-debug/', views.sysadmin_toggle_debug, name='sysadmin_toggle_debug'),
     path('sysadmin/salvar-env/', views.sysadmin_salvar_env, name='sysadmin_salvar_env'),
     path('sysadmin/salvar-igreja/', views.sysadmin_salvar_igreja, name='sysadmin_salvar_igreja'),
-    path('sysadmin/templates/', views.sysadmin_templates_list, name='sysadmin_templates_list'),
-    path('sysadmin/templates/novo/', views.sysadmin_template_editor, name='sysadmin_template_novo'),
-    path('sysadmin/templates/<int:template_id>/editar/', views.sysadmin_template_editor, name='sysadmin_template_editar'),
-    path('sysadmin/templates/<int:template_id>/salvar/', views.sysadmin_template_salvar, name='sysadmin_template_salvar'),
-    path('sysadmin/templates/salvar/', views.sysadmin_template_salvar, name='sysadmin_template_salvar_novo'),
-    path('sysadmin/templates/<int:template_id>/deletar/', views.sysadmin_template_deletar, name='sysadmin_template_deletar'),
 
     # Links Rápidos
     path('sysadmin/links/salvar/', views.sysadmin_link_salvar, name='sysadmin_link_salvar'),

@@ -1,0 +1,340 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Gestão de Turmas - {{ curso.nome }}{% endblock %}
+
+{% block header_title %}
+<div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+        <i data-lucide="users" class="w-5 h-5 text-white"></i>
+    </div>
+    <span class="text-white font-bold tracking-tight">Turmas do Curso</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <a href="{% url 'cursos_casais' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span class="font-medium text-sm">Voltar aos Cursos</span>
+    </a>
+</div>
+
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div>
+        <h1 class="text-3xl font-black text-white tracking-tight">{{ curso.nome }}</h1>
+        <p class="text-gray-400 mt-1 text-sm">Crie turmas e delegue professores para ministrar este curso.</p>
+    </div>
+    <div class="flex gap-2">
+        <button x-data @click="$dispatch('open-modal', 'modal-novo-professor')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold flex items-center gap-2 border border-gray-700 transition-all">
+            <i data-lucide="user-plus" class="w-4 h-4 text-green-400"></i>
+            <span>Cadastrar Prof. Externo</span>
+        </button>
+        <button x-data @click="$dispatch('open-modal', 'modal-nova-turma')" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            <span>Nova Turma</span>
+        </button>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-6 space-y-2">
+    {% for message in messages %}
+        <div class="p-4 rounded-xl text-sm font-medium {% if message.tags == 'error' %}bg-red-500/10 text-red-400 border border-red-500/20{% elif message.tags == 'warning' %}bg-yellow-500/10 text-yellow-400 border border-yellow-500/20{% else %}bg-green-500/10 text-green-400 border border-green-500/20{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="space-y-6">
+    {% for turma in turmas %}
+                <div x-show="tab === 'ativas' && '{{ turma.status }}' !== 'Concluída' || tab === 'finalizadas' && '{{ turma.status }}' === 'Concluída'">
+    <div class="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-blue-500/30 transition-all">
+        <div class="flex flex-col lg:flex-row justify-between gap-6">
+            <!-- Info da Turma -->
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <h3 class="text-2xl font-bold text-white">{{ turma.nome_turma }}</h3>
+                    <span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider {% if turma.status == 'Em Andamento' %}bg-green-500/20 text-green-400 border border-green-500/30{% elif turma.status == 'Concluída' %}bg-gray-500/20 text-gray-400 border border-gray-500/30{% else %}bg-blue-500/20 text-blue-400 border border-blue-500/30{% endif %}">
+                        {{ turma.status }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-6 text-sm text-gray-400 mb-6">
+                    {% if turma.data_inicio %}
+                    <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-4 h-4"></i> Início: {{ turma.data_inicio|date:"d/m/Y" }}</span>
+                    {% endif %}
+                    {% if turma.data_fim %}
+                    <span class="flex items-center gap-1"><i data-lucide="calendar-check" class="w-4 h-4"></i> Fim: {{ turma.data_fim|date:"d/m/Y" }}</span>
+                    {% endif %}
+                    <span class="flex items-center gap-1 text-blue-400"><i data-lucide="users" class="w-4 h-4"></i> {{ turma.matriculas.count }} Alunos</span>
+                </div>
+
+                <!-- Professores Vinculados -->
+                <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-sm font-bold text-gray-300">Professores da Turma</h4>
+                        <button x-data @click="$dispatch('open-modal', 'modal-add-prof-{{ turma.id }}')" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Adicionar
+                        </button>
+                    </div>
+
+                    <div class="space-y-2">
+                        {% for vinculo in turma.professores.all %}
+                        <div class="flex justify-between items-center p-2 bg-gray-900 border border-gray-800 rounded-lg">
+                            <div class="flex items-center gap-2 text-sm text-gray-300">
+                                <div class="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-[10px]">
+                                    {{ vinculo.professor.first_name|first|default:vinculo.professor.username|first|upper }}
+                                </div>
+                                {{ vinculo.professor.get_full_name|default:vinculo.professor.username }}
+                            </div>
+                            <form action="{% url 'remover_professor_turma' vinculo.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-400 hover:text-red-300 p-1" title="Remover Professor">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </div>
+                        </div>
+                {% empty %}
+                        <p class="text-xs text-gray-500 italic">Nenhum professor vinculado. O Líder do departamento gerencia por padrão.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="flex flex-col gap-2 min-w-[200px] justify-center">
+                <a href="{% url 'mural_professor_turma' turma.id %}" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-600/20 hover:bg-brand-600 border border-brand-500/50 hover:border-brand-500 text-brand-300 hover:text-white rounded-xl transition-all shadow-[0_0_15px_rgba(59,130,246,0.15)] font-bold">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    Acessar Sala de Aula
+                </a>
+
+                <form action="{% url 'excluir_turma_curso' turma.id %}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir esta turma?');">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-700 hover:border-red-500/50 rounded-xl transition-all text-sm font-bold">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Turma
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add Professor -->
+    <div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-add-prof-{{ turma.id }}') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
+                <form action="{% url 'adicionar_professor_turma' turma.id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="px-6 py-6 border-b border-gray-800">
+                        <h3 class="text-xl font-bold text-white">Vincular Professor - {{ turma.nome_turma }}</h3>
+                    </div>
+                    <div class="px-6 py-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Selecione o Professor</label>
+                            <select name="professor_id" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">Selecione...</option>
+                                {% for prof in possiveis_professores %}
+                                <option value="{{ prof.id }}">{{ prof.get_full_name|default:prof.username }} ({{ prof.email }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-800/50 flex justify-end gap-3 border-t border-gray-800">
+                        <button type="button" @click="open = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancelar</button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold">Vincular</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    </div>
+                {% empty %}
+    <div class="py-16 text-center border border-dashed border-gray-700 rounded-3xl bg-gray-800/50">
+        <div class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="users" class="w-8 h-8 text-gray-400"></i>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Nenhuma Turma Criada</h3>
+        <p class="text-gray-400">Clique em "Nova Turma" para começar a receber matrículas.</p>
+    </div>
+    {% endfor %}
+</div>
+
+        </div>
+    </div>
+
+    <!-- Modal Nova Turma -->
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-nova-turma') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <form action="{% url 'adicionar_turma_curso' curso.id %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6 border-b border-gray-800">
+                    <h3 class="text-xl font-bold text-white">Criar Nova Turma</h3>
+                </div>
+                <div class="px-6 py-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Nome/Número da Turma</label>
+                        <input type="text" name="nome_turma" required placeholder="Ex: Turma 1 - 2024" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Valor do Material (R$)</label>
+                            <input type="number" step="0.01" name="valor_curso" required value="0.00" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Status Inicial</label>
+                            <select name="status" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                                <option value="Aberta">Aberta (Aceitando Matrículas)</option>
+                                <option value="Em Andamento">Em Andamento</option>
+                                <option value="Concluída">Concluída</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-800 pt-4 mt-4">
+                        <h4 class="text-md font-bold text-gray-300 mb-3">Calendário e Aulas</h4>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Data de Início</label>
+                                <input type="date" name="data_inicio" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Data de Término (Opcional)</label>
+                                <input type="date" name="data_fim" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Carga Horária Total (Horas)</label>
+                                <input type="number" name="carga_horaria" required value="20" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Duração por Aula (Horas)</label>
+                                <input type="number" name="duracao_aula_horas" required value="2" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                                <p class="text-[10px] text-gray-500 mt-1">Ex: 20h / 2h = 10 Aulas geradas automaticamente.</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Dias da Semana do Curso</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <label class="flex items-center gap-2 cursor-pointer bg-gray-800/50 border border-gray-700 p-2 rounded-lg hover:border-blue-500/50 transition-colors">
+                                    <input type="checkbox" name="dias_semana" value="Segunda" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                                    <span class="text-sm text-gray-300">Segunda</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-gray-800/50 border border-gray-700 p-2 rounded-lg hover:border-blue-500/50 transition-colors">
+                                    <input type="checkbox" name="dias_semana" value="Terça" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                                    <span class="text-sm text-gray-300">Terça</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-gray-800/50 border border-gray-700 p-2 rounded-lg hover:border-blue-500/50 transition-colors">
+                                    <input type="checkbox" name="dias_semana" value="Quarta" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                                    <span class="text-sm text-gray-300">Quarta</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-gray-800/50 border border-gray-700 p-2 rounded-lg hover:border-blue-500/50 transition-colors">
+                                    <input type="checkbox" name="dias_semana" value="Quinta" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                                    <span class="text-sm text-gray-300">Quinta</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-gray-800/50 border border-gray-700 p-2 rounded-lg hover:border-blue-500/50 transition-colors">
+                                    <input type="checkbox" name="dias_semana" value="Sexta" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                                    <span class="text-sm text-gray-300">Sexta</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-gray-800/50 border border-gray-700 p-2 rounded-lg hover:border-blue-500/50 transition-colors">
+                                    <input type="checkbox" name="dias_semana" value="Sábado" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                                    <span class="text-sm text-gray-300">Sábado</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-gray-800/50 border border-gray-700 p-2 rounded-lg hover:border-blue-500/50 transition-colors">
+                                    <input type="checkbox" name="dias_semana" value="Domingo" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                                    <span class="text-sm text-gray-300">Domingo</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-800 pt-4 mt-4">
+                        <h4 class="text-md font-bold text-gray-300 mb-3">Regras da Turma</h4>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Limite Máximo de Faltas</label>
+                                <input type="number" name="limite_faltas" required value="3" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Presença Mínima (%)</label>
+                                <input type="number" name="percentual_presenca_minimo" required value="75" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div class="flex gap-6 mt-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                <input type="checkbox" name="emite_certificado" class="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-gray-900">
+                                Emite Certificado Automático?
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                <input type="checkbox" name="compra_camiseta" class="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-gray-900">
+                                Requer Camiseta?
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 flex justify-end gap-3 border-t border-gray-800 rounded-b-2xl">
+                    <button type="button" @click="open = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancelar</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-900/20">Salvar e Gerar Aulas</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Professor Externo -->
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-novo-professor') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <form action="{% url 'cadastrar_professor_externo' curso.id %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6 border-b border-gray-800">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-5 h-5 text-green-400"></i> Cadastrar Professor Externo
+                    </h3>
+                    <p class="text-xs text-gray-400 mt-1">Essa conta terá acesso restrito apenas para lecionar as turmas atribuídas, não tendo acesso à intranet.</p>
+                </div>
+                <div class="px-6 py-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Nome Completo</label>
+                        <input type="text" name="nome" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-green-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">CPF</label>
+                            <input type="text" name="cpf" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Nascimento</label>
+                            <input type="date" name="data_nascimento" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-green-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">E-mail (Login)</label>
+                        <input type="email" name="email" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Senha Padrão</label>
+                        <input type="text" name="senha" required value="123456789" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-green-500">
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 flex justify-end gap-3 border-t border-gray-800">
+                    <button type="button" @click="open = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancelar</button>
+                    <button type="submit" class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold">Cadastrar e Criar Acesso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

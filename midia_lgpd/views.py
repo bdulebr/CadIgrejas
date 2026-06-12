@@ -14,14 +14,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
-from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, DocumentoTemplate, DocumentoGerado, PastaVirtual, CompartilhamentoPasta
+from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, PastaVirtual, CompartilhamentoPasta
 from gestao_membros.models import Departamento
 import json
 
 # Serviço de Nuvem e E-mail
 from intranet.services.google_drive import upload_arquivo_drive
 from intranet.services.gmail_service import enviar_email_html
-from intranet.services.pdf_generator import gerar_pdf_contrato
 
 def is_super_admin(user):
     return user.nivel_hierarquico == 'super_admin' or user.is_superuser
@@ -198,107 +197,8 @@ def upload_arquivo(request):
 
     return redirect('painel_midia')
 
-@login_required
-@user_passes_test(is_super_admin)
-def painel_documentos(request):
-    templates = DocumentoTemplate.objects.filter(ativo=True).order_by('-data_criacao')
-    documentos = DocumentoGerado.objects.order_by('-data_solicitacao')
 
-    if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente']:
-        documentos = documentos.filter(solicitado_por=request.user)
 
-    return render(request, 'midia_lgpd/painel_documentos.html', {
-        'templates': templates,
-        'documentos': documentos
-    })
-
-@login_required
-@user_passes_test(is_super_admin)
-def enviar_documento(request):
-    if request.method == 'POST':
-        template_id = request.POST.get('template_id')
-        email = request.POST.get('email_destino')
-        nome = request.POST.get('nome_destino')
-
-        template = get_object_or_404(DocumentoTemplate, id=template_id)
-
-        doc = DocumentoGerado.objects.create(
-            template=template,
-            email_destino=email,
-            nome_destino=nome,
-            solicitado_por=request.user
-        )
-
-        link = f"{settings.BASE_URL}/midia_lgpd/documentos/assinar/{doc.token_acesso}/"
-
-        enviar_email_html(
-            destinatario=email,
-            assunto=f"Solicitação de Assinatura: {template.titulo}",
-            template_name="generico.html",
-            context={
-                'content': f"<p>Olá {nome or ''}, você foi solicitado a assinar um documento.</p><br><a href='{link}' style='padding: 10px 20px; background: #22c55e; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>Acessar e Assinar</a>"
-            }
-        )
-
-        messages.success(request, f'Link de assinatura enviado para {email}.')
-    return redirect('painel_documentos')
-
-def assinar_documento_externo(request, token):
-    doc = get_object_or_404(DocumentoGerado, token_acesso=token)
-
-    if doc.status == 'assinado':
-        return render(request, 'midia_lgpd/sucesso_assinatura.html', {'doc': doc})
-
-    if request.method == 'POST':
-        # Captura todos os campos
-        dados = {}
-        for campo in doc.template.campos_json:
-            dados[campo['nome']] = request.POST.get(campo['nome'], '')
-
-        assinatura_base64 = request.POST.get('assinatura_base64', '')
-        if assinatura_base64:
-            dados['assinatura_base64'] = assinatura_base64
-
-        doc.dados_preenchidos = dados
-        doc.nome_destino = request.POST.get('assinatura_nome_completo', doc.nome_destino)
-
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        doc.ip_assinatura = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
-        doc.data_assinatura = timezone.now()
-        doc.status = 'assinado'
-
-        # Gera o PDF
-        gerar_pdf_contrato(doc)
-
-        # Se enviou anexo
-        if 'anexo_scan' in request.FILES:
-            doc.anexo_fisico_escaneado = request.FILES['anexo_scan']
-
-        doc.save()
-
-        # Envia e-mail de confirmação com recibo
-        link_pdf = f"{settings.BASE_URL}{doc.arquivo_pdf_final.url}"
-        enviar_email_html(
-            destinatario=doc.email_destino,
-            assunto=f"Cópia do Contrato: {doc.template.titulo}",
-            template_name="generico.html",
-            context={
-                'content': f"<p>Obrigado! Seu documento foi assinado digitalmente e imutável.</p><br><a href='{link_pdf}' style='padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>Baixar PDF Original</a>"
-            }
-        )
-
-        # Notifica quem solicitou
-        if doc.solicitado_por:
-            enviar_email_html(
-                destinatario=doc.solicitado_por.email,
-                assunto=f"Documento Assinado por {doc.nome_destino}",
-                template_name="generico.html",
-                context={
-                    'content': f"<p>O contato {doc.email_destino} acabou de assinar o documento <b>{doc.template.titulo}</b>.</p><br><a href='{link_pdf}' style='padding: 10px 20px; background: #14532d; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>Baixar PDF Assinado</a>"
-                }
-            )
-
-        return render(request, 'midia_lgpd/sucesso_assinatura.html', {'doc': doc})
 
 
 @login_required
@@ -364,14 +264,14 @@ def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
                 # Arquivos compartilhados com meu departamento
                 permissoes = PermissaoPVDrive.objects.filter(
                     Q(validade__isnull=True) | Q(validade__gte=hoje),
-                    alvo_departamento=dep_atual, 
+                    alvo_departamento=dep_atual,
                     is_ativo=True
                 )
             else:
                 # Arquivos compartilhados comigo
                 permissoes = PermissaoPVDrive.objects.filter(
                     Q(validade__isnull=True) | Q(validade__gte=hoje),
-                    alvo_membro=request.user, 
+                    alvo_membro=request.user,
                     is_ativo=True
                 )
 
@@ -809,21 +709,21 @@ def upload_inteligente_ocr(request):
 @login_required
 def cancelar_compartilhamento(request, permissao_id):
     permissao = get_object_or_404(PermissaoPVDrive, id=permissao_id)
-    
+
     # Valida se o usuário pode cancelar (é o dono da pasta, o criador original ou admin)
-    if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente'] or 
-            permissao.pasta.dono_membro == request.user or 
+    if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente'] or
+            permissao.pasta.dono_membro == request.user or
             permissao.concedido_por == request.user):
         messages.error(request, "Você não tem autorização para cancelar este compartilhamento.")
         return redirect('pv_drive_home')
-        
+
     permissao.is_ativo = False
     permissao.save()
-    
+
     # Remover shortcut no GDrive poderia ser feito aqui caso o sistema estivesse com permissões completas, mas por agora inativar já remove da listagem.
-    
+
     messages.success(request, "Compartilhamento cancelado com sucesso.")
-    
+
     # Retorna para a mesma view que o usuario estava
     modo = 'pessoal'
     if permissao.pasta.departamento:

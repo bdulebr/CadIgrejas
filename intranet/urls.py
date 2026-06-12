@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic.base import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -24,6 +25,7 @@ from django.views.generic import TemplateView
 from core.views import pwa_manifest, pwa_service_worker
 
 urlpatterns = [
+    path('favicon.ico', RedirectView.as_view(url='/static/img/logo.jpg', permanent=True)),
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('', include('gestao_membros.urls')),

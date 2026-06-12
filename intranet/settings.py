@@ -27,7 +27,12 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-default')
 DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
-CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['https://intranet.pvenseda.org'])
+
+# Nginx Proxy Headers (Fundamental for HTTPS/VPS)
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Source of Truth para todos os links gerados no sistema (PDFs, Emails, Senha)
 BASE_URL = env('BASE_URL', default='http://127.0.0.1:8000').rstrip('/')

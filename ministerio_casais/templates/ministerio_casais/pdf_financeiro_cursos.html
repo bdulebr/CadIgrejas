@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Relatório Financeiro dos Cursos</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+            }
+        }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #333; }
+        h1 { text-align: center; color: #2c3e50; font-size: 18pt; margin-bottom: 5px; }
+        h2 { text-align: center; color: #7f8c8d; font-size: 12pt; margin-top: 0; margin-bottom: 20px; font-weight: normal; }
+
+        .kpi-container { width: 100%; margin-bottom: 20px; }
+        .kpi-box { width: 30%; display: inline-block; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px; background-color: #ecf0f1; text-align: center; }
+        .kpi-title { font-size: 10pt; color: #7f8c8d; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+        .kpi-value { font-size: 16pt; font-weight: bold; color: #2c3e50; }
+        .kpi-value.green { color: #27ae60; }
+        .kpi-value.red { color: #c0392b; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background-color: #34495e; color: #fff; padding: 8px; text-align: left; font-weight: bold; border: 1px solid #2c3e50; }
+        td { padding: 8px; border: 1px solid #bdc3c7; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .status { padding: 3px 6px; border-radius: 3px; font-weight: bold; font-size: 9pt; }
+        .status-pago { background-color: #d5f5e3; color: #27ae60; }
+        .status-parcial { background-color: #fcf3cf; color: #f39c12; }
+        .status-pendente { background-color: #fadbd8; color: #c0392b; }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Ministério de Casais - Relatório Financeiro</h1>
+    <h2>Visão Geral de Arrecadação e Inadimplência</h2>
+
+    <div class="kpi-container">
+        <div class="kpi-box">
+            <div class="kpi-title">Total Esperado</div>
+            <div class="kpi-value">R$ {{ total_esperado|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box" style="margin-left: 2%;">
+            <div class="kpi-title">Total Arrecadado</div>
+            <div class="kpi-value green">R$ {{ total_arrecadado|floatformat:2 }}</div>
+        </div>
+        <div class="kpi-box" style="margin-left: 2%;">
+            <div class="kpi-title">Inadimplência</div>
+            <div class="kpi-value red">R$ {{ inadimplencia|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Casal</th>
+                <th>Curso</th>
+                <th class="text-right">Custo</th>
+                <th class="text-right">Pago</th>
+                <th class="text-right">Saldo Devedor</th>
+                <th class="text-center">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mat in matriculas %}
+            <tr>
+                <td>{{ mat.casal.nomes_juntos }}</td>
+                <td>{{ mat.curso.nome }}</td>
+                <td class="text-right">R$ {{ mat.turma.valor_curso }}</td>
+                <td class="text-right" style="color: #27ae60; font-weight: bold;">R$ {{ mat.total_pago|floatformat:2 }}</td>
+                <td class="text-right" style="color: #c0392b; font-weight: bold;">
+                    {% if mat.saldo_devedor > 0 %}
+                    R$ {{ mat.saldo_devedor|floatformat:2 }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if mat.status_calc == 'Pago' %}
+                    <span class="status status-pago">Quitado</span>
+                    {% elif mat.status_calc == 'Parcial' %}
+                    <span class="status status-parcial">Parcial</span>
+                    {% else %}
+                    <span class="status status-pendente">Pendente</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">Nenhuma matrícula registrada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div id="footer_content" style="text-align: right; color: #7f8c8d; font-size: 8pt;">
+        Gerado pelo sistema IntranetPV - Página <pdf:pagenumber> de <pdf:pagecount>
+    </div>
+</body>
+</html>
