@@ -46,6 +46,7 @@ urlpatterns = [
     path('sysadmin/desbloquear-ip/', views.sysadmin_desbloquear_ip, name='sysadmin_desbloquear_ip'),
     path('sysadmin/toggle-debug/', views.sysadmin_toggle_debug, name='sysadmin_toggle_debug'),
     path('sysadmin/salvar-env/', views.sysadmin_salvar_env, name='sysadmin_salvar_env'),
+    path('sysadmin/deploy/', views.sysadmin_deploy_producao, name='sysadmin_deploy_producao'),
     path('sysadmin/salvar-igreja/', views.sysadmin_salvar_igreja, name='sysadmin_salvar_igreja'),
 
     # Links Rápidos

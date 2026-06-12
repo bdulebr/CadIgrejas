@@ -1606,3 +1606,49 @@ def sysadmin_baixar_log_spider(request, log_id):
     response = HttpResponse(log.log_texto, content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename="spider_log_{log.id}_{log.data_execucao.strftime("%Y%m%d%H%M")}.txt"'
     return response
+
+@login_required
+@user_passes_test(is_super_admin)
+def sysadmin_deploy_producao(request):
+    from django.core.management import call_command
+    import io
+    from django.utils.crypto import get_random_string
+    import os
+    
+    config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
+    if config.sistema_implantado:
+        messages.error(request, "O sistema já foi implantado! Ação bloqueada.")
+        return redirect('sysadmin_dashboard')
+        
+    try:
+        # 1. Migrate
+        out = io.StringIO()
+        call_command('migrate', interactive=False, stdout=out)
+        
+        # 2. Collectstatic
+        call_command('collectstatic', interactive=False, stdout=out)
+        
+        # 3. Clean Cache
+        from django.core.cache import cache
+        cache.clear()
+        
+        # 4. Generate new SECRET_KEY in .env
+        env_path = os.path.join(settings.BASE_DIR, '.env')
+        if os.path.exists(env_path):
+            with open(env_path, 'r', encoding='utf-8') as f:
+                env_text = f.read()
+            import re
+            new_key = get_random_string(50)
+            env_text = re.sub(r'SECRET_KEY=.*', f'SECRET_KEY={new_key}', env_text)
+            with open(env_path, 'w', encoding='utf-8') as f:
+                f.write(env_text)
+                
+        # 5. Lock it
+        config.sistema_implantado = True
+        config.save()
+        
+        messages.success(request, "SISTEMA IMPLANTADO COM SUCESSO! Caches limpos, migrações aplicadas, arquivos estáticos copiados e Chave Secreta rotacionada.")
+    except Exception as e:
+        messages.error(request, f"Erro crítico no deploy: {str(e)}")
+        
+    return redirect('sysadmin_dashboard')
