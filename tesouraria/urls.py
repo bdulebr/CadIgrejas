@@ -21,4 +21,5 @@ urlpatterns = [
     path('importacao/template/', views.download_template_importacao, name='download_template_importacao'),
     path('importacao/preview/', views.preview_importacao, name='preview_importacao'),
     path('importacao/confirmar/', views.confirmar_importacao, name='confirmar_importacao'),
+    path('logs/', views.logs_auditoria_tesouraria, name='logs_auditoria'),
 ]

@@ -587,3 +587,43 @@ def confirmar_importacao(request):
         return redirect('tesouraria:lista_lancamentos')
 
     return redirect('tesouraria:lista_lancamentos')
+
+@login_required
+@tesouraria_required
+def auditoria_tesouraria(request):
+    query = request.GET.get('q', '')
+    logs = LogImutavel.objects.filter(
+        Q(acao__icontains='LANCAMENTO') |
+        Q(acao__icontains='TESOURARIA') |
+        Q(acao__icontains='SEDE')
+    ).order_by('-criado_em')
+
+    if query:
+        logs = logs.filter(
+            Q(acao__icontains=query) |
+            Q(dados_acao__icontains=query) |
+            Q(membro__user__first_name__icontains=query)
+        )
+
+    paginator = Paginator(logs, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'tesouraria/auditoria.html', {'page_obj': page_obj, 'query': query})
+
+@login_required
+@tesouraria_required
+def logs_auditoria_tesouraria(request):
+    from core.models import LogImutavel
+    from django.db.models import Q
+
+    # Filtra logs relacionados aos Lancamentos
+    logs_list = LogImutavel.objects.filter(
+        Q(acao__icontains='LANCAMENTO') | Q(acao__icontains='IMPORTACAO') | Q(acao__icontains='TESOURARIA')
+    ).order_by('-criado_em')
+
+    paginator = Paginator(logs_list, 50)
+    page_number = request.GET.get('page')
+    logs = paginator.get_page(page_number)
+
+    return render(request, 'tesouraria/logs_auditoria.html', {'logs': logs})
