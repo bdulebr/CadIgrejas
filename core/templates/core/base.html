@@ -225,6 +225,11 @@
                     <i data-lucide="settings" class="w-5 h-5 text-gray-400 group-hover:text-gray-200"></i>
                     <span x-show="sidebarOpen" class="whitespace-nowrap">Configurações Sysadmin</span>
                 </a>
+
+                <a href="{% url 'permissoes:dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Gerenciador de Permissões (RBAC)">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-gray-400 group-hover:text-blue-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap">Permissões (Acessos)</span>
+                </a>
                 {% endif %}
             </nav>
             {% endif %}

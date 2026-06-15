@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from .models import Visitante, VisitaCulto, RegistroAcompanhamento
@@ -55,6 +56,7 @@ def enviar_email_novo_membro_background(nome, email, base_url):
         print(f"Erro ao enviar email de novo membro para {email}: {e}")
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def visitantes_dashboard(request):
     """
     Dashboard principal de visitantes. Mostra todos os visitantes ativos,
@@ -101,6 +103,7 @@ def visitantes_dashboard(request):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def visitante_perfil(request, visitante_id):
     """
     Perfil detalhado do visitante, mostrando timeline de visitas e acompanhamentos.
@@ -142,6 +145,7 @@ def visitante_perfil(request, visitante_id):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def cadastrar_visitante(request):
     """
     Modal/Página para cadastrar um novo visitante rapidamente.
@@ -183,6 +187,7 @@ def cadastrar_visitante(request):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def editar_visitante(request, visitante_id):
     visitante = get_object_or_404(Visitante, id=visitante_id)
     if request.method == 'POST':
@@ -205,6 +210,7 @@ def editar_visitante(request, visitante_id):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def tornar_membro(request, visitante_id):
     visitante = get_object_or_404(Visitante, id=visitante_id)
     if request.method == 'POST':
@@ -234,6 +240,7 @@ def tornar_membro(request, visitante_id):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def visitantes_arquivo(request):
     """
     Dashboard secundário que lista pessoas que se tornaram membros ou desistiram.
@@ -266,6 +273,7 @@ def visitantes_arquivo(request):
     return render(request, 'visitantes/arquivo_membros.html', context)
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def desistencia_visitante(request, visitante_id):
     visitante = get_object_or_404(Visitante, id=visitante_id)
     if request.method == 'POST':
@@ -289,6 +297,7 @@ def desistencia_visitante(request, visitante_id):
     return redirect('visitante_perfil', visitante_id=visitante.id)
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def excluir_visitante(request, visitante_id):
     visitante = get_object_or_404(Visitante, id=visitante_id)
     if request.method == 'POST':
@@ -300,6 +309,7 @@ def excluir_visitante(request, visitante_id):
     return redirect('visitante_perfil', visitante_id=visitante_id)
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def adicionar_acompanhamento(request, visitante_id):
     visitante = get_object_or_404(Visitante, id=visitante_id)
     if request.method == 'POST':
@@ -324,6 +334,7 @@ def adicionar_acompanhamento(request, visitante_id):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def adicionar_visita(request, visitante_id):
     visitante = get_object_or_404(Visitante, id=visitante_id)
     if request.method == 'POST':
@@ -344,6 +355,7 @@ def adicionar_visita(request, visitante_id):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def exportar_relatorio_geral_pdf(request):
     if request.user.nivel_hierarquico == 'membro_voluntario':
         return HttpResponse("Acesso Negado", status=403)
@@ -370,6 +382,7 @@ def exportar_relatorio_geral_pdf(request):
 
 
 @login_required
+@requer_permissao('visitantes', 'ver')
 def exportar_relatorio_individual_pdf(request, visitante_id):
     if request.user.nivel_hierarquico == 'membro_voluntario':
         return HttpResponse("Acesso Negado", status=403)

@@ -11,7 +11,8 @@
 
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.utils import timezone
 from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, PastaVirtual, CompartilhamentoPasta
@@ -26,6 +27,7 @@ def is_super_admin(user):
     return user.nivel_hierarquico == 'super_admin' or user.is_superuser
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def ler_assinar_termo(request):
     termo_ativo = TermoLGPD.objects.filter(is_ativo=True).first()
 
@@ -87,6 +89,7 @@ def ler_assinar_termo(request):
 import json
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def portal_lgpd(request):
     # Encontrar a assinatura atual
     assinatura = AssinaturaLGPD.objects.filter(membro=request.user).order_by('-data_aceite').first()
@@ -95,6 +98,7 @@ def portal_lgpd(request):
     })
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def exportar_dados_pessoais(request):
     import io
     import zipfile
@@ -132,6 +136,7 @@ def exportar_dados_pessoais(request):
     return response
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def solicitar_esquecimento(request):
     if request.method == 'POST':
         # Enviar e-mail para o DPO/Admin
@@ -148,7 +153,7 @@ def solicitar_esquecimento(request):
     return redirect('portal_lgpd')
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('midia_lgpd', 'excluir')
 def painel_midia(request):
     if request.user.nivel_hierarquico == 'super_admin' or request.user.is_superuser:
         departamentos = Departamento.objects.all()
@@ -171,7 +176,7 @@ def painel_midia(request):
     })
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('midia_lgpd', 'excluir')
 def upload_arquivo(request):
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
@@ -202,6 +207,7 @@ def upload_arquivo(request):
 
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
     # Lógica de Permissões Básicas
     # Qualquer membro logado tem acesso.
@@ -309,6 +315,7 @@ from django.http import HttpResponse
 import mimetypes
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def criar_pasta(request):
     if request.method == 'POST':
         nome = request.POST.get('nome')
@@ -362,6 +369,7 @@ def criar_pasta(request):
     return redirect('pv_drive_home')
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def upload_drive(request):
     if request.method == 'POST':
         modo_atual = request.POST.get('modo_atual')
@@ -427,6 +435,7 @@ def upload_drive(request):
     return redirect('pv_drive_home')
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def visualizar_arquivo(request, arquivo_id):
     arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
 
@@ -450,6 +459,7 @@ def visualizar_arquivo(request, arquivo_id):
         return redirect('pv_drive_home')
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def baixar_arquivo(request, arquivo_id):
     arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
 
@@ -479,6 +489,7 @@ import io
 from django.http import HttpResponse
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def download_pasta_zip(request, pasta_id):
     if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor', 'lider']):
         messages.error(request, 'Acesso restrito.')
@@ -508,6 +519,7 @@ def download_pasta_zip(request, pasta_id):
     return response
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def pv_drive_lixeira(request):
     if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor', 'lider']):
         return redirect('dashboard')
@@ -524,6 +536,7 @@ def pv_drive_lixeira(request):
     })
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def restaurar_arquivo(request, arquivo_id):
     if request.method == 'POST':
         arq = get_object_or_404(ArquivoMidia, id=arquivo_id)
@@ -537,6 +550,7 @@ from .models import PermissaoPVDrive
 from django.utils.dateparse import parse_datetime
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def compartilhar_pasta(request, pasta_id):
     if request.method == 'POST':
         pasta = get_object_or_404(PastaVirtual, id=pasta_id, is_excluida=False)
@@ -601,6 +615,7 @@ from core.models import Membro, NotificacaoGlobal
 import mimetypes
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def upload_inteligente_ocr(request):
     if request.method == 'POST':
         arquivo = request.FILES.get('arquivo_ia')
@@ -707,6 +722,7 @@ def upload_inteligente_ocr(request):
     return redirect('pv_drive_home')
 
 @login_required
+@requer_permissao('midia_lgpd', 'ver')
 def cancelar_compartilhamento(request, permissao_id):
     permissao = get_object_or_404(PermissaoPVDrive, id=permissao_id)
 

@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.http import JsonResponse
 from django.contrib import messages
 from .models import Produto, Venda, ItemVenda, Caixa, CategoriaProduto, ConfiguracaoPDV, MovimentoCaixa
@@ -23,7 +24,7 @@ def sysadmin_access_check(user):
     return user.nivel_hierarquico == 'super_admin'
 
 @login_required
-@user_passes_test(pdv_access_check)
+@requer_permissao('pdv', 'ver')
 def pdv_dashboard(request):
     config, _ = ConfiguracaoPDV.objects.get_or_create(id=1)
 
@@ -59,7 +60,7 @@ def pdv_dashboard(request):
     })
 
 @login_required
-@user_passes_test(pdv_access_check)
+@requer_permissao('pdv', 'ver')
 def pdv_frente_caixa(request):
     caixa_atual = Caixa.objects.filter(status='aberto').last()
     if not caixa_atual:
@@ -145,7 +146,7 @@ def api_finalizar_venda(request):
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
 @login_required
-@user_passes_test(pdv_access_check)
+@requer_permissao('pdv', 'ver')
 def importar_xml_fornecedor(request):
     if request.method == 'POST' and request.FILES.get('xml_file'):
         xml_file = request.FILES['xml_file']
@@ -281,7 +282,7 @@ def editar_produto(request, produto_id):
     return render(request, 'pdv/form_produto.html', {'produto': produto, 'categorias': categorias})
 
 @login_required
-@user_passes_test(sysadmin_access_check)
+@requer_permissao('pdv', 'excluir')
 def configuracoes_pdv(request):
     config = ConfiguracaoPDV.objects.first()
     if not config:

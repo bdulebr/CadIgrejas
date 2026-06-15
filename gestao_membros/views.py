@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
 from django.conf import settings
@@ -22,7 +23,7 @@ def is_sysadmin_ou_lider_global(user):
 from intranet.services.gmail_service import enviar_email_html
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('membros', 'editar')
 def listar_departamentos(request):
     if request.method == 'POST':
         nome = request.POST.get('nome')
@@ -33,7 +34,7 @@ def listar_departamentos(request):
     return render(request, 'gestao_membros/departamentos.html', {'departamentos': departamentos, 'is_master': is_super_admin(request.user)})
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def painel_lider(request):
     if is_super_admin(request.user):
         departamentos = Departamento.objects.all()
@@ -111,7 +112,7 @@ def painel_lider(request):
     })
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def aprovar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     membro.is_active = True
@@ -121,7 +122,7 @@ def aprovar_membro(request, membro_id):
     return redirect('painel_lider')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def rejeitar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     membro.delete()
@@ -129,7 +130,7 @@ def rejeitar_membro(request, membro_id):
     return redirect('painel_lider')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def evoluir_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     membro.nivel_hierarquico = 'lider'
@@ -345,7 +346,7 @@ def detalhes_departamento(request, dep_id):
     return render(request, 'gestao_membros/detalhes_departamento.html', context)
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('membros', 'editar')
 def excluir_departamento(request, dep_id):
     dep = get_object_or_404(Departamento, id=dep_id)
     if request.method == 'POST':
@@ -429,7 +430,7 @@ def baixar_modelo_importacao(request):
     return HttpResponse("Função de baixar modelo será implementada em breve.")
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def adicionar_membro(request):
     if request.method == 'POST':
         membro = Membro()
@@ -512,7 +513,7 @@ def gerir_membro_lider(request, membro_id):
     return redirect('painel_membros')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def editar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     if request.method == 'POST':
@@ -596,7 +597,7 @@ def editar_membro(request, membro_id):
     })
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('membros', 'editar')
 def excluir_membro(request, membro_id):
     if request.method == 'POST':
         messages.error(request, 'Blindagem Zero-Trust: Servidores da Palavra (Membros) não podem ser excluídos para manter o histórico de auditoria. Inative o perfil invés de apagar.')
@@ -652,7 +653,7 @@ from django.template import Context, Template
 from intranet.services.pdf_service import gerar_pdf
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def rh_painel(request):
     """Painel principal do RH mostrando todos os voluntários sob gestão do líder ou todos para admin"""
     if is_super_admin(request.user):
@@ -681,7 +682,7 @@ def rh_painel(request):
     })
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def rh_dossie_membro(request, membro_id):
     """Visualiza o histórico completo do membro (Avaliações, Ocorrências, Ações Disciplinares)"""
     membro = get_object_or_404(Membro, id=membro_id)
@@ -697,7 +698,7 @@ def rh_dossie_membro(request, membro_id):
     })
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def rh_avaliar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     if request.method == 'POST':
@@ -714,7 +715,7 @@ def rh_avaliar_membro(request, membro_id):
     return redirect('rh_painel')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def rh_nova_ocorrencia(request):
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
@@ -741,7 +742,7 @@ def rh_nova_ocorrencia(request):
     return render(request, 'gestao_membros/rh_nova_ocorrencia.html', {'membros': membros_disponiveis})
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def rh_aplicar_disciplina(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
     if request.method == 'POST':
@@ -780,7 +781,7 @@ def rh_aplicar_disciplina(request, membro_id):
     return render(request, 'gestao_membros/rh_aplicar_disciplina.html', {'membro': membro})
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('membros', 'editar')
 def rh_gerar_pdf_disciplina(request, acao_id):
     acao = get_object_or_404(AcaoDisciplinar, id=acao_id)
 

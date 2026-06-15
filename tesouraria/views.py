@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.core.paginator import Paginator
@@ -18,27 +19,10 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.conf import settings
 # Decorator de segurança militar
-def tesouraria_required(view_func):
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.nivel_hierarquico == 'super_admin':
-            return view_func(request, *args, **kwargs)
 
-        is_leader = request.user.departamentos_liderados.filter(nome__icontains='Tesouraria').exists()
-
-        if is_leader:
-            return view_func(request, *args, **kwargs)
-
-        LogImutavel.objects.create(
-            membro=request.user,
-            acao="ACESSO_NEGADO_TESOURARIA",
-            dados_acao="Tentativa de acessar rota protegida da Tesouraria sem privilégios de Líder."
-        )
-        raise PermissionDenied("Acesso restrito: Apenas o Líder da Tesouraria e o Super Admin possuem acesso.")
-    return _wrapped_view
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def dashboard(request):
     mes_atual = datetime.date.today().month
     ano_atual = datetime.date.today().year
@@ -59,7 +43,7 @@ def dashboard(request):
     return render(request, 'tesouraria/dashboard.html', context)
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def lista_lancamentos(request):
     query = request.GET.get('q', '')
     tipo_filtro = request.GET.get('tipo', '')
@@ -88,7 +72,7 @@ def lista_lancamentos(request):
     return render(request, 'tesouraria/lista_lancamentos.html', {'page_obj': page_obj, 'query': query})
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'editar')
 def novo_lancamento(request):
     if request.method == 'POST':
         form = LancamentoForm(request.POST)
@@ -111,13 +95,13 @@ def novo_lancamento(request):
     return render(request, 'tesouraria/form_lancamento.html', {'form': form, 'title': 'Novo Lançamento'})
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def detalhe_lancamento(request, pk):
     lancamento = get_object_or_404(Lancamento, pk=pk)
     return render(request, 'tesouraria/detalhe_lancamento.html', {'lancamento': lancamento})
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def cancelar_lancamento(request, pk):
     lancamento = get_object_or_404(Lancamento, pk=pk)
     if request.method == 'POST':
@@ -160,7 +144,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from django.utils.dateparse import parse_date
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def exportar_relatorio(request):
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
@@ -294,7 +278,7 @@ def exportar_relatorio(request):
         return response
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def configuracoes_tesouraria(request):
     categorias = CategoriaTesouraria.objects.all().order_by('tipo', 'nome')
     tags = TagTesouraria.objects.all().order_by('nome')
@@ -348,7 +332,7 @@ def configuracoes_tesouraria(request):
     })
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def dar_baixa_lancamento(request, pk):
     lancamento = get_object_or_404(Lancamento, pk=pk)
 
@@ -371,7 +355,7 @@ def dar_baixa_lancamento(request, pk):
 
 @csrf_exempt
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def api_scan_comprovante(request):
     if request.method == 'POST':
         # Frontend envia como 'comprovante' via FormData
@@ -390,7 +374,7 @@ def api_scan_comprovante(request):
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def gerar_e_revisar_planilha_sede(request):
     mes_str = request.GET.get('mes')
     ano_str = request.GET.get('ano')
@@ -426,7 +410,7 @@ def gerar_e_revisar_planilha_sede(request):
         return redirect('tesouraria:lista_lancamentos')
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def enviar_relatorio_sede_email(request):
     mes = int(request.POST.get('mes', datetime.date.today().month))
     ano = int(request.POST.get('ano', datetime.date.today().year))
@@ -473,7 +457,7 @@ def enviar_relatorio_sede_email(request):
 # =========================================================
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def download_template_importacao(request):
     """Retorna uma planilha XLSX vazia com cabeçalhos para preenchimento."""
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -499,7 +483,7 @@ def download_template_importacao(request):
 import json
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def preview_importacao(request):
     """Recebe a planilha, processa via IA e armazena na sessão para revisão (Staging)."""
     if request.method == 'POST':
@@ -538,7 +522,7 @@ def preview_importacao(request):
     return redirect('tesouraria:lista_lancamentos')
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def confirmar_importacao(request):
     """Varre a sessão e grava em lote no BD."""
     if request.method == 'POST':
@@ -589,7 +573,7 @@ def confirmar_importacao(request):
     return redirect('tesouraria:lista_lancamentos')
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def auditoria_tesouraria(request):
     query = request.GET.get('q', '')
     logs = LogImutavel.objects.filter(
@@ -612,7 +596,7 @@ def auditoria_tesouraria(request):
     return render(request, 'tesouraria/auditoria.html', {'page_obj': page_obj, 'query': query})
 
 @login_required
-@tesouraria_required
+@requer_permissao('tesouraria', 'ver')
 def logs_auditoria_tesouraria(request):
     from core.models import LogImutavel
     from django.db.models import Q

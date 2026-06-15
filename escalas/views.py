@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
+from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse, FileResponse, HttpResponseForbidden
@@ -96,7 +98,7 @@ def minhas_escalas(request):
     })
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def painel_escalas(request):
     departamentos = get_departamentos_permitidos(request.user)
     competencias = CompetenciaEscala.objects.filter(departamento__in=departamentos).order_by('-data_criacao')
@@ -107,7 +109,7 @@ def painel_escalas(request):
     })
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def nova_competencia(request):
     if request.method == 'POST':
         departamento_id = request.POST.get('departamento_id')
@@ -136,7 +138,7 @@ def nova_competencia(request):
     return redirect('painel_escalas')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def excluir_competencia(request, comp_id):
     comp = get_object_or_404(CompetenciaEscala, id=comp_id)
 
@@ -151,7 +153,7 @@ def excluir_competencia(request, comp_id):
     return redirect('painel_escalas')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def editor_escala_manual(request, comp_id):
     comp = get_object_or_404(CompetenciaEscala, id=comp_id)
     deps_permitidos = get_departamentos_permitidos(request.user)
@@ -262,7 +264,7 @@ def editor_escala_manual(request, comp_id):
     })
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def salvar_slot_escala(request, comp_id):
     if request.method == 'POST':
         comp = get_object_or_404(CompetenciaEscala, id=comp_id)
@@ -333,7 +335,7 @@ def salvar_slot_escala(request, comp_id):
     return redirect('editor_escala_manual', comp_id=comp_id)
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def deletar_slot_escala(request, escala_id):
     escala = get_object_or_404(Escala, id=escala_id)
     comp_id = escala.competencia.id
@@ -364,7 +366,7 @@ def deletar_slot_escala(request, escala_id):
     return redirect('editor_escala_manual', comp_id=comp_id)
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def publicar_competencia(request, comp_id):
     comp = get_object_or_404(CompetenciaEscala, id=comp_id)
 
@@ -473,23 +475,23 @@ def baixar_escala_publica(request):
 
 # As outras views de exportação (excel, csv) continuam, só adaptá-las para aceitar comp_id se o cliente pedir.
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def exportar_escalas_pdf(request):
     return redirect('painel_escalas')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def exportar_escalas_excel(request):
     return redirect('painel_escalas')
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def exportar_escalas_csv(request):
     return redirect('painel_escalas')
 
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 def gerar_escala_automatica(request):
     if request.method == 'POST':
         comp_id = request.POST.get('comp_id')
@@ -566,17 +568,35 @@ def gerar_escala_automatica(request):
             return redirect('editor_escala_manual', comp_id=comp.id)
 
         try:
+            from intranet.services.gemini_ai import gerar_escala_inteligente_gemini
             from intranet.services.groq_ai import gerar_escala_inteligente_groq
 
             regras = {'limite_mensal': 4}
-            resultado = gerar_escala_inteligente_groq(
-                departamento_nome=comp.departamento.nome,
-                mes=mes,
-                ano=ano,
-                membros=membros_data,
-                eventos=eventos_data,
-                regras=regras
-            )
+            resultado = None
+            motor_usado = ""
+
+            try:
+                resultado = gerar_escala_inteligente_gemini(
+                    departamento_nome=comp.departamento.nome,
+                    mes=mes,
+                    ano=ano,
+                    membros=membros_data,
+                    eventos=eventos_data,
+                    regras=regras
+                )
+                motor_usado = "Gemini 2.5 Flash"
+            except Exception as e_gemini:
+                import logging
+                logging.getLogger(__name__).warning(f"Erro no Motor Gemini: {e_gemini}. Acionando Fallback Groq...")
+                resultado = gerar_escala_inteligente_groq(
+                    departamento_nome=comp.departamento.nome,
+                    mes=mes,
+                    ano=ano,
+                    membros=membros_data,
+                    eventos=eventos_data,
+                    regras=regras
+                )
+                motor_usado = "LPU Groq"
 
             alocacoes = resultado.get('alocacoes', [])
             slots_criados = 0
@@ -606,12 +626,12 @@ def gerar_escala_automatica(request):
                     slots_criados += 1
                 except Exception as e:
                     import logging
-                    logging.getLogger(__name__).warning(f"Erro no Motor Groq ao alocar: {e}")
+                    logging.getLogger(__name__).warning(f"Erro ao salvar alocacao da IA: {e}")
 
-            messages.success(request, f'✨ Motor LPU Groq finalizado! A IA analisou as restrições e alocou {slots_criados} voluntários com precisão matemática.')
+            messages.success(request, f'✨ Motor IA ({motor_usado}) finalizado! {slots_criados} voluntários alocados.')
 
         except Exception as e:
-            messages.warning(request, f'Motor Groq AI falhou ({str(e)}). Acionando Motor Offline de emergência...')
+            messages.warning(request, f'Motores de IA falharam ({str(e)}). Acionando Motor Offline de emergência...')
             return gerar_escala_automatica_fallback(request)
 
         return redirect('editor_escala_manual', comp_id=comp.id)
@@ -712,11 +732,9 @@ def gerar_escala_automatica_fallback(request):
                                 data_escala__lt=data_atual
                             ).exists()
 
-                            # Intelligent Load Balancing: Try to avoid if scheduled recently
-                            # We can just put them in a secondary list and use them only if primary is empty
                             if not is_indisponivel and count_mes < 4 and not ja_escalado_hoje and not is_trabalho:
                                 if not ja_escalado_recentemente:
-                                    membros_disponiveis.append(m)
+                                    membros_disponiveis.append((count_mes, m))
 
                         # If strict cooldown leaves no one available, relax the cooldown
                         if not membros_disponiveis:
@@ -733,10 +751,18 @@ def gerar_escala_automatica_fallback(request):
                                 is_trabalho = is_trabalhando(m, data_atual, start_time, end_time)
 
                                 if not is_indisponivel and count_mes < 4 and not ja_escalado_hoje and not is_trabalho:
-                                    membros_disponiveis.append(m)
+                                    membros_disponiveis.append((count_mes, m))
 
                         if membros_disponiveis:
-                            escolhido = random.choice(membros_disponiveis)
+                            # Distribuição Matemática: Ordena por quem tem MENOS escalas no mês
+                            membros_disponiveis.sort(key=lambda x: x[0])
+
+                            # Filtra apenas os que têm o número mínimo de escalas (em caso de empate)
+                            min_count = membros_disponiveis[0][0]
+                            empatados = [item[1] for item in membros_disponiveis if item[0] == min_count]
+
+                            # Escolhe aleatoriamente entre os que estão empatados com o menor número de escalas
+                            escolhido = random.choice(empatados)
 
                             Escala.objects.create(
                                 competencia=comp,
@@ -760,7 +786,7 @@ from django.views.decorators.http import require_POST
 import json
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 @require_POST
 def alocar_slot_api(request):
     try:
@@ -834,7 +860,7 @@ def alocar_slot_api(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @login_required
-@user_passes_test(is_lider)
+@requer_permissao('escalas', 'editar')
 @require_POST
 def remover_slot_api(request):
     try:
@@ -877,7 +903,7 @@ def is_super_admin_escala(user):
     return user.nivel_hierarquico == 'super_admin'
 
 @login_required
-@user_passes_test(is_super_admin_escala)
+@requer_permissao('escalas', 'editar')
 def gerenciar_cultos(request):
     cultos = CultoEvento.objects.all().order_by('tipo', 'dia_semana', 'data_evento')
     dias_map = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'}
@@ -897,7 +923,7 @@ def gerenciar_cultos(request):
     })
 
 @login_required
-@user_passes_test(is_super_admin_escala)
+@requer_permissao('escalas', 'editar')
 def criar_culto(request):
     if request.method == 'POST':
         nome = request.POST.get('nome')
@@ -923,7 +949,7 @@ def criar_culto(request):
     return redirect('gerenciar_cultos')
 
 @login_required
-@user_passes_test(is_super_admin_escala)
+@requer_permissao('escalas', 'editar')
 def editar_culto(request, culto_id):
     culto = get_object_or_404(CultoEvento, id=culto_id)
     if request.method == 'POST':
@@ -947,7 +973,7 @@ def editar_culto(request, culto_id):
     return redirect('gerenciar_cultos')
 
 @login_required
-@user_passes_test(is_super_admin_escala)
+@requer_permissao('escalas', 'editar')
 def excluir_culto(request, culto_id):
     if request.method == 'POST':
         culto = get_object_or_404(CultoEvento, id=culto_id)

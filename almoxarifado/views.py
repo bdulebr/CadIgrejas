@@ -1,6 +1,7 @@
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.utils import timezone
 from .models import ItemAlmoxarifado, MovimentacaoAlmoxarifado, CategoriaItem
@@ -97,6 +98,7 @@ def can_edit_almoxarifado(user):
     return False
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def painel_inventario(request):
     if not can_edit_almoxarifado(request.user):
         messages.error(request, "Acesso Negado.")
@@ -168,6 +170,7 @@ def painel_inventario(request):
     })
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def livro_almoxarifado(request):
     if not can_edit_almoxarifado(request.user):
         messages.error(request, "Acesso Negado.")
@@ -177,6 +180,7 @@ def livro_almoxarifado(request):
     return render(request, 'almoxarifado/livro_almoxarifado.html', {'movimentacoes': movimentacoes})
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def exportar_livro_pdf(request):
     from xhtml2pdf import pisa
     from io import BytesIO
@@ -213,6 +217,7 @@ def exportar_livro_pdf(request):
     return HttpResponse("Erro ao gerar PDF", status=500)
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def cadastrar_item_almoxarifado(request):
     if not can_edit_almoxarifado(request.user):
         messages.error(request, "Acesso Negado.")
@@ -333,9 +338,11 @@ def cadastrar_item_almoxarifado(request):
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from .models import CategoriaItem, SubcategoriaItem
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def gerenciar_categorias(request):
     if not request.user.nivel_hierarquico in ['super_admin', 'pastor', 'lider']:
         return HttpResponseForbidden("Acesso Negado")
@@ -384,17 +391,16 @@ def gerenciar_categorias(request):
     return render(request, 'almoxarifado/gerenciar_categorias.html', {'categorias': categorias})
 
 @login_required
+@requer_permissao('almoxarifado', 'editar')
 def editar_item_almoxarifado(request, item_id):
-    if not can_edit_almoxarifado(request.user):
-        messages.error(request, "Acesso Negado.")
-
-        item = get_object_or_404(ItemAlmoxarifado, id=item_id)
+    item = get_object_or_404(ItemAlmoxarifado, id=item_id)
     categorias = CategoriaItem.objects.all()
 
     if request.method == 'POST':
         item.nome = request.POST.get('nome', '').strip()
         categoria_id = request.POST.get('categoria')
-        item.subcategoria_id = request.POST.get('subcategoria')
+        subcategoria_id = request.POST.get('subcategoria')
+        item.subcategoria_id = subcategoria_id
         subcategoria = SubcategoriaItem.objects.filter(id=subcategoria_id).first() if subcategoria_id else None
         item.tipo_item = request.POST.get('tipo_item', 'permanente')
         item.quantidade_estoque = int(request.POST.get('quantidade', item.quantidade_estoque))
@@ -448,6 +454,7 @@ import base64
 from io import BytesIO
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def imprimir_etiqueta_qr(request, item_id):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")
@@ -487,6 +494,7 @@ def imprimir_etiqueta_qr(request, item_id):
     })
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def imprimir_todos_qrs(request):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")
@@ -643,6 +651,7 @@ def finalizar_carrinho(request):
 # ==========================================
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def painel_aprovacoes_almoxarifado(request):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")
@@ -651,6 +660,7 @@ def painel_aprovacoes_almoxarifado(request):
     return render(request, 'almoxarifado/fila_aprovacoes.html', {'movimentacoes': movs_pendentes})
 
 @login_required
+@requer_permissao('almoxarifado', 'ver')
 def processar_aprovacao(request, mov_id, acao):
     if not can_edit_almoxarifado(request.user):
         return HttpResponseForbidden("Acesso Negado")

@@ -17,7 +17,8 @@ from .models import LogAuditoria, ConfiguracaoSistema
 import json
 import psutil
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from .models import Membro
 from gestao_membros.models import Habilidade
 from axes.models import AccessAttempt
@@ -330,7 +331,7 @@ def logout_view(request):
     return redirect('login')
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_dashboard(request):
 
     from core.models import ConfiguracaoSistema, LinkRapido, EmailLog
@@ -425,7 +426,7 @@ def sysadmin_dashboard(request):
     return render(request, 'core/pages/sysadmin_dashboard.html', context)
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_link_salvar(request):
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
@@ -443,7 +444,7 @@ def sysadmin_link_salvar(request):
     return redirect('sysadmin_dashboard')
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_link_deletar(request, link_id):
     if request.method == 'POST':
         link = get_object_or_404(LinkRapido, id=link_id)
@@ -453,7 +454,7 @@ def sysadmin_link_deletar(request, link_id):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_toggle_manutencao(request):
 
     if request.method == 'POST':
@@ -467,7 +468,7 @@ def sysadmin_toggle_manutencao(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_toggle_email(request):
 
     if request.method == 'POST':
@@ -481,7 +482,7 @@ def sysadmin_toggle_email(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_desbloquear_ip(request):
 
     if request.method == 'POST':
@@ -497,7 +498,7 @@ def sysadmin_desbloquear_ip(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_toggle_debug(request):
 
     if request.method == 'POST':
@@ -546,7 +547,7 @@ def sysadmin_toggle_debug(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_salvar_env(request):
 
     if request.method == 'POST':
@@ -596,7 +597,7 @@ def sysadmin_salvar_env(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_salvar_igreja(request):
 
     if request.method == 'POST':
@@ -621,7 +622,7 @@ def sysadmin_salvar_igreja(request):
 from .models import LinkRapido
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_baixar_backup(request, backup_id=None):
     import os
     from django.conf import settings
@@ -646,7 +647,7 @@ def sysadmin_baixar_backup(request, backup_id=None):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_subir_backup(request):
 
     if request.method == 'POST':
@@ -669,7 +670,7 @@ def sysadmin_subir_backup(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_backup_gdrive(request, backup_id=None):
     from intranet.services.gdrive import upload_backup_to_gdrive
     from core.models import DatabaseBackup
@@ -695,7 +696,7 @@ def sysadmin_backup_gdrive(request, backup_id=None):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_zerar_banco(request):
 
     if request.method == 'POST':
@@ -877,7 +878,8 @@ from django.db.models import Count, Q
 from django.utils import timezone
 import datetime
 import json
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from core.models import Membro
@@ -1272,7 +1274,7 @@ from core.utils_forensics import registrar_log_forense
 from core.services.pdf_auditoria import gerar_laudo_pericial_pdf
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_logs_list(request):
 
     query = request.GET.get('q', '')
@@ -1302,7 +1304,7 @@ def sysadmin_logs_list(request):
     return render(request, 'core/pages/sysadmin_logs.html', context)
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_log_pdf(request, log_id):
 
     log = get_object_or_404(LogAuditoria, id=log_id)
@@ -1314,7 +1316,7 @@ def sysadmin_log_pdf(request, log_id):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_ux_tracker(request):
     """
     Recebe requests silenciosos do ux_tracker.js via POST/AJAX
@@ -1478,7 +1480,7 @@ def ler_todas_notificacoes(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_gerar_backup_local(request):
     import shutil
     import datetime
@@ -1529,7 +1531,7 @@ def sysadmin_gerar_backup_local(request):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_deletar_backup(request, backup_id):
     if request.method == 'POST':
         import os
@@ -1548,7 +1550,7 @@ def sysadmin_deletar_backup(request, backup_id):
 
 @login_required
 @csrf_exempt
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_restaurar_backup(request, backup_id):
     if request.method == 'POST':
         import shutil
@@ -1608,30 +1610,30 @@ def sysadmin_baixar_log_spider(request, log_id):
     return response
 
 @login_required
-@user_passes_test(is_super_admin)
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_deploy_producao(request):
     from django.core.management import call_command
     import io
     from django.utils.crypto import get_random_string
     import os
-    
+
     config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
     if config.sistema_implantado:
         messages.error(request, "O sistema já foi implantado! Ação bloqueada.")
         return redirect('sysadmin_dashboard')
-        
+
     try:
         # 1. Migrate
         out = io.StringIO()
         call_command('migrate', interactive=False, stdout=out)
-        
+
         # 2. Collectstatic
         call_command('collectstatic', interactive=False, stdout=out)
-        
+
         # 3. Clean Cache
         from django.core.cache import cache
         cache.clear()
-        
+
         # 4. Generate new SECRET_KEY in .env
         env_path = os.path.join(settings.BASE_DIR, '.env')
         if os.path.exists(env_path):
@@ -1642,13 +1644,13 @@ def sysadmin_deploy_producao(request):
             env_text = re.sub(r'SECRET_KEY=.*', f'SECRET_KEY={new_key}', env_text)
             with open(env_path, 'w', encoding='utf-8') as f:
                 f.write(env_text)
-                
+
         # 5. Lock it
         config.sistema_implantado = True
         config.save()
-        
+
         messages.success(request, "SISTEMA IMPLANTADO COM SUCESSO! Caches limpos, migrações aplicadas, arquivos estáticos copiados e Chave Secreta rotacionada.")
     except Exception as e:
         messages.error(request, f"Erro crítico no deploy: {str(e)}")
-        
+
     return redirect('sysadmin_dashboard')

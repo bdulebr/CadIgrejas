@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -10,19 +11,12 @@ from io import BytesIO
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 
-def check_permission(user):
-    is_global = user.nivel_hierarquico in ['super_admin', 'pastor_regente', 'pastor'] or user.is_superuser
-    if is_global: return True
-    try:
-        depts_str = " ".join(user.departamentos_liderados.values_list('nome', flat=True)).lower()
-        return 'casal' in depts_str or 'família' in depts_str
-    except Exception:
-        return False
+
 
 @login_required
+@requer_permissao('casais', 'ver')
 def dashboard_casais(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado. Este módulo contém informações confidenciais.", status=403)
+
 
     casais = Casal.objects.filter(arquivado=False).order_by('-data_cadastro')
     total_casais = casais.count()
@@ -47,9 +41,9 @@ def dashboard_casais(request):
     return render(request, 'ministerio_casais/dashboard.html', context)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def matricular_casal(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     casal = get_object_or_404(Casal, id=casal_id)
     if request.method == 'POST':
         turma_id = request.POST.get('turma_id')
@@ -94,9 +88,9 @@ def matricular_casal(request, casal_id):
     return redirect('perfil_casal', casal_id=casal.id)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def perfil_casal(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     casal = get_object_or_404(Casal, id=casal_id)
     historico = casal.historicos_aconselhamento.all().order_by('-data_sessao')
@@ -113,9 +107,9 @@ def perfil_casal(request, casal_id):
     return render(request, 'ministerio_casais/perfil.html', context)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def cadastrar_casal(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     if request.method == 'POST':
         nome_conjuge_1 = request.POST.get('nome_conjuge_1')
@@ -154,9 +148,9 @@ def cadastrar_casal(request):
     return redirect('dashboard_casais')
 
 @login_required
+@requer_permissao('casais', 'ver')
 def exportar_relatorio_individual_casais(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     casal = get_object_or_404(Casal, id=casal_id)
     historico = casal.historicos_aconselhamento.all().order_by('-data_sessao')
@@ -187,9 +181,9 @@ def exportar_relatorio_individual_casais(request, casal_id):
     return HttpResponse("Erro ao gerar PDF", status=500)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def upload_certificado(request, matricula_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
     if request.method == 'POST' and request.FILES.get('certificado_arquivo'):
@@ -202,9 +196,9 @@ def upload_certificado(request, matricula_id):
 
 
 @login_required
+@requer_permissao('casais', 'ver')
 def painel_pastoral_casais(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     # Busca casais por status para o Kanban (ignorando arquivados)
     casais_namorados = Casal.objects.filter(status_relacionamento='Namorados', arquivado=False).order_by('-data_cadastro')
@@ -221,9 +215,9 @@ def painel_pastoral_casais(request):
     return render(request, 'ministerio_casais/painel.html', context)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def atualizar_status_casal(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     if request.method == 'POST':
         novo_status = request.POST.get('status')
         casal = get_object_or_404(Casal, id=casal_id)
@@ -234,9 +228,9 @@ def atualizar_status_casal(request, casal_id):
     return HttpResponse(status=400)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def nova_sessao_aconselhamento(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     casal = get_object_or_404(Casal, id=casal_id)
     if request.method == 'POST':
         pastor = request.POST.get('pastor_conselheiro')
@@ -265,16 +259,16 @@ def nova_sessao_aconselhamento(request, casal_id):
     return redirect('perfil_casal', casal_id=casal.id)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def cursos_dashboard(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     cursos = CursoCasal.objects.all().order_by('-id')
     return render(request, 'ministerio_casais/cursos_dashboard.html', {'cursos': cursos})
 
 @login_required
+@requer_permissao('casais', 'ver')
 def adicionar_curso(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     if request.method == 'POST':
         nome = request.POST.get('nome')
         descricao = request.POST.get('descricao')
@@ -302,9 +296,9 @@ def adicionar_curso(request):
 
 
 @login_required
+@requer_permissao('casais', 'ver')
 def aprovar_matricula(request, matricula_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
     matricula.aprovado = True
     matricula.percentual_conclusao = 100
@@ -335,9 +329,9 @@ def aprovar_matricula(request, matricula_id):
     return redirect('perfil_casal', casal_id=matricula.casal.id)
 
 @login_required
+@requer_permissao('casais', 'editar')
 def editar_casal(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     casal = get_object_or_404(Casal, id=casal_id)
     if request.method == 'POST':
         casal.nome_conjuge_1 = request.POST.get('nome_conjuge_1')
@@ -363,9 +357,9 @@ def editar_casal(request, casal_id):
     return redirect('perfil_casal', casal_id=casal.id)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def relatorio_geral_casais(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     casais = Casal.objects.all().order_by('-data_cadastro')
 
@@ -392,9 +386,9 @@ def relatorio_geral_casais(request):
     return HttpResponse("Erro ao gerar PDF", status=500)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def editar_curso(request, curso_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     curso = get_object_or_404(CursoCasal, id=curso_id)
     if request.method == 'POST':
         curso.nome = request.POST.get('nome', curso.nome)
@@ -418,9 +412,9 @@ def editar_curso(request, curso_id):
     return redirect('cursos_casais')
 
 @login_required
+@requer_permissao('casais', 'ver')
 def excluir_curso(request, curso_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     curso = get_object_or_404(CursoCasal, id=curso_id)
     if request.method == 'POST':
         curso.delete()
@@ -428,9 +422,9 @@ def excluir_curso(request, curso_id):
     return redirect('cursos_casais')
 
 @login_required
+@requer_permissao('casais', 'ver')
 def arquivar_casal(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     casal = get_object_or_404(Casal, id=casal_id)
     if request.method == 'POST':
         casal.arquivado = True
@@ -448,9 +442,9 @@ def arquivar_casal(request, casal_id):
     return redirect('dashboard_casais')
 
 @login_required
+@requer_permissao('casais', 'ver')
 def excluir_casal(request, casal_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     casal = get_object_or_404(Casal, id=casal_id)
     if request.method == 'POST':
         casal_id_bkp = casal.id
@@ -469,9 +463,9 @@ def excluir_casal(request, casal_id):
     return redirect('dashboard_casais')
 
 @login_required
+@requer_permissao('casais', 'ver')
 def desfazer_aprovacao_matricula(request, matricula_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
     matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
     if request.method == 'POST':
         matricula.aprovado = False
@@ -484,9 +478,9 @@ from django.db.models import Sum, F
 from .models import PagamentoCursoCasal
 
 @login_required
+@requer_permissao('casais', 'ver')
 def gestao_financeira_cursos(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     cursos = CursoCasal.objects.all().prefetch_related('turmas__matriculas', 'turmas__matriculas__casal')
 
@@ -519,9 +513,9 @@ def gestao_financeira_cursos(request):
     return render(request, 'ministerio_casais/gestao_financeira_cursos.html', context)
 
 @login_required
+@requer_permissao('casais', 'ver')
 def registrar_pagamento_curso(request, matricula_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     if request.method == 'POST':
         matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
@@ -557,9 +551,9 @@ def registrar_pagamento_curso(request, matricula_id):
     return redirect('gestao_financeira_cursos')
 
 @login_required
+@requer_permissao('casais', 'ver')
 def disparar_cobranca_curso(request, matricula_id):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     if request.method == 'POST':
         matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
@@ -596,9 +590,9 @@ def disparar_cobranca_curso(request, matricula_id):
     return redirect('gestao_financeira_cursos')
 
 @login_required
+@requer_permissao('casais', 'ver')
 def pdf_relatorio_financeiro_cursos(request):
-    if not check_permission(request.user):
-        return HttpResponse("Acesso Negado.", status=403)
+
 
     cursos = CursoCasal.objects.all().prefetch_related('turmas__matriculas', 'turmas__matriculas__casal')
 
