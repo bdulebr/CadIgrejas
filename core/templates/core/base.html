@@ -194,6 +194,14 @@
             </nav>
             {% endif %}
 
+            {% if user.nivel_hierarquico == 'super_admin' or is_tesouraria_team %}
+            <div x-show="sidebarOpen" class="text-[10px] uppercase font-bold text-emerald-500 tracking-widest pl-3 mt-4 mb-1">Financeiro</div>
+            <a href="{% url 'tesouraria:dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Gestão da Tesouraria">
+                <i data-lucide="wallet" class="w-5 h-5 min-w-[20px] text-emerald-400 group-hover:text-emerald-300"></i>
+                <span x-show="sidebarOpen" class="whitespace-nowrap">Tesouraria</span>
+            </a>
+            {% endif %}
+
             {% if user.nivel_hierarquico == 'super_admin' or user.is_superuser %}
             <div x-show="sidebarOpen" class="text-[10px] uppercase font-bold text-red-500 tracking-widest pl-3 mt-4 mb-1">Administração</div>
             <nav class="flex flex-col gap-1 px-2">

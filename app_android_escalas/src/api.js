@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Como o apk vai rodar no android, e o django localmente no pc
 // Usamos o IP da maquina na rede, ou se for emulador, 10.0.2.2.
 // Altere para o IP de producao quando fizer deploy.
-export const BASE_URL = 'http://10.0.2.2:8000/api';
+export const BASE_URL = 'http://192.168.1.9:8000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,

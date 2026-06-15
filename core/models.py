@@ -168,7 +168,7 @@ class LogAuditoria(models.Model):
                                     )
                         except Exception:
                             pass
-                    
+
                     threading.Thread(target=fetch_geoip_async, args=(self.ip_origem,)).start()
 
             ultimo_log = LogAuditoria.objects.order_by('-id').first()
@@ -314,3 +314,28 @@ class SpiderTestLog(models.Model):
 
     def __str__(self):
         return f"Spider Test em {self.data_execucao.strftime('%d/%m/%Y %H:%M')} - Erros: {self.erros_encontrados}"
+
+
+import hashlib
+
+class LogImutavel(models.Model):
+    membro = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
+    acao = models.CharField(max_length=255)
+    dados_acao = models.TextField()
+    hash_anterior = models.CharField(max_length=64, blank=True, null=True)
+    hash_atual = models.CharField(max_length=64, unique=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Log Imutável (Zero-Trust)'
+        verbose_name_plural = 'Logs Imutáveis (Zero-Trust)'
+        ordering = ['-id']
+
+    def save(self, *args, **kwargs):
+        if not self.hash_atual:
+            last_log = LogImutavel.objects.order_by('-id').first()
+            self.hash_anterior = last_log.hash_atual if last_log else "GENESIS"
+
+            data_to_hash = f"{self.membro.id if self.membro else 'SYS'}|{self.acao}|{self.dados_acao}|{self.hash_anterior}"
+            self.hash_atual = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
+        super().save(*args, **kwargs)

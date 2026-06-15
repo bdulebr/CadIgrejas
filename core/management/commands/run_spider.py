@@ -1,4 +1,5 @@
 import os
+import json
 from django.core.management.base import BaseCommand
 from django.test import Client
 from django.urls import get_resolver
@@ -29,6 +30,16 @@ class Command(BaseCommand):
 
         client.login(username='admin_spider', password='password123')
 
+        # Autenticação JWT para API
+        jwt_token = None
+        try:
+            res_auth = client.post('/api/auth/login/', {'username': 'admin_spider', 'password': 'password123'}, content_type='application/json')
+            if res_auth.status_code == 200:
+                jwt_token = res_auth.json().get('access')
+        except Exception as e:
+            pass
+
+
         resolver = get_resolver()
 
         def get_all_urls(urllist, prefix=''):
@@ -47,12 +58,12 @@ class Command(BaseCommand):
         total_urls = 0
 
         for url in set(urls):
-            if 'admin/' in url or '<' in url or 'media' in url or 'api/' in url or 'qr/' in url or 'logout' in url or 'run-spider' in url:
+            if 'admin/' in url or '<' in url or 'media' in url or 'qr/' in url or 'logout' in url or 'run-spider' in url:
                 continue
-            
+
             path = '/' + url.replace('^', '').replace('$', '').replace('\\Z', '')
             total_urls += 1
-            
+
             try:
                 response = client.get(path)
                 if response.status_code == 500:

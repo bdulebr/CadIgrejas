@@ -1,0 +1,86 @@
+{% extends 'core/base.html' %}
+{% block title %}Tesouraria - Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-vault text-warning"></i> Cofre da Tesouraria</h2>
+        <div>
+            <a href="{% url 'tesouraria:configuracoes' %}" class="btn btn-outline-secondary me-2" title="Configurações (Categorias e Tags)"><i class="fas fa-cogs"></i></a>
+            <a href="{% url 'tesouraria:novo_lancamento' %}" class="btn btn-success"><i class="fas fa-plus"></i> Novo Lançamento</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3 shadow-sm" style="border-radius: 15px;">
+                <div class="card-body">
+                    <h5 class="card-title">Entradas do Mês</h5>
+                    <h2 class="card-text">R$ {{ entradas|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger mb-3 shadow-sm" style="border-radius: 15px;">
+                <div class="card-body">
+                    <h5 class="card-title">Saídas do Mês</h5>
+                    <h2 class="card-text">R$ {{ saidas|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white {% if saldo >= 0 %}bg-primary{% else %}bg-warning{% endif %} mb-3 shadow-sm" style="border-radius: 15px;">
+                <div class="card-body">
+                    <h5 class="card-title">Saldo do Mês</h5>
+                    <h2 class="card-text">R$ {{ saldo|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4 shadow-sm" style="background: rgba(30, 41, 59, 0.9); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="card-body">
+            <h4 class="text-white">Ações Rápidas</h4>
+            <a href="{% url 'tesouraria:lista_lancamentos' %}" class="btn btn-outline-light me-2"><i class="fas fa-list"></i> Ver Lançamentos</a>
+            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="fas fa-file-export"></i> Relatório Personalizado
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Exportação -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-white" style="background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;">
+      <form method="GET" action="{% url 'tesouraria:exportar_relatorio' %}">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title"><i class="fas fa-file-contract text-info"></i> Exportar Mês ou Período</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+                <label>Data Início (Opcional)</label>
+                <input type="date" name="data_inicio" class="form-control bg-dark text-white border-secondary">
+            </div>
+            <div class="mb-3">
+                <label>Data Fim (Opcional)</label>
+                <input type="date" name="data_fim" class="form-control bg-dark text-white border-secondary">
+            </div>
+            <div class="mb-3">
+                <label>Formato do Relatório</label>
+                <select name="formato" class="form-select bg-dark text-white border-secondary">
+                    <option value="pdf">Documento PDF (Alta Resolução)</option>
+                    <option value="xlsx">Planilha Excel (XLSX)</option>
+                    <option value="csv">Dados Brutos (CSV)</option>
+                </select>
+            </div>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-info"><i class="fas fa-download"></i> Gerar e Baixar</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

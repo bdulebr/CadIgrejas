@@ -36,6 +36,7 @@ urlpatterns = [
     path('casais/', include('ministerio_casais.urls')),
     path('', include('midia_lgpd.urls')),
     path('api/', include('api.urls')),
+    path('tesouraria/', include('tesouraria.urls')),
     path('sw.js', pwa_service_worker, name='sw.js'),
     path('manifest.json', pwa_manifest, name='manifest.json'),
 ]

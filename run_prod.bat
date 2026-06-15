@@ -20,9 +20,14 @@ echo - Servidor Web: WAITRESS (Pronto para alta carga no Windows)
 echo - Arquivos Estaticos: WHITENOISE (Compactados e Cacheados)
 echo ==============================================================
 echo.
+echo Coletando arquivos estaticos para o WhiteNoise...
+call venv\Scripts\activate
+python manage.py collectstatic --noinput
+
+echo.
 echo Pressione CTRL+C para derrubar o servidor e S (Sim) para sair do loop.
 echo.
-call venv\Scripts\activate
+set USE_HTTPS=False
 waitress-serve --port=8000 intranet.wsgi:application
 echo.
 echo Servidor reiniciando (loop ativo)...

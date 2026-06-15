@@ -18,6 +18,7 @@ def global_config(request):
                 links_permitidos.append(link)
 
     is_almoxarifado_team = False
+    is_tesouraria_team = False
     if request.user.is_authenticated:
         try:
             from almoxarifado.views import can_edit_almoxarifado
@@ -25,10 +26,13 @@ def global_config(request):
         except ImportError:
             pass
 
+        is_tesouraria_team = request.user.departamentos_liderados.filter(nome__icontains='Tesouraria').exists()
+
     return {
         'sys_config': config,
         'links_rapidos': links_permitidos,
-        'is_almoxarifado_team': is_almoxarifado_team
+        'is_almoxarifado_team': is_almoxarifado_team,
+        'is_tesouraria_team': is_tesouraria_team
     }
 
 def notificacoes_globais(request):

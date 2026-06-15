@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}
+{% block title %}Tesouraria - Lançamento{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg" style="background: rgba(30, 41, 59, 0.95); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="card-header border-bottom border-secondary">
+            <h3 class="text-white"><i class="fas fa-plus-circle text-success"></i> {{ title }}</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row">
+                    {% for field in form %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-light">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger mt-1"><small>{{ field.errors|striptags }}</small></div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="alert alert-warning mt-3" role="alert">
+                    <i class="fas fa-shield-alt"></i> <strong>Zero-Trust Ativado:</strong> Este registro será encriptado e atrelado ao seu usuário de forma permanente.
+                </div>
+
+                <div class="text-end mt-4">
+                    <a href="{% url 'tesouraria:lista_lancamentos' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Registrar Lançamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

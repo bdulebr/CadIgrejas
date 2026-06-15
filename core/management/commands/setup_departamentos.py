@@ -11,7 +11,8 @@ class Command(BaseCommand):
             {'id_unico_fixo': 'SYS_ESCALAS', 'nome': 'Gestão de Escalas', 'categoria': 'departamento', 'is_system': True},
             {'id_unico_fixo': 'SYS_CRM', 'nome': 'CRM de Visitantes', 'categoria': 'departamento', 'is_system': True},
             {'id_unico_fixo': 'SYS_CASAIS', 'nome': 'Ministério de Casais', 'categoria': 'departamento', 'is_system': True},
-            {'id_unico_fixo': 'SYS_ADMIN', 'nome': 'Administração Sysadmin', 'categoria': 'setor', 'is_system': True}
+            {'id_unico_fixo': 'SYS_ADMIN', 'nome': 'Administração Sysadmin', 'categoria': 'setor', 'is_system': True},
+            {'id_unico_fixo': 'SYS_TESO', 'nome': 'Tesouraria', 'categoria': 'departamento', 'is_system': True}
         ]
 
         criados = 0

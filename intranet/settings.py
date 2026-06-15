@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'pdv',
     'visitantes',
     'ministerio_casais',
+    'tesouraria',
 ]
 
 MIDDLEWARE = [
@@ -132,6 +133,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'intranet.wsgi.application'
 
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 209715200 # 200MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 209715200 # 200MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-fields
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
