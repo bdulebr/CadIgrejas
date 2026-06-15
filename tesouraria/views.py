@@ -538,6 +538,7 @@ def confirmar_importacao(request):
                 tipo=item.get('tipo', 'saida'),
                 valor=item.get('valor', 0),
                 data_vencimento=item.get('data_vencimento', datetime.date.today()),
+                data_lancamento=item.get('data_lancamento') or None,
                 descricao=item.get('descricao', 'Sem Descrição'),
                 categoria=categoria,
                 forma_pagamento=item.get('forma_pagamento', 'outros')[:20],

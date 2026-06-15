@@ -49,6 +49,7 @@ def analisar_comprovante_tesouraria(file_obj, categorias=None):
           "tipo": "entrada ou saida",
           "valor": 150.50,
           "data_vencimento": "YYYY-MM-DD",
+          "data_lancamento": "YYYY-MM-DDTHH:MM",
           "descricao": "Breve descrição do gasto (ex: Compra de materiais Kalunga)",
           "categoria_id": 123,
           "categoria_sugerida": "Nome da Categoria",
@@ -145,9 +146,11 @@ def analisar_planilha_importacao(file_obj, categorias=None):
     1. Ignorar o cabeçalho.
     2. Identificar cada linha de lançamento e formatar os dados.
     3. Fazer o fuzzy match do nome da categoria descrita na planilha para o "categoria_id" (se não achar, nulo).
-    4. Validar as regras de negócio Zero-Trust: Valores não podem ser negativos, datas de vencimento devem ser coerentes (YYYY-MM-DD), o tipo DEVE ser "entrada" ou "saida".
-    5. 'forma_pagamento' deve ser: pix, boleto, credito, debito, dinheiro, transferencia, outros.
-    6. Avaliar se o lançamento é parcelado.
+    3. Fazer o fuzzy match da categoria de acordo com a lista.
+    4. Identificar data de vencimento e DATA DE LANÇAMENTO (data/hora em que a transação ocorreu de fato, no formato YYYY-MM-DDTHH:MM).
+    5. Identificar impostos e parcelamentos.
+    6. Identificar a forma de pagamento (pix, boleto, credito, debito, dinheiro, transferencia, outros).
+    7. Validar as regras de negócio Zero-Trust: Valores não podem ser negativos, datas de vencimento devem ser coerentes (YYYY-MM-DD), o tipo DEVE ser "entrada" ou "saida".
 
     Se houver ERROS GRAVES (ex: valores negativos, datas absurdas como 29/02 em ano não bissexto), você deve preencher o campo "erros_críticos" no JSON com a lista de problemas encontrados para que a importação seja abortada. Se estiver tudo OK ou houver apenas warnings leves, "erros_críticos" deve ser uma lista vazia [].
 
@@ -159,6 +162,7 @@ def analisar_planilha_importacao(file_obj, categorias=None):
           "tipo": "entrada ou saida",
           "valor": 100.50,
           "data_vencimento": "YYYY-MM-DD",
+          "data_lancamento": "YYYY-MM-DDTHH:MM",
           "descricao": "Descricao",
           "categoria_id": 123,
           "forma_pagamento": "pix",

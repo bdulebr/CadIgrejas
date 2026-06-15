@@ -39,6 +39,7 @@
                 <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400">
                     <tr>
                         <th class="px-6 py-4">Data Venc.</th>
+                        <th class="px-6 py-4">Data Lanç.</th>
                         <th class="px-6 py-4">Descrição</th>
                         <th class="px-6 py-4">Tipo</th>
                         <th class="px-6 py-4 text-right">Valor</th>
@@ -51,6 +52,7 @@
                     {% for l in lancamentos %}
                     <tr class="hover:bg-slate-700/30 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">{{ l.data_vencimento }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{% if l.data_lancamento %}{{ l.data_lancamento|date:"d/m/Y H:i" }}{% else %}-{% endif %}</td>
                         <td class="px-6 py-4 font-medium text-white">{{ l.descricao }}</td>
                         <td class="px-6 py-4">
                             {% if l.tipo == 'entrada' %}

@@ -11,11 +11,16 @@ class LancamentoForm(forms.ModelForm):
 
     class Meta:
         model = Lancamento
-        fields = ['tipo', 'valor', 'data_vencimento', 'data_pagamento', 'descricao', 'categoria', 'status', 'tags', 'observacoes', 'departamento_origem', 'forma_pagamento', 'impostos', 'is_parcelado', 'numero_parcelas', 'parcela_atual']
+        fields = [
+            'tipo', 'valor', 'data_vencimento', 'data_lancamento', 'status', 'categoria',
+            'descricao', 'observacoes', 'tags', 'forma_pagamento', 'impostos',
+            'is_parcelado', 'numero_parcelas', 'parcela_atual'
+        ]
         widgets = {
             'data_vencimento': forms.DateInput(attrs={'type': 'date'}),
-            'data_pagamento': forms.DateInput(attrs={'type': 'date'}),
+            'data_lancamento': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'observacoes': forms.Textarea(attrs={'rows': 3}),
+            'tags': forms.CheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, **kwargs):

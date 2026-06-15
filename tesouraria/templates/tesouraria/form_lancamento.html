@@ -63,9 +63,15 @@
                 </div>
 
                 <!-- Data de Vencimento/Ocorrência -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Data Vencimento / Ref.</label>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-slate-400">Vencimento / Data Base *</label>
                     {% render_field form.data_vencimento class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" type="date" %}
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-slate-400">Ocorrência (Lançamento)</label>
+                    {% render_field form.data_lancamento class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" %}
+                    <p class="text-xs text-slate-500 mt-1">Data e hora em que a transação ocorreu de fato (ex: hora do PIX).</p>
                 </div>
 
                 <!-- Forma de Pagamento -->
@@ -195,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (dados.tipo) document.querySelector('[name="tipo"]').value = dados.tipo;
                 if (dados.valor) document.querySelector('[name="valor"]').value = dados.valor;
                 if (dados.data_vencimento) document.querySelector('[name="data_vencimento"]').value = dados.data_vencimento;
+                if (dados.data_lancamento) document.querySelector('[name="data_lancamento"]').value = dados.data_lancamento;
                 if (dados.descricao) document.querySelector('[name="descricao"]').value = dados.descricao;
                 if (dados.forma_pagamento) document.querySelector('[name="forma_pagamento"]').value = dados.forma_pagamento;
                 if (dados.impostos !== undefined && dados.impostos !== null) document.querySelector('[name="impostos"]').value = dados.impostos;

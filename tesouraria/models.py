@@ -39,6 +39,7 @@ class Lancamento(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
     valor = models.DecimalField(max_digits=12, decimal_places=2)
     data_vencimento = models.DateField()
+    data_lancamento = models.DateTimeField(null=True, blank=True, help_text="Data e hora em que a transação ocorreu de fato")
     data_pagamento = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pago')
 
@@ -80,7 +81,8 @@ class Lancamento(models.Model):
         # Assinatura de integridade no Log Imutavel da Intranet
         impostos_str = f"|IMP:{self.impostos}" if self.impostos else ""
         parcelas_str = f"|PARC:{self.parcela_atual}/{self.numero_parcelas}" if self.is_parcelado else ""
-        data_str = f"LANC-{self.id}|{self.valor}|{self.tipo}|{self.status}|{self.data_vencimento}|{self.forma_pagamento}{impostos_str}{parcelas_str}"
+        data_lanc_str = f"|LANC:{self.data_lancamento}" if self.data_lancamento else ""
+        data_str = f"LANC-{self.id}|{self.valor}|{self.tipo}|{self.status}|{self.data_vencimento}{data_lanc_str}|{self.forma_pagamento}{impostos_str}{parcelas_str}"
         hash_val = hashlib.sha256(data_str.encode('utf-8')).hexdigest()
 
         if self.hash_assinatura != hash_val:

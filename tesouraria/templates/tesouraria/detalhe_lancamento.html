@@ -75,6 +75,13 @@
 
                 <div class="grid grid-cols-2 gap-4 pt-4">
                     <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i data-lucide="clock" class="w-5 h-5"></i> Ocorrência (Lançamento)</h5>
+                        <p class="text-slate-200 font-medium">{% if lancamento.data_lancamento %}{{ lancamento.data_lancamento|date:"d/m/Y H:i" }}{% else %}-{% endif %}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <div>
                         <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i data-lucide="credit-card" class="w-5 h-5"></i> Forma de Pagamento</h5>
                         <p class="text-slate-200 font-medium capitalize">{{ lancamento.forma_pagamento }}</p>
                     </div>
