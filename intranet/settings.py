@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'visitantes',
     'ministerio_casais',
     'tesouraria',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
