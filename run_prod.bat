@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 :start
 echo ==============================================================
 echo INICIANDO SERVIDOR DE PRODUCAO (MODO ZERO-TRUST TESTE LOCAL)
@@ -11,9 +12,9 @@ for /f "tokens=1,2 delims==" %%A in (.env) do (
 )
 
 if "%DEBUG_MODE%"=="True" (
-    echo - Debug Mode: [ALERTA] ATIVADO (Vulneravel)
+    echo - Debug Mode: [ALERTA] ATIVADO [Vulneravel]
 ) else (
-    echo - Debug Mode: DESATIVADO (Extrema Seguranca)
+    echo - Debug Mode: DESATIVADO [Extrema Seguranca]
 )
 
 echo - Servidor Web: WAITRESS (Pronto para alta carga no Windows)

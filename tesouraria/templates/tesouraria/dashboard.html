@@ -1,86 +1,122 @@
 {% extends 'core/base.html' %}
 {% block title %}Tesouraria - Dashboard{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-vault text-warning"></i> Cofre da Tesouraria</h2>
-        <div>
-            <a href="{% url 'tesouraria:configuracoes' %}" class="btn btn-outline-secondary me-2" title="Configurações (Categorias e Tags)"><i class="fas fa-cogs"></i></a>
-            <a href="{% url 'tesouraria:novo_lancamento' %}" class="btn btn-success"><i class="fas fa-plus"></i> Novo Lançamento</a>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h2 class="text-3xl font-extrabold text-white flex items-center gap-3 drop-shadow-md">
+            <i class="fas fa-vault text-yellow-400 animate-pulse"></i> Cofre da Tesouraria
+        </h2>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'tesouraria:configuracoes' %}" class="p-3 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 group" title="Configurações">
+                <i class="fas fa-cogs group-hover:rotate-90 transition-transform duration-500"></i>
+            </a>
+            <a href="{% url 'tesouraria:novo_lancamento' %}" class="px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-plus"></i> Novo Lançamento
+            </a>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card text-white bg-success mb-3 shadow-sm" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="card-title">Entradas do Mês</h5>
-                    <h2 class="card-text">R$ {{ entradas|floatformat:2 }}</h2>
-                </div>
-            </div>
+    <!-- Cards Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Card Entradas -->
+        <div class="bg-gradient-to-br from-emerald-600/90 to-emerald-900/90 backdrop-blur-xl rounded-2xl p-6 border border-emerald-500/30 shadow-xl shadow-emerald-900/20 transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-500 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob"></div>
+            <h5 class="text-emerald-100 font-medium text-sm uppercase tracking-wider mb-2">Entradas do Mês</h5>
+            <h2 class="text-3xl font-bold text-white">R$ {{ entradas|floatformat:2 }}</h2>
         </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-danger mb-3 shadow-sm" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="card-title">Saídas do Mês</h5>
-                    <h2 class="card-text">R$ {{ saidas|floatformat:2 }}</h2>
-                </div>
-            </div>
+
+        <!-- Card Saídas -->
+        <div class="bg-gradient-to-br from-rose-600/90 to-rose-900/90 backdrop-blur-xl rounded-2xl p-6 border border-rose-500/30 shadow-xl shadow-rose-900/20 transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-rose-500 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-2000"></div>
+            <h5 class="text-rose-100 font-medium text-sm uppercase tracking-wider mb-2">Saídas do Mês</h5>
+            <h2 class="text-3xl font-bold text-white">R$ {{ saidas|floatformat:2 }}</h2>
         </div>
-        <div class="col-md-4">
-            <div class="card text-white {% if saldo >= 0 %}bg-primary{% else %}bg-warning{% endif %} mb-3 shadow-sm" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="card-title">Saldo do Mês</h5>
-                    <h2 class="card-text">R$ {{ saldo|floatformat:2 }}</h2>
-                </div>
-            </div>
+
+        <!-- Card Saldo -->
+        <div class="bg-gradient-to-br {% if saldo >= 0 %}from-blue-600/90 to-indigo-900/90 border-blue-500/30 shadow-blue-900/20{% else %}from-orange-600/90 to-red-900/90 border-orange-500/30 shadow-orange-900/20{% endif %} backdrop-blur-xl rounded-2xl p-6 border shadow-xl transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 {% if saldo >= 0 %}bg-blue-500{% else %}bg-orange-500{% endif %} rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-4000"></div>
+            <h5 class="text-white/70 font-medium text-sm uppercase tracking-wider mb-2">Saldo do Mês</h5>
+            <h2 class="text-3xl font-bold text-white">R$ {{ saldo|floatformat:2 }}</h2>
         </div>
     </div>
 
-    <div class="card mt-4 shadow-sm" style="background: rgba(30, 41, 59, 0.9); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
-        <div class="card-body">
-            <h4 class="text-white">Ações Rápidas</h4>
-            <a href="{% url 'tesouraria:lista_lancamentos' %}" class="btn btn-outline-light me-2"><i class="fas fa-list"></i> Ver Lançamentos</a>
-            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#exportModal">
-                <i class="fas fa-file-export"></i> Relatório Personalizado
+    <!-- Quick Actions -->
+    <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl p-6">
+        <h4 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <i class="fas fa-bolt text-yellow-400"></i> Ações Rápidas
+        </h4>
+        <div class="flex flex-wrap gap-4">
+            <a href="{% url 'tesouraria:lista_lancamentos' %}" class="px-6 py-3 bg-slate-700/50 hover:bg-slate-600 text-white rounded-xl border border-slate-600 transition-colors duration-300 flex items-center gap-2 font-medium">
+                <i class="fas fa-list text-blue-400"></i> Ver Lançamentos
+            </a>
+
+            <button onclick="document.getElementById('exportModal').classList.remove('hidden')" class="px-6 py-3 bg-slate-700/50 hover:bg-slate-600 text-white rounded-xl border border-slate-600 transition-colors duration-300 flex items-center gap-2 font-medium">
+                <i class="fas fa-file-export text-purple-400"></i> Relatório Personalizado
             </button>
         </div>
     </div>
 </div>
 
-<!-- Modal de Exportação -->
-<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content text-white" style="background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;">
-      <form method="GET" action="{% url 'tesouraria:exportar_relatorio' %}">
-          <div class="modal-header border-secondary">
-            <h5 class="modal-title"><i class="fas fa-file-contract text-info"></i> Exportar Mês ou Período</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-                <label>Data Início (Opcional)</label>
-                <input type="date" name="data_inicio" class="form-control bg-dark text-white border-secondary">
-            </div>
-            <div class="mb-3">
-                <label>Data Fim (Opcional)</label>
-                <input type="date" name="data_fim" class="form-control bg-dark text-white border-secondary">
-            </div>
-            <div class="mb-3">
-                <label>Formato do Relatório</label>
-                <select name="formato" class="form-select bg-dark text-white border-secondary">
-                    <option value="pdf">Documento PDF (Alta Resolução)</option>
-                    <option value="xlsx">Planilha Excel (XLSX)</option>
-                    <option value="csv">Dados Brutos (CSV)</option>
-                </select>
-            </div>
-          </div>
-          <div class="modal-footer border-secondary">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-info"><i class="fas fa-download"></i> Gerar e Baixar</button>
-          </div>
-      </form>
+<!-- Modal Exportação Tailwind -->
+<div id="exportModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="document.getElementById('exportModal').classList.add('hidden')"></div>
+
+        <div class="relative inline-block align-bottom bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
+            <form method="GET" action="{% url 'tesouraria:exportar_relatorio' %}">
+                <div class="px-6 py-5 border-b border-slate-700">
+                    <h3 class="text-lg font-medium leading-6 text-white flex items-center gap-2" id="modal-title">
+                        <i class="fas fa-file-contract text-purple-400"></i> Exportar Mês ou Período
+                    </h3>
+                </div>
+                <div class="px-6 py-5 bg-slate-800/50 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Data Início (Opcional)</label>
+                        <input type="date" name="data_inicio" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Data Fim (Opcional)</label>
+                        <input type="date" name="data_fim" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Formato do Relatório</label>
+                        <select name="formato" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all">
+                            <option value="pdf">Documento PDF (Alta Resolução)</option>
+                            <option value="xlsx">Planilha Excel (XLSX)</option>
+                            <option value="csv">Dados Brutos (CSV)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-slate-900/50 border-t border-slate-700 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('exportModal').classList.add('hidden')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors shadow-lg shadow-purple-500/30 font-medium flex items-center gap-2">
+                        <i class="fas fa-download"></i> Gerar e Baixar
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-  </div>
 </div>
+
+<style>
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob {
+  animation: blob 7s infinite;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+</style>
 {% endblock %}

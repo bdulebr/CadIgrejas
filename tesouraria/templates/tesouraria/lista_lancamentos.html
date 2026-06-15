@@ -1,63 +1,111 @@
 {% extends 'core/base.html' %}
 {% block title %}Tesouraria - Lançamentos{% endblock %}
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="fas fa-file-invoice-dollar text-primary"></i> Livro Caixa (Lançamentos)</h2>
-        <a href="{% url 'tesouraria:novo_lancamento' %}" class="btn btn-success"><i class="fas fa-plus"></i> Registrar Saída/Entrada</a>
-    </div>
 
-    <div class="card mt-3 shadow-sm" style="background: rgba(30, 41, 59, 0.9); border-radius: 15px;">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <div class="col-md-5">
-                    <input type="text" name="q" class="form-control" placeholder="Buscar por descrição, categoria ou tags..." value="{{ query }}">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Buscar</button>
-                </div>
-            </form>
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
+
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h2 class="text-3xl font-extrabold text-white flex items-center gap-3 drop-shadow-md">
+            <i class="fas fa-list-ul text-blue-400"></i> Lançamentos
+        </h2>
+        <div class="flex gap-3">
+            <a href="{% url 'tesouraria:dashboard' %}" class="px-5 py-2.5 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <a href="{% url 'tesouraria:novo_lancamento' %}" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-plus"></i> Novo Lançamento
+            </a>
         </div>
     </div>
 
-    <div class="table-responsive mt-4">
-        <table class="table table-dark table-hover" style="border-radius: 15px; overflow: hidden;">
-            <thead class="table-active">
-                <tr>
-                    <th>Data</th>
-                    <th>Descrição</th>
-                    <th>Categoria</th>
-                    <th>Valor</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for l in page_obj %}
-                <tr>
-                    <td>{{ l.data_vencimento|date:"d/m/Y" }}</td>
-                    <td>{{ l.descricao }}</td>
-                    <td>{{ l.categoria.nome }}</td>
-                    <td class="{% if l.tipo == 'entrada' %}text-success{% else %}text-danger{% endif %}">
-                        R$ {{ l.valor|floatformat:2 }}
-                    </td>
-                    <td>
-                        {% if l.status == 'pago' %}<span class="badge bg-success">Pago</span>
-                        {% elif l.status == 'pendente' %}<span class="badge bg-warning text-dark">Pendente</span>
-                        {% elif l.status == 'cancelado' %}<span class="badge bg-danger">Cancelado</span>
-                        {% else %}<span class="badge bg-secondary">{{ l.status }}</span>{% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'tesouraria:detalhe_lancamento' l.id %}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i> Auditar</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted">Nenhum lançamento encontrado.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Filtros -->
+    <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-xl p-6 mb-8">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Mês/Ano</label>
+                <input type="month" name="mes_ano" value="{{ request.GET.mes_ano }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Categoria</label>
+                <select name="categoria" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                    <option value="">Todas</option>
+                    {% for cat in categorias %}
+                        <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Tag</label>
+                <select name="tag" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                    <option value="">Todas</option>
+                    {% for tag in tags %}
+                        <option value="{{ tag.id }}" {% if request.GET.tag == tag.id|stringformat:"s" %}selected{% endif %}>{{ tag.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/30 flex justify-center items-center gap-2">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela -->
+    <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+                <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400">
+                    <tr>
+                        <th class="px-6 py-4">Data Venc.</th>
+                        <th class="px-6 py-4">Descrição</th>
+                        <th class="px-6 py-4">Categoria</th>
+                        <th class="px-6 py-4 text-right">Valor</th>
+                        <th class="px-6 py-4 text-center">Status</th>
+                        <th class="px-6 py-4 text-center">Detalhes</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/50 bg-slate-800/30">
+                    {% for l in lancamentos %}
+                    <tr class="hover:bg-slate-700/30 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">{{ l.data_vencimento|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 font-medium text-white">{{ l.descricao }}</td>
+                        <td class="px-6 py-4">
+                            {% if l.categoria %}
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700 border border-slate-600 text-slate-300">{{ l.categoria.nome }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold {% if l.tipo == 'entrada' %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                            {% if l.tipo == 'entrada' %}+{% else %}-{% endif %} R$ {{ l.valor|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if l.status == 'pago' %}
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i class="fas fa-check-circle"></i> Pago</span>
+                            {% elif l.status == 'atrasado' %}
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30"><i class="fas fa-exclamation-circle"></i> Atrasado</span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"><i class="fas fa-clock"></i> Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{% url 'tesouraria:detalhe_lancamento' l.id %}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-700 hover:bg-blue-600 text-slate-300 hover:text-white transition-colors" title="Ver Detalhes">
+                                <i class="fas fa-search"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-500 italic">
+                            <i class="fas fa-inbox text-4xl mb-3 opacity-50 block"></i>
+                            Nenhum lançamento encontrado neste período.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

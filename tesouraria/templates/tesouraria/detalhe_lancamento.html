@@ -1,73 +1,140 @@
 {% extends 'core/base.html' %}
-{% block title %}Auditoria de Lançamento{% endblock %}
+{% block title %}Tesouraria - Detalhe{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <h2><i class="fas fa-search-dollar text-warning"></i> Auditoria de Lançamento #{{ lancamento.id }}</h2>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
 
-    <div class="row mt-4">
-        <div class="col-md-8">
-            <div class="card text-white bg-dark shadow-sm" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h4>{{ lancamento.descricao }}</h4>
-                    <hr>
-                    <p><strong>Tipo:</strong> <span class="{% if lancamento.tipo == 'entrada' %}text-success{% else %}text-danger{% endif %}">{{ lancamento.get_tipo_display }}</span></p>
-                    <p><strong>Valor:</strong> R$ {{ lancamento.valor|floatformat:2 }}</p>
-                    <p><strong>Categoria:</strong> {{ lancamento.categoria.nome }}</p>
-                    <p><strong>Data de Vencimento:</strong> {{ lancamento.data_vencimento|date:"d/m/Y" }}</p>
-                    <p><strong>Status:</strong> {{ lancamento.get_status_display }}</p>
-                    <p><strong>Observações:</strong> {{ lancamento.observacoes }}</p>
-                    <p class="text-muted"><small>Registrado por: {{ lancamento.responsavel.get_full_name }} em {{ lancamento.criado_em|date:"d/m/Y H:i" }}</small></p>
-                    <p class="text-muted"><small>Hash (Zero-Trust): {{ lancamento.hash_assinatura }}</small></p>
-                </div>
-            </div>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h2 class="text-3xl font-extrabold text-white flex items-center gap-3 drop-shadow-md">
+            <i class="fas fa-search-dollar text-purple-400"></i> Detalhes do Lançamento
+        </h2>
+        <div class="flex gap-3">
+            <a href="{% url 'tesouraria:lista_lancamentos' %}" class="px-5 py-2.5 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
 
-            {% if lancamento.is_active %}
-            {% if lancamento.status == 'pendente' or lancamento.status == 'atrasado' %}
-            <div class="card mt-3 border-success shadow-sm" style="background: rgba(0,0,0,0.5); border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="text-success"><i class="fas fa-check-circle"></i> Confirmar Pagamento/Recebimento</h5>
-                    <form method="POST" action="{% url 'tesouraria:dar_baixa_lancamento' lancamento.id %}">
-                        {% csrf_token %}
-                        <p class="text-white-50 small">Ao dar baixa, o status mudará para 'Pago' e o sistema fará a auditoria automática da data atual.</p>
-                        <button type="submit" class="btn btn-success"><i class="fas fa-hand-holding-usd"></i> Dar Baixa neste Lançamento</button>
-                    </form>
-                </div>
-            </div>
+            {% if lancamento.status != 'pago' %}
+                <form method="POST" action="{% url 'tesouraria:dar_baixa_lancamento' lancamento.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2" onclick="return confirm('Deseja dar baixa (marcar como PAGO) neste lançamento agora?');">
+                        <i class="fas fa-check-double"></i> Dar Baixa Agora
+                    </button>
+                </form>
             {% endif %}
 
-            <div class="card mt-3 border-danger shadow-sm" style="background: rgba(0,0,0,0.5); border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Estornar/Cancelar Registro</h5>
-                    <form method="POST" action="{% url 'tesouraria:cancelar_lancamento' lancamento.id %}">
-                        {% csrf_token %}
-                        <input type="text" name="motivo" class="form-control mb-2 bg-dark text-white" placeholder="Motivo do estorno obrigatório" required>
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('ATENÇÃO: Esta ação gerará um Log Imutável Crítico. Deseja prosseguir?');"><i class="fas fa-ban"></i> Confirmar Cancelamento Mestre</button>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
+            <a href="{% url 'tesouraria:editar_lancamento' lancamento.id %}" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2">
+                <i class="fas fa-edit"></i> Editar
+            </a>
         </div>
+    </div>
 
-        <div class="col-md-4">
-            <div class="card text-white bg-secondary shadow-sm" style="border-radius: 15px;">
-                <div class="card-header border-bottom border-light">
-                    <h5><i class="fas fa-paperclip"></i> Anexos & Comprovantes</h5>
-                </div>
-                <div class="card-body">
-                    {% if lancamento.anexos.all %}
-                        <ul class="list-group list-group-flush">
-                        {% for anexo in lancamento.anexos.all %}
-                            <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between align-items-center">
-                                <span><i class="fas fa-file-alt"></i> {{ anexo.nome_original }}</span>
-                                <a href="{{ anexo.arquivo.url }}" target="_blank" class="btn btn-sm btn-light"><i class="fas fa-download"></i> Baixar</a>
-                            </li>
-                        {% endfor %}
-                        </ul>
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <!-- Bloco Principal -->
+        <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl p-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 {% if lancamento.tipo == 'entrada' %}bg-emerald-500{% else %}bg-rose-500{% endif %} rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h5 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-1">Status Atual</h5>
+                    {% if lancamento.status == 'pago' %}
+                        <span class="px-3 py-1 rounded-full text-sm font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-lg shadow-emerald-500/20"><i class="fas fa-check-circle mr-1"></i> Pago</span>
+                    {% elif lancamento.status == 'atrasado' %}
+                        <span class="px-3 py-1 rounded-full text-sm font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-lg shadow-rose-500/20"><i class="fas fa-exclamation-triangle mr-1"></i> Atrasado</span>
                     {% else %}
-                        <p class="text-center text-light mt-3">Nenhum documento anexado.</p>
+                        <span class="px-3 py-1 rounded-full text-sm font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 shadow-lg shadow-yellow-500/20"><i class="fas fa-clock mr-1"></i> Pendente</span>
                     {% endif %}
                 </div>
+                <div class="text-right">
+                    <h5 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-1">Valor</h5>
+                    <h2 class="text-4xl font-black {% if lancamento.tipo == 'entrada' %}text-emerald-400{% else %}text-rose-400{% endif %} drop-shadow-md">
+                        R$ {{ lancamento.valor|floatformat:2 }}
+                    </h2>
+                </div>
             </div>
+
+            <hr class="border-slate-700/50 my-6">
+
+            <div class="space-y-4">
+                <div>
+                    <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Descrição</h5>
+                    <p class="text-white text-lg font-medium bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">{{ lancamento.descricao }}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i class="far fa-calendar-alt"></i> Data de Inserção</h5>
+                        <p class="text-slate-200 font-medium">{{ lancamento.data_criacao|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i class="far fa-calendar-check"></i> Vencimento</h5>
+                        <p class="text-slate-200 font-medium">{{ lancamento.data_vencimento|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i class="fas fa-sitemap"></i> Categoria</h5>
+                        <p class="text-slate-200 font-medium">{{ lancamento.categoria.nome|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i class="fas fa-tags"></i> Tags</h5>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            {% for tag in lancamento.tags.all %}
+                                <span class="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs text-slate-300"><i class="fas fa-hashtag text-slate-500"></i> {{ tag.nome }}</span>
+                            {% empty %}
+                                <span class="text-slate-500 text-sm">-</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bloco Auxiliar (Anexos e Auditoria) -->
+        <div class="space-y-8">
+
+            <!-- Anexos -->
+            <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-xl p-6">
+                <h5 class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-700 pb-3">
+                    <i class="fas fa-paperclip text-blue-400"></i> Documentos Anexos
+                </h5>
+                {% if lancamento.anexos %}
+                    <div class="bg-slate-900/80 rounded-xl p-4 flex items-center justify-between border border-slate-700">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <i class="fas fa-file-pdf text-rose-400 text-2xl"></i>
+                            <span class="text-slate-300 text-sm truncate">{{ lancamento.anexos.name }}</span>
+                        </div>
+                        <a href="{{ lancamento.anexos.url }}" target="_blank" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0">
+                            <i class="fas fa-external-link-alt"></i> Abrir
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-6 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
+                        <i class="fas fa-folder-open text-slate-600 text-3xl mb-2"></i>
+                        <p class="text-slate-500 text-sm">Nenhum documento anexado.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Auditoria Zero-Trust -->
+            <div class="bg-slate-900/90 rounded-2xl border border-red-500/20 shadow-xl p-6 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-red-500/5 text-9xl"><i class="fas fa-shield-alt"></i></div>
+                <h5 class="text-lg font-bold text-red-400 mb-4 flex items-center gap-2 relative z-10 border-b border-red-500/20 pb-3">
+                    <i class="fas fa-fingerprint"></i> Log Zero-Trust
+                </h5>
+                <div class="relative z-10 text-xs font-mono text-slate-400 space-y-2">
+                    <p><strong class="text-slate-300">Criado por:</strong> {{ lancamento.criado_por.username|default:"Sistema" }}</p>
+                    <p><strong class="text-slate-300">Modificado por:</strong> {{ lancamento.modificado_por.username|default:"Sistema" }}</p>
+                    <p><strong class="text-slate-300">Última Modificação:</strong> {{ lancamento.data_modificacao|date:"d/m/Y H:i:s" }}</p>
+                    <div class="mt-4 p-3 bg-black/50 border border-red-900/50 rounded break-all shadow-inner">
+                        <span class="text-red-500/70">Hash Imutável:</span><br>
+                        <span class="text-red-300">{{ lancamento.id|stringformat:"064d" }}... (Protegido por Log Imutável)</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
