@@ -112,5 +112,48 @@
             </div>
         </div>
     </div>
+
+    <!-- Integração Sede AI -->
+    <div class="mt-8 bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-700/50 bg-slate-800/30">
+            <h5 class="text-lg font-bold text-white flex items-center gap-2">
+                <i data-lucide="building" class="w-5 h-5 text-purple-400"></i> Relatórios da Sede (Automação AI)
+            </h5>
+        </div>
+        <div class="p-6">
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_sede">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">E-mail da Sede</label>
+                        <input type="email" name="email_sede" value="{{ config_sede.email_sede|default:'' }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all" placeholder="sede@igreja.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Nome / Depto. Recebedor</label>
+                        <input type="text" name="nome_recebedor_sede" value="{{ config_sede.nome_recebedor_sede|default:'' }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all" placeholder="Aos cuidados de...">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Planilha Padrão (Template Excel)</label>
+                    <div class="flex items-center gap-4">
+                        <input type="file" name="planilha_padrao_sede" accept=".xls,.xlsx" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-500/20 file:text-purple-400 hover:file:bg-purple-500/30 transition-all cursor-pointer">
+                        {% if config_sede.planilha_padrao_sede %}
+                            <span class="text-emerald-400 text-sm flex items-center gap-1 shrink-0"><i data-lucide="check-circle" class="w-4 h-4"></i> Template Atual: {{ config_sede.planilha_padrao_sede.name }}</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">A LPU Gemini irá preencher os lançamentos do mês baseado na estrutura deste arquivo. Deve ser .xls ou .xlsx.</p>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors font-medium shadow-lg shadow-purple-500/30 flex items-center gap-2">
+                        <i data-lucide="save" class="w-5 h-5"></i> Salvar Configurações da Sede
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

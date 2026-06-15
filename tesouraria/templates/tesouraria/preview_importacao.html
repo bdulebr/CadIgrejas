@@ -1,0 +1,89 @@
+{% extends 'core/base.html' %}
+{% block title %}Revisão de Importação - Tesouraria{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
+
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-extrabold text-white flex items-center gap-3 drop-shadow-md">
+            <i data-lucide="eye" class="w-6 h-6 text-indigo-400"></i> Revisão de Importação (Lote)
+        </h2>
+        <form method="POST" action="{% url 'tesouraria:confirmar_importacao' %}">
+            {% csrf_token %}
+            <div class="flex gap-3">
+                <a href="{% url 'tesouraria:lista_lancamentos' %}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all border border-slate-600 flex items-center gap-2">
+                    Cancelar Lote
+                </a>
+                <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i> Aprovar Lote e Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-indigo-900/30 border border-indigo-500/30 rounded-xl p-5 mb-8 flex items-start gap-4">
+        <div class="p-3 bg-indigo-500/20 rounded-lg">
+            <i data-lucide="shield-check" class="w-8 h-8 text-indigo-400"></i>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold text-white mb-1">Staging Area (Área de Preparação)</h3>
+            <p class="text-indigo-200/80 text-sm">
+                A IA validou os dados da sua planilha. Abaixo estão os lançamentos prontos para serem salvos. Eles ainda <strong>não estão no banco de dados</strong>. Se houver algum problema, cancele a operação, corrija sua planilha e envie novamente.
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+                <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400">
+                    <tr>
+                        <th class="px-6 py-4">Data Venc.</th>
+                        <th class="px-6 py-4">Descrição</th>
+                        <th class="px-6 py-4">Tipo</th>
+                        <th class="px-6 py-4 text-right">Valor</th>
+                        <th class="px-6 py-4 text-center">F. Pagamento</th>
+                        <th class="px-6 py-4 text-center">Parcela</th>
+                        <th class="px-6 py-4">Impostos</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/50 bg-slate-800/30">
+                    {% for l in lancamentos %}
+                    <tr class="hover:bg-slate-700/30 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">{{ l.data_vencimento }}</td>
+                        <td class="px-6 py-4 font-medium text-white">{{ l.descricao }}</td>
+                        <td class="px-6 py-4">
+                            {% if l.tipo == 'entrada' %}
+                                <span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">Entrada</span>
+                            {% else %}
+                                <span class="px-2 py-1 rounded bg-rose-500/20 text-rose-400 text-xs">Saída</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold {% if l.tipo == 'entrada' %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                            R$ {{ l.valor|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 text-center capitalize">{{ l.forma_pagamento }}</td>
+                        <td class="px-6 py-4 text-center">
+                            {% if l.is_parcelado %}
+                                {{ l.parcela_atual }} / {{ l.numero_parcelas }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if l.impostos %}R$ {{ l.impostos|floatformat:2 }}{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-500 italic">
+                            Nenhum lançamento válido encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

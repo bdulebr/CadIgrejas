@@ -65,13 +65,36 @@
                 <div class="grid grid-cols-2 gap-4 pt-4">
                     <div>
                         <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i data-lucide="calendar" class="w-5 h-5"></i> Data de Inserção</h5>
-                        <p class="text-slate-200 font-medium">{{ lancamento.data_criacao|date:"d/m/Y H:i" }}</p>
+                        <p class="text-slate-200 font-medium">{{ lancamento.criado_em|date:"d/m/Y H:i" }}</p>
                     </div>
                     <div>
                         <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i data-lucide="calendar-check" class="w-5 h-5"></i> Vencimento</h5>
                         <p class="text-slate-200 font-medium">{{ lancamento.data_vencimento|date:"d/m/Y" }}</p>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i data-lucide="credit-card" class="w-5 h-5"></i> Forma de Pagamento</h5>
+                        <p class="text-slate-200 font-medium capitalize">{{ lancamento.forma_pagamento }}</p>
+                    </div>
+                    <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i data-lucide="file-digit" class="w-5 h-5"></i> Impostos na Nota</h5>
+                        <p class="text-slate-200 font-medium">{% if lancamento.impostos %}R$ {{ lancamento.impostos|floatformat:2 }}{% else %}Isento / Não Informado{% endif %}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <div>
+                        <h5 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"><i data-lucide="layers" class="w-5 h-5"></i> Parcelamento</h5>
+                        <p class="text-slate-200 font-medium">
+                            {% if lancamento.is_parcelado %}
+                                Parcela {{ lancamento.parcela_atual }} de {{ lancamento.numero_parcelas }}
+                            {% else %}
+                                Pagamento Único
+                            {% endif %}
+                        </p>
+                    </div>
 
                 <div class="grid grid-cols-2 gap-4 pt-4">
                     <div>
@@ -125,12 +148,11 @@
                     <i data-lucide="fingerprint" class="w-5 h-5"></i> Log Zero-Trust
                 </h5>
                 <div class="relative z-10 text-xs font-mono text-slate-400 space-y-2">
-                    <p><strong class="text-slate-300">Criado por:</strong> {{ lancamento.criado_por.username|default:"Sistema" }}</p>
-                    <p><strong class="text-slate-300">Modificado por:</strong> {{ lancamento.modificado_por.username|default:"Sistema" }}</p>
-                    <p><strong class="text-slate-300">Última Modificação:</strong> {{ lancamento.data_modificacao|date:"d/m/Y H:i:s" }}</p>
+                    <p><strong class="text-slate-300">Registrado por:</strong> {{ lancamento.responsavel.username|default:"Sistema" }}</p>
+                    <p><strong class="text-slate-300">Última Modificação:</strong> {{ lancamento.atualizado_em|date:"d/m/Y H:i:s" }}</p>
                     <div class="mt-4 p-3 bg-black/50 border border-red-900/50 rounded break-all shadow-inner">
-                        <span class="text-red-500/70">Hash Imutável:</span><br>
-                        <span class="text-red-300">{{ lancamento.id|stringformat:"064d" }}... (Protegido por Log Imutável)</span>
+                        <span class="text-red-500/70">Hash Imutável (SHA-256):</span><br>
+                        <span class="text-red-300">{{ lancamento.hash_assinatura|default:"Gerando..." }}</span>
                     </div>
                 </div>
             </div>

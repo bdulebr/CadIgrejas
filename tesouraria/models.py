@@ -45,6 +45,22 @@ class Lancamento(models.Model):
     categoria = models.ForeignKey(CategoriaTesouraria, on_delete=models.RESTRICT, related_name='lancamentos')
     tags = models.ManyToManyField(TagTesouraria, blank=True)
 
+    FORMA_PAGAMENTO_CHOICES = (
+        ('pix', 'PIX'),
+        ('boleto', 'Boleto'),
+        ('credito', 'Cartão de Crédito'),
+        ('debito', 'Cartão de Débito'),
+        ('dinheiro', 'Dinheiro'),
+        ('transferencia', 'Transferência'),
+        ('outros', 'Outros')
+    )
+    forma_pagamento = models.CharField(max_length=20, choices=FORMA_PAGAMENTO_CHOICES, default='outros')
+    impostos = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Total de impostos cobrados na nota")
+
+    is_parcelado = models.BooleanField(default=False)
+    numero_parcelas = models.PositiveIntegerField(default=1, null=True, blank=True)
+    parcela_atual = models.PositiveIntegerField(default=1, null=True, blank=True)
+
     observacoes = models.TextField(blank=True)
 
     responsavel = models.ForeignKey(Membro, on_delete=models.RESTRICT, related_name='lancamentos_registrados')
@@ -62,7 +78,9 @@ class Lancamento(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Assinatura de integridade no Log Imutavel da Intranet
-        data_str = f"LANC-{self.id}|{self.valor}|{self.tipo}|{self.status}|{self.data_vencimento}"
+        impostos_str = f"|IMP:{self.impostos}" if self.impostos else ""
+        parcelas_str = f"|PARC:{self.parcela_atual}/{self.numero_parcelas}" if self.is_parcelado else ""
+        data_str = f"LANC-{self.id}|{self.valor}|{self.tipo}|{self.status}|{self.data_vencimento}|{self.forma_pagamento}{impostos_str}{parcelas_str}"
         hash_val = hashlib.sha256(data_str.encode('utf-8')).hexdigest()
 
         if self.hash_assinatura != hash_val:
@@ -86,3 +104,22 @@ class AnexoLancamento(models.Model):
 
     def __str__(self):
         return f"Anexo de {self.lancamento.id} - {self.nome_original}"
+
+
+class ConfiguracaoTesouraria(models.Model):
+    email_sede = models.EmailField(blank=True, null=True, help_text="E-mail da Sede para recebimento do relatório mensal")
+    nome_recebedor_sede = models.CharField(max_length=150, blank=True, null=True, help_text="Nome da pessoa ou departamento responsável na Sede")
+    planilha_padrao_sede = models.FileField(
+        upload_to='tesouraria/templates_sede/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['xls', 'xlsx'])],
+        help_text="Upload da planilha padrão (template) exigida pela Sede. A IA preencherá este arquivo."
+    )
+    ultima_atualizacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração da Tesouraria'
+        verbose_name_plural = 'Configurações da Tesouraria'
+
+    def __str__(self):
+        return "Configurações Globais da Tesouraria"

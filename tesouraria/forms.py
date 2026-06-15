@@ -11,7 +11,7 @@ class LancamentoForm(forms.ModelForm):
 
     class Meta:
         model = Lancamento
-        fields = ['tipo', 'valor', 'data_vencimento', 'data_pagamento', 'descricao', 'categoria', 'status', 'tags', 'observacoes', 'departamento_origem']
+        fields = ['tipo', 'valor', 'data_vencimento', 'data_pagamento', 'descricao', 'categoria', 'status', 'tags', 'observacoes', 'departamento_origem', 'forma_pagamento', 'impostos', 'is_parcelado', 'numero_parcelas', 'parcela_atual']
         widgets = {
             'data_vencimento': forms.DateInput(attrs={'type': 'date'}),
             'data_pagamento': forms.DateInput(attrs={'type': 'date'}),

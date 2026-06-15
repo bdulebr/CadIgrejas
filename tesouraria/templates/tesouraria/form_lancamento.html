@@ -17,7 +17,24 @@
     </div>
 
     <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden p-8">
-        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        <!-- Gemini AI Scan Zone -->
+        <div id="ai-dropzone" class="mb-8 p-6 bg-indigo-900/30 border-2 border-dashed border-indigo-500/50 rounded-xl text-center cursor-pointer hover:bg-indigo-900/50 hover:border-indigo-400 transition-all group relative overflow-hidden">
+            <div id="ai-loading" class="absolute inset-0 bg-indigo-900/90 hidden flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                <i data-lucide="brain-circuit" class="w-10 h-10 text-indigo-400 animate-pulse mb-3"></i>
+                <p class="text-indigo-200 font-semibold animate-pulse">LPU Gemini Lendo Documento...</p>
+            </div>
+
+            <input type="file" id="ai-file-input" class="hidden" accept=".pdf,image/*">
+            <div class="flex flex-col items-center justify-center space-y-3 pointer-events-none">
+                <div class="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="scan-text" class="w-8 h-8 text-indigo-400"></i>
+                </div>
+                <h3 class="text-lg font-bold text-indigo-300">Auto-Preenchimento por IA</h3>
+                <p class="text-sm text-indigo-200/70 max-w-md mx-auto">Arraste um recibo ou nota fiscal (PDF/Imagem) ou clique aqui. A inteligência do Gemini vai extrair os dados e preencher o formulário sozinho.</p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-6" id="lancamento-form">
             {% csrf_token %}
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -49,6 +66,37 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-300 mb-2">Data Vencimento / Ref.</label>
                     {% render_field form.data_vencimento class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" type="date" %}
+                </div>
+
+                <!-- Forma de Pagamento -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Forma de Pagamento</label>
+                    {% render_field form.forma_pagamento class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" %}
+                </div>
+
+                <!-- Impostos -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Impostos na Nota (R$)</label>
+                    {% render_field form.impostos class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" placeholder="0.00" %}
+                </div>
+            </div>
+
+            <!-- Parcelamento -->
+            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                <label class="flex items-center space-x-3 text-sm font-medium text-slate-300 mb-4 cursor-pointer">
+                    {% render_field form.is_parcelado class="w-5 h-5 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500 focus:ring-2" id="chk-parcelado" %}
+                    <span>Lançamento Parcelado?</span>
+                </label>
+
+                <div class="grid grid-cols-2 gap-4 hidden transition-all" id="div-parcelas">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Parcela Atual</label>
+                        {% render_field form.parcela_atual class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white" type="number" min="1" %}
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Total de Parcelas</label>
+                        {% render_field form.numero_parcelas class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white" type="number" min="1" %}
+                    </div>
                 </div>
             </div>
 
@@ -90,4 +138,138 @@
         </form>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('ai-dropzone');
+    const fileInput = document.getElementById('ai-file-input');
+    const loading = document.getElementById('ai-loading');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-indigo-400', 'bg-indigo-900/50');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-indigo-400', 'bg-indigo-900/50');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-indigo-400', 'bg-indigo-900/50');
+        if (e.dataTransfer.files.length > 0) {
+            processFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            processFile(e.target.files[0]);
+        }
+    });
+
+    async function processFile(file) {
+        loading.classList.remove('hidden');
+
+        const formData = new FormData();
+        formData.append('comprovante', file);
+
+        try {
+            const response = await fetch("{% url 'tesouraria:api_scan_comprovante' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success' && result.dados) {
+                const dados = result.dados;
+
+                if (dados.tipo) document.querySelector('[name="tipo"]').value = dados.tipo;
+                if (dados.valor) document.querySelector('[name="valor"]').value = dados.valor;
+                if (dados.data_vencimento) document.querySelector('[name="data_vencimento"]').value = dados.data_vencimento;
+                if (dados.descricao) document.querySelector('[name="descricao"]').value = dados.descricao;
+                if (dados.forma_pagamento) document.querySelector('[name="forma_pagamento"]').value = dados.forma_pagamento;
+                if (dados.impostos !== undefined && dados.impostos !== null) document.querySelector('[name="impostos"]').value = dados.impostos;
+
+                if (dados.is_parcelado) {
+                    const chkParcelado = document.getElementById('chk-parcelado');
+                    chkParcelado.checked = true;
+                    document.getElementById('div-parcelas').classList.remove('hidden');
+
+                    if (dados.numero_parcelas) document.querySelector('[name="numero_parcelas"]').value = dados.numero_parcelas;
+                    if (dados.parcela_atual) document.querySelector('[name="parcela_atual"]').value = dados.parcela_atual;
+                }
+
+                const catSelect = document.querySelector('[name="categoria"]');
+                let catEncontrada = false;
+
+                if (dados.categoria_id && catSelect) {
+                    // IA encontrou ID exato
+                    catSelect.value = dados.categoria_id;
+                    catEncontrada = true;
+                } else if (dados.categoria_sugerida && catSelect) {
+                    // Tenta achar via frontend (fuzzy match case insensitive)
+                    const sug = dados.categoria_sugerida.toLowerCase();
+                    for (let i = 0; i < catSelect.options.length; i++) {
+                        if (catSelect.options[i].text.toLowerCase().includes(sug)) {
+                            catSelect.value = catSelect.options[i].value;
+                            catEncontrada = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!catEncontrada && dados.categoria_sugerida) {
+                    const descInput = document.querySelector('[name="descricao"]');
+                    descInput.value = `[IA Sugere Categoria: ${dados.categoria_sugerida}] ` + descInput.value;
+                }
+
+                // Anexa o arquivo no input de anexo principal
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.querySelector('[name="anexos"]').files = dataTransfer.files;
+
+                // Animação de sucesso
+                dropzone.classList.add('bg-emerald-900/30', 'border-emerald-500');
+                dropzone.innerHTML = `<div class="flex flex-col items-center justify-center space-y-2 py-4">
+                    <i data-lucide="check-circle" class="w-12 h-12 text-emerald-400"></i>
+                    <p class="text-emerald-300 font-bold">Documento processado e formulário preenchido!</p>
+                </div>`;
+                lucide.createIcons();
+
+            } else {
+                alert("Erro da IA: " + (result.mensagem || "Não foi possível extrair os dados."));
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erro de comunicação com o servidor.");
+        } finally {
+            if(loading) loading.classList.add('hidden');
+        }
+    }
+
+    // Toggle parcelas visibility
+    const chkParcelado = document.getElementById('chk-parcelado');
+    const divParcelas = document.getElementById('div-parcelas');
+    if (chkParcelado) {
+        if(chkParcelado.checked) divParcelas.classList.remove('hidden');
+        chkParcelado.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                divParcelas.classList.remove('hidden');
+            } else {
+                divParcelas.classList.add('hidden');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}
