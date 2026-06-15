@@ -1,138 +1,125 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Logs de Auditoria - Tesouraria | {{ request.config.igreja_nome }}{% endblock %}
-
-{% block custom_css %}
-<style>
-    .logs-container {
-        padding: 20px;
-        background-color: var(--win-bg);
-        border: 2px solid var(--win-border-light);
-        border-right-color: var(--win-border-dark);
-        border-bottom-color: var(--win-border-dark);
-    }
-
-    .log-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-        font-family: 'MS Sans Serif', Tahoma, sans-serif;
-    }
-
-    .log-table th {
-        background-color: #000080;
-        color: white;
-        padding: 8px;
-        text-align: left;
-        border: 1px solid #fff;
-    }
-
-    .log-table td {
-        padding: 8px;
-        border: 1px solid #999;
-        background-color: #fff;
-        color: #000;
-        font-size: 13px;
-    }
-
-    .log-table tr:nth-child(even) td {
-        background-color: #f1f1f1;
-    }
-
-    .hash-badge {
-        background-color: #333;
-        color: #0f0;
-        padding: 2px 5px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 11px;
-        border: 1px inset #888;
-        display: inline-block;
-        max-width: 150px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .data-acao {
-        font-family: 'Courier New', Courier, monospace;
-        background-color: #ffffe0;
-        padding: 5px;
-        border: 1px solid #ccc;
-        display: block;
-        word-break: break-all;
-    }
-</style>
-{% endblock %}
+{% block title %}Auditoria Zero-Trust | {{ request.config.igreja_nome }}{% endblock %}
 
 {% block content %}
-<div class="logs-container">
-    <div class="window-header" style="margin-bottom: 20px;">
-        <img src="{% static 'img/icons/security.png' %}" alt="Security" width="24" style="vertical-align: middle; margin-right: 10px;">
-        <h2 style="display: inline-block; margin: 0; vertical-align: middle; font-size: 18px;">Logs de Auditoria (Zero-Trust) - Tesouraria</h2>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'tesouraria:dashboard' %}" class="p-3 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 group">
+                <i data-lucide="arrow-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300"></i>
+            </a>
+            <h2 class="text-3xl font-extrabold text-white flex items-center gap-3 drop-shadow-md">
+                <i data-lucide="shield-check" class="w-8 h-8 text-emerald-400"></i> Auditoria Zero-Trust
+            </h2>
+        </div>
+        <div class="px-4 py-2 bg-slate-800/80 backdrop-blur-xl border border-slate-700 rounded-lg flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span class="text-sm text-slate-300 font-medium">Hash Chain Ativa</span>
+        </div>
     </div>
 
-    <div class="toolbar" style="margin-bottom: 15px;">
-        <a href="{% url 'tesouraria:dashboard' %}" class="win98-btn">← Voltar</a>
+    <!-- Security Warning -->
+    <div class="bg-gradient-to-r from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl p-6 border-l-4 border-emerald-500 shadow-xl mb-8 flex gap-4 items-start">
+        <i data-lucide="lock" class="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1"></i>
+        <div>
+            <h3 class="text-white font-semibold text-lg mb-1">Registro Imutável</h3>
+            <p class="text-slate-300 text-sm leading-relaxed">
+                Todos os registros abaixo são imutáveis e encadeados criptograficamente via SHA-256.
+                Qualquer tentativa de adulteração no banco de dados corromperá a Hash Chain e será identificada pelo sistema.
+            </p>
+        </div>
     </div>
 
-    <div class="alert alert-info">
-        <strong>Aviso de Segurança:</strong> Todos os registros abaixo são imutáveis e encadeados criptograficamente via SHA-256. Qualquer tentativa de adulteração no banco de dados quebrará a Hash Chain.
-    </div>
+    <!-- Logs Table -->
+    <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-900/50 border-b border-slate-700">
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">Data / Hora</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">Usuário</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ação</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">Detalhes</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">Hash SHA-256</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/50">
+                    {% for log in logs %}
+                    <tr class="hover:bg-slate-700/30 transition-colors duration-200">
+                        <td class="py-4 px-6 whitespace-nowrap">
+                            <div class="flex items-center gap-2 text-slate-300">
+                                <i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i>
+                                <span class="font-medium">{{ log.criado_em|date:"d/m/Y" }}</span>
+                                <span class="text-slate-500 text-sm">{{ log.criado_em|date:"H:i:s" }}</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
+                                    <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                                <span class="text-white font-medium">{{ log.membro.username|default:"Sistema" }}</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 whitespace-nowrap">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium
+                                {% if 'SALVOU' in log.acao or 'NOVO' in log.acao %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                                {% elif 'DELETOU' in log.acao or 'CANCEL' in log.acao %}bg-rose-500/20 text-rose-400 border border-rose-500/30
+                                {% else %}bg-blue-500/20 text-blue-400 border border-blue-500/30{% endif %}">
+                                {{ log.acao }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="text-sm text-slate-300 bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 font-mono break-all max-w-md">
+                                {{ log.dados_acao }}
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-2 group cursor-pointer" title="{{ log.hash_atual }}">
+                                <i data-lucide="hash" class="w-4 h-4 text-purple-400"></i>
+                                <span class="text-xs text-purple-300/80 font-mono bg-purple-500/10 px-2 py-1 rounded border border-purple-500/20 truncate max-w-[150px] transition-all duration-300 group-hover:max-w-none group-hover:bg-purple-500/20">
+                                    {{ log.hash_atual }}
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-12 px-6 text-center">
+                            <div class="flex flex-col items-center justify-center text-slate-500">
+                                <i data-lucide="search-x" class="w-12 h-12 mb-3 opacity-50"></i>
+                                <p class="text-lg font-medium text-slate-400">Nenhum registro encontrado</p>
+                                <p class="text-sm">Ainda não existem logs de auditoria registrados para a Tesouraria.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    <div style="overflow-x: auto;">
-        <table class="log-table">
-            <thead>
-                <tr>
-                    <th>Data/Hora</th>
-                    <th>Usuário</th>
-                    <th>Ação</th>
-                    <th>Dados da Ação</th>
-                    <th>Hash da Transação</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in logs %}
-                <tr>
-                    <td>{{ log.criado_em|date:"d/m/Y H:i:s" }}</td>
-                    <td><strong>{{ log.membro.username|default:"Sistema" }}</strong></td>
-                    <td>{{ log.acao }}</td>
-                    <td>
-                        <div class="data-acao">{{ log.dados_acao }}</div>
-                    </td>
-                    <td>
-                        <span class="hash-badge" title="{{ log.hash_atual }}">{{ log.hash_atual }}</span>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" style="text-align: center;">Nenhum log encontrado para a Tesouraria.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Paginação -->
-    {% if logs.has_other_pages %}
-    <div class="pagination" style="margin-top: 15px; text-align: center;">
-        <span class="step-links">
-            {% if logs.has_previous %}
-                <a href="?page=1" class="win98-btn">&laquo; Primeira</a>
-                <a href="?page={{ logs.previous_page_number }}" class="win98-btn">Anterior</a>
-            {% endif %}
-
-            <span class="current" style="padding: 0 10px;">
-                Página {{ logs.number }} de {{ logs.paginator.num_pages }}.
+        <!-- Pagination -->
+        {% if logs.has_other_pages %}
+        <div class="px-6 py-4 border-t border-slate-700 bg-slate-800/80 flex items-center justify-between">
+            <span class="text-sm text-slate-400">
+                Página <span class="font-medium text-white">{{ logs.number }}</span> de <span class="font-medium text-white">{{ logs.paginator.num_pages }}</span>
             </span>
+            <div class="flex gap-2">
+                {% if logs.has_previous %}
+                    <a href="?page=1" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors border border-slate-600">&laquo;</a>
+                    <a href="?page={{ logs.previous_page_number }}" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors border border-slate-600">Anterior</a>
+                {% endif %}
 
-            {% if logs.has_next %}
-                <a href="?page={{ logs.next_page_number }}" class="win98-btn">Próxima</a>
-                <a href="?page={{ logs.paginator.num_pages }}" class="win98-btn">Última &raquo;</a>
-            {% endif %}
-        </span>
+                {% if logs.has_next %}
+                    <a href="?page={{ logs.next_page_number }}" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors border border-slate-600">Próxima</a>
+                    <a href="?page={{ logs.paginator.num_pages }}" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors border border-slate-600">&raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
-
 </div>
 {% endblock %}
