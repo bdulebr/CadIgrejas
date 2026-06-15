@@ -6,14 +6,14 @@
     <!-- Header Section -->
     <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h2 class="text-3xl font-extrabold text-white flex items-center gap-3 drop-shadow-md">
-            <i class="fas fa-vault text-yellow-400 animate-pulse"></i> Cofre da Tesouraria
+            <i data-lucide="lock" class="w-5 h-5 text-yellow-400 animate-pulse"></i> Cofre da Tesouraria
         </h2>
         <div class="flex items-center gap-3">
             <a href="{% url 'tesouraria:configuracoes' %}" class="p-3 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 group" title="Configurações">
-                <i class="fas fa-cogs group-hover:rotate-90 transition-transform duration-500"></i>
+                <i data-lucide="settings" class="w-5 h-5 group-hover:rotate-90 transition-transform duration-500"></i>
             </a>
             <a href="{% url 'tesouraria:novo_lancamento' %}" class="px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2">
-                <i class="fas fa-plus"></i> Novo Lançamento
+                <i data-lucide="plus" class="w-5 h-5"></i> Novo Lançamento
             </a>
         </div>
     </div>
@@ -45,15 +45,15 @@
     <!-- Quick Actions -->
     <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl p-6">
         <h4 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <i class="fas fa-bolt text-yellow-400"></i> Ações Rápidas
+            <i data-lucide="zap" class="w-5 h-5 text-yellow-400"></i> Ações Rápidas
         </h4>
         <div class="flex flex-wrap gap-4">
             <a href="{% url 'tesouraria:lista_lancamentos' %}" class="px-6 py-3 bg-slate-700/50 hover:bg-slate-600 text-white rounded-xl border border-slate-600 transition-colors duration-300 flex items-center gap-2 font-medium">
-                <i class="fas fa-list text-blue-400"></i> Ver Lançamentos
+                <i data-lucide="list" class="w-5 h-5 text-blue-400"></i> Ver Lançamentos
             </a>
 
             <button onclick="document.getElementById('exportModal').classList.remove('hidden')" class="px-6 py-3 bg-slate-700/50 hover:bg-slate-600 text-white rounded-xl border border-slate-600 transition-colors duration-300 flex items-center gap-2 font-medium">
-                <i class="fas fa-file-export text-purple-400"></i> Relatório Personalizado
+                <i data-lucide="file-down" class="w-5 h-5 text-purple-400"></i> Relatório Personalizado
             </button>
         </div>
     </div>
@@ -68,7 +68,7 @@
             <form method="GET" action="{% url 'tesouraria:exportar_relatorio' %}">
                 <div class="px-6 py-5 border-b border-slate-700">
                     <h3 class="text-lg font-medium leading-6 text-white flex items-center gap-2" id="modal-title">
-                        <i class="fas fa-file-contract text-purple-400"></i> Exportar Mês ou Período
+                        <i data-lucide="file-text" class="w-5 h-5 text-purple-400"></i> Exportar Mês ou Período
                     </h3>
                 </div>
                 <div class="px-6 py-5 bg-slate-800/50 space-y-4">
@@ -94,7 +94,7 @@
                         Cancelar
                     </button>
                     <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors shadow-lg shadow-purple-500/30 font-medium flex items-center gap-2">
-                        <i class="fas fa-download"></i> Gerar e Baixar
+                        <i data-lucide="download" class="w-5 h-5"></i> Gerar e Baixar
                     </button>
                 </div>
             </form>

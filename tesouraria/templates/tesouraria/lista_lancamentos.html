@@ -6,14 +6,14 @@
 
     <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h2 class="text-3xl font-extrabold text-white flex items-center gap-3 drop-shadow-md">
-            <i class="fas fa-list-ul text-blue-400"></i> Lançamentos
+            <i data-lucide="list" class="w-5 h-5 -ul text-blue-400"></i> Lançamentos
         </h2>
         <div class="flex gap-3">
             <a href="{% url 'tesouraria:dashboard' %}" class="px-5 py-2.5 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Voltar
+                <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar
             </a>
             <a href="{% url 'tesouraria:novo_lancamento' %}" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all duration-300 flex items-center gap-2">
-                <i class="fas fa-plus"></i> Novo Lançamento
+                <i data-lucide="plus" class="w-5 h-5"></i> Novo Lançamento
             </a>
         </div>
     </div>
@@ -45,7 +45,7 @@
             </div>
             <div class="flex items-end">
                 <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/30 flex justify-center items-center gap-2">
-                    <i class="fas fa-filter"></i> Filtrar
+                    <i data-lucide="filter" class="w-5 h-5"></i> Filtrar
                 </button>
             </div>
         </form>
@@ -82,23 +82,23 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             {% if l.status == 'pago' %}
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i class="fas fa-check-circle"></i> Pago</span>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i data-lucide="check-circle" class="w-5 h-5"></i> Pago</span>
                             {% elif l.status == 'atrasado' %}
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30"><i class="fas fa-exclamation-circle"></i> Atrasado</span>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30"><i data-lucide="alert-circle" class="w-5 h-5"></i> Atrasado</span>
                             {% else %}
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"><i class="fas fa-clock"></i> Pendente</span>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"><i data-lucide="clock" class="w-5 h-5"></i> Pendente</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-center">
                             <a href="{% url 'tesouraria:detalhe_lancamento' l.id %}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-700 hover:bg-blue-600 text-slate-300 hover:text-white transition-colors" title="Ver Detalhes">
-                                <i class="fas fa-search"></i>
+                                <i data-lucide="search" class="w-5 h-5"></i>
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="6" class="px-6 py-12 text-center text-slate-500 italic">
-                            <i class="fas fa-inbox text-4xl mb-3 opacity-50 block"></i>
+                            <i data-lucide="inbox" class="w-5 h-5 text-4xl mb-3 opacity-50 block"></i>
                             Nenhum lançamento encontrado neste período.
                         </td>
                     </tr>
