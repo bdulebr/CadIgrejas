@@ -218,7 +218,8 @@ def gerar_planilha_sede_mensal(mes, ano):
             "id": l.id,
             "tipo": l.tipo,
             "valor": float(l.valor),
-            "data": l.data_vencimento.strftime("%Y-%m-%d"),
+            "data_vencimento": l.data_vencimento.strftime("%Y-%m-%d"),
+            "data_lancamento": l.data_lancamento.strftime("%Y-%m-%dT%H:%M") if l.data_lancamento else "",
             "descricao": l.descricao,
             "categoria": l.categoria.nome if l.categoria else ""
         })
