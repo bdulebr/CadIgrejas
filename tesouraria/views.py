@@ -392,8 +392,10 @@ def api_scan_comprovante(request):
 @login_required
 @tesouraria_required
 def gerar_e_revisar_planilha_sede(request):
-    mes = int(request.GET.get('mes', datetime.date.today().month))
-    ano = int(request.GET.get('ano', datetime.date.today().year))
+    mes_str = request.GET.get('mes')
+    ano_str = request.GET.get('ano')
+    mes = int(mes_str) if mes_str else datetime.date.today().month
+    ano = int(ano_str) if ano_str else datetime.date.today().year
     try:
         caminho_planilha = gerar_planilha_sede_mensal(mes, ano)
         return FileResponse(open(caminho_planilha, 'rb'), as_attachment=True, filename=f"Relatorio_Sede_{mes:02d}_{ano}.xlsx")
