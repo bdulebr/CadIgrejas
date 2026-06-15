@@ -397,8 +397,30 @@ def gerar_e_revisar_planilha_sede(request):
     mes = int(mes_str) if mes_str else datetime.date.today().month
     ano = int(ano_str) if ano_str else datetime.date.today().year
     try:
+        import zipfile
+        import io
+        import os
+
         caminho_planilha = gerar_planilha_sede_mensal(mes, ano)
-        return FileResponse(open(caminho_planilha, 'rb'), as_attachment=True, filename=f"Relatorio_Sede_{mes:02d}_{ano}.xlsx")
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            zip_file.write(caminho_planilha, f"Relatorio_Sede_{mes:02d}_{ano}.xlsx")
+
+            lancamentos = Lancamento.objects.filter(data_vencimento__month=mes, data_vencimento__year=ano).exclude(anexos='')
+            for l in lancamentos:
+                if l.anexos and hasattr(l.anexos, 'path') and os.path.exists(l.anexos.path):
+                    extensao = os.path.splitext(l.anexos.path)[1]
+                    nome_seguro = "".join([c for c in l.descricao if c.isalpha() or c.isdigit() or c==' ']).rstrip().replace(' ', '_')
+                    nome_arquivo = f"anexos/{l.data_vencimento.strftime('%d-%m-%Y')}_ID{l.id}_{nome_seguro[:20]}{extensao}"
+                    zip_file.write(l.anexos.path, nome_arquivo)
+
+        zip_buffer.seek(0)
+
+        response = HttpResponse(zip_buffer, content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="Fechamento_Sede_{mes:02d}_{ano}.zip"'
+        return response
+
     except Exception as e:
         messages.error(request, f"Erro ao gerar planilha: {str(e)}")
         return redirect('tesouraria:lista_lancamentos')
@@ -462,7 +484,7 @@ def download_template_importacao(request):
     ws.title = "Importação"
 
     headers = [
-        "Data Vencimento", "Descricao", "Tipo (entrada/saida)", "Valor",
+        "Data Vencimento", "Data Lancamento", "Descricao", "Tipo (entrada/saida)", "Valor",
         "Forma Pagamento", "Categoria", "Impostos",
         "Parcelado (sim/nao)", "Numero Parcelas", "Parcela Atual", "Observacoes"
     ]
