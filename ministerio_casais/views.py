@@ -368,8 +368,8 @@ def aprovar_matricula(request, matricula_id):
     if casal.email_2: emails_destino.append(casal.email_2)
 
     if emails_destino:
-        assunto = f"Parabéns! Curso Concluído: {matricula.curso.nome}"
-        contexto_email = {'casal': casal, 'curso': matricula.curso}
+        assunto = f"Parabéns! Curso Concluído: {matricula.turma.curso.nome}"
+        contexto_email = {'casal': casal, 'curso': matricula.turma.curso}
 
         def enviar_background_conclusao(emails, ass, ctx):
             for e in emails:

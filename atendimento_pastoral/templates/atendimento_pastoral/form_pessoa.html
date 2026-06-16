@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Novo Cadastro Pastoral{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="mb-8 flex items-center gap-4">
+        <a href="{% url 'atendimento_pastoral:lista_pessoas' %}" class="w-10 h-10 bg-gray-900/50 hover:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-white border border-gray-800 transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Nova Ficha Pastoral</h1>
+            <p class="text-gray-400 mt-1">Cadastro sigiloso no banco de dados.</p>
+        </div>
+    </div>
+
+    <div class="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-3xl p-8 shadow-2xl">
+        <form method="POST" action="{% url 'atendimento_pastoral:criar_pessoa' %}" class="space-y-6">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Nome Completo *</label>
+                    <input type="text" name="nome_completo" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Telefone / WhatsApp *</label>
+                    <input type="text" name="telefone" required placeholder="Ex: 11999999999" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">E-mail</label>
+                    <input type="email" name="email" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Estado Civil</label>
+                    <select name="estado_civil" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Solteiro(a)">Solteiro(a)</option>
+                        <option value="Casado(a)">Casado(a)</option>
+                        <option value="Divorciado(a)">Divorciado(a)</option>
+                        <option value="Viúvo(a)">Viúvo(a)</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Endereço Completo</label>
+                    <input type="text" name="endereco" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <hr class="border-gray-800 my-6">
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Tags de Risco (Selecione se aplicável)</label>
+                <div class="flex flex-wrap gap-3">
+                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-gray-950/60 border border-gray-700 rounded-xl cursor-pointer hover:bg-gray-800">
+                        <input type="checkbox" name="tags_risco" value="Crise Conjugal" class="rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-gray-800">
+                        <span class="text-sm text-gray-300">Crise Conjugal</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-900/50 rounded-xl cursor-pointer hover:bg-red-900/40">
+                        <input type="checkbox" name="tags_risco" value="Risco de Suicídio" class="rounded border-red-600 text-red-500 focus:ring-red-500 bg-gray-800">
+                        <span class="text-sm text-red-400 font-medium">Risco de Suicídio</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-900/50 rounded-xl cursor-pointer hover:bg-red-900/40">
+                        <input type="checkbox" name="tags_risco" value="Violência" class="rounded border-red-600 text-red-500 focus:ring-red-500 bg-gray-800">
+                        <span class="text-sm text-red-400 font-medium">Violência</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-orange-900/20 border border-orange-900/50 rounded-xl cursor-pointer hover:bg-orange-900/40">
+                        <input type="checkbox" name="tags_risco" value="Luto" class="rounded border-orange-600 text-orange-500 focus:ring-orange-500 bg-gray-800">
+                        <span class="text-sm text-orange-400 font-medium">Luto Profundo</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Anotações Iniciais (Público aos pastores)</label>
+                <textarea name="anotacoes_gerais" rows="3" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500" placeholder="Apenas o básico para saber quem é. O histórico real fica no Prontuário."></textarea>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    Salvar e Abrir Prontuário
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

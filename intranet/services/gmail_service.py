@@ -71,7 +71,12 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
         else:
             assunto_real = assunto
             # Fallback para os arquivos físicos caso o template falhe
-            html_content = render_to_string(f"emails/{template_name}", context)
+            if '/' in template_name:
+                # O template_name já contém um caminho completo (ex: ministerio_casais/email.html)
+                html_content = render_to_string(template_name, context)
+            else:
+                # O template_name é apenas o arquivo (ex: boletos.html) -> tenta na pasta emails/
+                html_content = render_to_string(f"emails/{template_name}", context)
 
         # Versão segura de texto puro
         text_content = strip_tags(html_content)

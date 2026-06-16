@@ -1,0 +1,65 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agendar Atendimento{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="mb-8 flex items-center gap-4">
+        <a href="{% url 'atendimento_pastoral:lista_pessoas' %}" class="w-10 h-10 bg-gray-900/50 hover:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-white border border-gray-800 transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Novo Agendamento</h1>
+            <p class="text-gray-400 mt-1">Marque um horário para atendimento pastoral.</p>
+        </div>
+    </div>
+
+    <div class="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-3xl p-8 shadow-2xl">
+        <form method="POST" action="{% url 'atendimento_pastoral:criar_agendamento' %}" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Pessoa / Família *</label>
+                <select name="pessoa_id" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Selecione a pessoa...</option>
+                    {% for p in pessoas %}
+                    <option value="{{ p.id }}" {% if request.GET.pessoa_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nome_completo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Data *</label>
+                    <input type="date" name="data_agendamento" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Início *</label>
+                    <input type="time" name="hora_inicio" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Término *</label>
+                    <input type="time" name="hora_fim" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Local do Atendimento *</label>
+                <select name="local" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="Gabinete Igreja">Gabinete Igreja</option>
+                    <option value="Casa da Pessoa">Casa da Pessoa</option>
+                    <option value="Online (Meet/Zoom)">Online (Meet/Zoom)</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2">
+                    <i data-lucide="calendar-check" class="w-4 h-4"></i>
+                    Confirmar Agendamento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

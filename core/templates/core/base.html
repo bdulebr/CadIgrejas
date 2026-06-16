@@ -233,6 +233,14 @@
                 <span x-show="sidebarOpen" class="whitespace-nowrap">Min. de Casais</span>
             </a>
             {% endif %}
+
+            <!-- Gabinete Pastoral (Somente Pastores e Sysadmin) -->
+            {% if user.nivel_hierarquico == 'super_admin' or user.nivel_hierarquico == 'pastor_regente' or user.nivel_hierarquico == 'pastor' or user.is_superuser %}
+            <a href="{% url 'atendimento_pastoral:dashboard_agenda' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Gabinete Pastoral">
+                <i data-lucide="book-open" class="w-5 h-5 min-w-[20px] text-purple-400 group-hover:text-purple-300"></i>
+                <span x-show="sidebarOpen" class="whitespace-nowrap">Gabinete Pastoral</span>
+            </a>
+            {% endif %}
             {% endif %}
 
             {% if is_almoxarifado_team %}

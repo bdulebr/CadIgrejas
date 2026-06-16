@@ -91,6 +91,7 @@ INSTALLED_APPS = [
     'ministerio_casais',
     'tesouraria',
     'permissoes',
+    'atendimento_pastoral',
     'widget_tweaks',
 ]
 

@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Pessoas - Gabinete Pastoral{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'atendimento_pastoral:dashboard_agenda' %}" class="text-gray-400 hover:text-white transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <h1 class="text-3xl font-bold text-white tracking-tight">Pessoas Cadastradas</h1>
+            </div>
+            <p class="text-gray-400 mt-1 ml-8">Base de dados privada para aconselhamentos.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'atendimento_pastoral:criar_pessoa' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-900/20 transition-all">
+                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i> Nova Pessoa
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de Busca -->
+    <div class="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-4 mb-8">
+        <form method="GET" class="flex gap-4">
+            <div class="flex-1 relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i data-lucide="search" class="h-5 w-5 text-gray-400"></i>
+                </div>
+                <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nome, email ou telefone..." class="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-xl leading-5 bg-gray-950/50 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors">
+            </div>
+            <button type="submit" class="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-xl border border-gray-700 transition-colors">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for pessoa in pessoas %}
+        <div class="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition-colors group relative">
+
+            {% if "Risco de Suicídio" in pessoa.tags_risco or "Violência" in pessoa.tags_risco %}
+            <div class="absolute -top-3 -right-3 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse" title="Alerta Crítico">
+                <i data-lucide="alert-triangle" class="w-3 h-3 text-white"></i>
+            </div>
+            {% endif %}
+
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center border border-blue-800/50">
+                        <span class="text-blue-400 font-bold text-lg">{{ pessoa.nome_completo|make_list|first|upper }}</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
+                            <a href="{% url 'atendimento_pastoral:prontuario_pessoa' pessoa.id %}">
+                                <span class="absolute inset-0"></span>
+                                {{ pessoa.nome_completo }}
+                            </a>
+                        </h3>
+                        <p class="text-sm text-gray-400">{{ pessoa.estado_civil }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2 text-sm text-gray-400">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                    {{ pessoa.telefone }}
+                </div>
+                {% if pessoa.email %}
+                <div class="flex items-center gap-2">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    {{ pessoa.email }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full bg-gray-900/50 border border-gray-800 rounded-2xl p-12 text-center">
+            <i data-lucide="users" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
+            <h3 class="text-lg font-medium text-white mb-2">Nenhuma pessoa encontrada</h3>
+            <p class="text-gray-400">Tente buscar por outro termo ou cadastre uma nova pessoa.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

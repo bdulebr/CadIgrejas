@@ -1,0 +1,76 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Gabinete Pastoral - Agenda{% endblock %}
+
+{% block extra_head %}
+<!-- FullCalendar CSS/JS -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+<style>
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #374151; }
+    .fc .fc-toolbar-title { font-size: 1.25rem; font-weight: 700; color: #f3f4f6; }
+    .fc .fc-button-primary { background-color: #3b82f6; border: none; }
+    .fc .fc-button-primary:hover { background-color: #2563eb; }
+    .fc .fc-button-primary:disabled { background-color: #1f2937; color: #9ca3af; }
+    .fc .fc-daygrid-day-number { color: #d1d5db; text-decoration: none; padding: 4px; }
+    .fc .fc-day-today { background-color: rgba(59, 130, 246, 0.1) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Gabinete Pastoral</h1>
+            <p class="text-gray-400 mt-1">Sua agenda de atendimentos e aconselhamentos confidenciais.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'atendimento_pastoral:sessao_avulsa' %}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-red-900/20 transition-all">
+                <i data-lucide="zap" class="w-4 h-4 mr-2"></i> Atendimento Urgente
+            </a>
+            <a href="{% url 'atendimento_pastoral:lista_pessoas' %}" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-xl border border-gray-700 transition-all">
+                <i data-lucide="users" class="w-4 h-4 mr-2"></i> Pessoas / Prontuários
+            </a>
+        </div>
+    </div>
+
+    <!-- Calendário Container -->
+    <div class="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-3xl p-6 shadow-2xl">
+        <div id='calendar'></div>
+    </div>
+</div>
+
+<!-- Modal Detalhes do Dia (Simulação lateral ou Modal) -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: '{% url "atendimento_pastoral:dashboard_agenda" %}?format=json',
+            eventClick: function(info) {
+                // Ao clicar, redireciona para o prontuário
+                info.jsEvent.preventDefault(); // Evita navegar direto se não quiser
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                }
+            },
+            eventContent: function(arg) {
+                // Personaliza o bloco do evento
+                return {
+                    html: `
+                        <div class="px-1 text-xs whitespace-nowrap overflow-hidden text-white font-medium">
+                            <span class="opacity-75">${arg.timeText}</span> ${arg.event.title}
+                        </div>
+                    `
+                };
+            }
+        });
+        calendar.render();
+    });
+</script>
+{% endblock %}
