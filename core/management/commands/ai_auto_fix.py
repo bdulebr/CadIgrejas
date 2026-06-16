@@ -13,7 +13,7 @@ import datetime
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from core.models import Membro, LogAuditoria
-from almoxarifado.models import AlimentoLote, Emprestimo
+from almoxarifado.models import ItemAlmoxarifado
 from intranet.services.groq_ai import obter_client_groq
 
 class Command(BaseCommand):
@@ -40,13 +40,12 @@ class Command(BaseCommand):
         Sua função é propor a correção de cada registro.
 
         Regras:
-        1. Se for 'Alimento Vencido', mude o 'status' para 'Vencido'.
-        2. Se for 'Empréstimo Atrasado', você pode mudar o 'status' para 'Atrasado' (se aplicável).
-        3. Para outras anomalias que tenham uma solução lógica direta, informe a correção.
+        1. Se for 'Item Vencido', mude o 'status_item' para 'consumido' (já que venceu e não está mais disponível).
+        2. Para outras anomalias que tenham uma solução lógica direta, informe a correção.
 
         Retorne ESTRITAMENTE um JSON no seguinte formato (uma lista de dicionários):
         [
-          {"model": "AlimentoLote", "id": 12, "update": {"status": "Vencido"}},
+          {"model": "ItemAlmoxarifado", "id": 12, "update": {"status_item": "consumido"}},
           ...
         ]
         Não retorne nenhum texto markdown (como ```json), devolva apenas a string JSON crua.
@@ -71,36 +70,22 @@ class Command(BaseCommand):
         hoje = timezone.now().date()
         agora = timezone.now()
 
-        # 1. Alimentos Vencidos
+        # 1. Itens Vencidos (Almoxarifado)
         try:
-            vencidos = AlimentoLote.objects.filter(data_validade__lt=hoje).exclude(status__in=['Vencido', 'Consumido'])
+            vencidos = ItemAlmoxarifado.objects.filter(data_vencimento__lt=hoje).exclude(status_item__in=['consumido', 'descartado'])
             for v in vencidos:
                 dados.append({
-                    "tipo": "Alimento Vencido",
-                    "model": "AlimentoLote",
+                    "tipo": "Item Vencido",
+                    "model": "ItemAlmoxarifado",
                     "id": v.id,
-                    "nome": v.alimento.nome,
-                    "validade": str(v.data_validade),
-                    "status_atual": getattr(v, 'status', 'N/A')
+                    "nome": v.nome,
+                    "validade": str(v.data_vencimento),
+                    "status_atual": v.status_item
                 })
         except Exception:
             pass
 
-        # 2. Empréstimos Atrasados
-        try:
-            atrasados = Emprestimo.objects.filter(data_devolucao_prevista__lt=hoje, data_devolucao_real__isnull=True)
-            for a in atrasados:
-                dados.append({
-                    "tipo": "Empréstimo Atrasado",
-                    "model": "Emprestimo",
-                    "id": a.id,
-                    "data_prevista": str(a.data_devolucao_prevista),
-                    "status_atual": getattr(a, 'status', 'N/A')
-                })
-        except Exception:
-            pass
-
-        # 3. Escalas Passadas Pendentes
+        # 2. Escalas Passadas Pendentes
         try:
             from escalas.models import Escala
             escalas_pendentes = Escala.objects.filter(data_escala__lt=hoje, status='Aguardando')
@@ -115,7 +100,7 @@ class Command(BaseCommand):
         except Exception:
             pass
 
-        # 4. Membros Pendentes de Aprovação por muito tempo (> 30 dias)
+        # 3. Membros Pendentes de Aprovação por muito tempo (> 30 dias)
         try:
             limite_aprovacao = agora - datetime.timedelta(days=30)
             membros_esquecidos = Membro.objects.filter(is_active=False, date_joined__lt=limite_aprovacao)
@@ -143,10 +128,8 @@ class Command(BaseCommand):
             if not updates: continue
 
             obj = None
-            if modelo == "AlimentoLote":
-                obj = AlimentoLote.objects.filter(id=obj_id).first()
-            elif modelo == "Emprestimo":
-                obj = Emprestimo.objects.filter(id=obj_id).first()
+            if modelo == "ItemAlmoxarifado":
+                obj = ItemAlmoxarifado.objects.filter(id=obj_id).first()
             elif modelo == "Escala":
                 from escalas.models import Escala
                 obj = Escala.objects.filter(id=obj_id).first()

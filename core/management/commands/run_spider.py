@@ -136,6 +136,33 @@ class Command(BaseCommand):
                 errors_found += 1
 
         # ==========================================
+        # FASE 3: AUDITORIA E CORREÇÃO VIA IA
+        # ==========================================
+        log_lines.append("\n--- [FASE 3: AI AUTO-FIX / ANOMALIA SCAN] ---")
+        self.stdout.write("\nIniciando Motor de Automação de IA (Auditoria Geral)...")
+        try:
+            from django.core.management import call_command
+            import io
+            import sys
+
+            old_stdout = sys.stdout
+            sys.stdout = saida_ia = io.StringIO()
+
+            call_command('ai_auto_fix')
+
+            sys.stdout = old_stdout
+            texto_saida_ia = saida_ia.getvalue()
+
+            for linha in texto_saida_ia.split('\n'):
+                if linha.strip():
+                    log_lines.append(f"[AI] {linha.strip()}")
+                    self.stdout.write(f"[AI] {linha.strip()}")
+
+        except Exception as e:
+            log_lines.append(f"[EXCEPTION AI] Erro ao executar motor IA: {e}")
+            self.stderr.write(f"Erro ao executar AI Auto-Fix: {e}")
+
+        # ==========================================
         # FINALIZAÇÃO E REGISTRO
         # ==========================================
         resumo = f"\n[SPIDER COMPLETE] {errors_found} errors found in {total_tables} DB tables and {total_urls} endpoints scanned."
