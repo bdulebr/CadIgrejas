@@ -20,6 +20,8 @@ class PessoaAtendimento(models.Model):
 
     anotacoes_gerais = models.TextField('Anotações Gerais', blank=True, null=True, help_text='Informações gerais, não usar para histórico pastoral.')
 
+    nivel_crise = models.IntegerField('Nível de Crise', default=1, help_text="1: Saudável, 5: Alerta Máximo")
+
     # Marcadores de risco rápido (JSON)
     tags_risco = models.JSONField('Tags de Risco', default=list, blank=True, help_text='Ex: ["Risco de Suicídio", "Divórcio", "Violência"]')
 

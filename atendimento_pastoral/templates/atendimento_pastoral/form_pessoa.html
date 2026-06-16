@@ -47,31 +47,21 @@
                     <label class="block text-sm font-medium text-gray-300 mb-2">Endereço Completo</label>
                     <input type="text" name="endereco" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-            </div>
 
-            <hr class="border-gray-800 my-6">
-
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Tags de Risco (Selecione se aplicável)</label>
-                <div class="flex flex-wrap gap-3">
-                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-gray-950/60 border border-gray-700 rounded-xl cursor-pointer hover:bg-gray-800">
-                        <input type="checkbox" name="tags_risco" value="Crise Conjugal" class="rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-gray-800">
-                        <span class="text-sm text-gray-300">Crise Conjugal</span>
-                    </label>
-                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-900/50 rounded-xl cursor-pointer hover:bg-red-900/40">
-                        <input type="checkbox" name="tags_risco" value="Risco de Suicídio" class="rounded border-red-600 text-red-500 focus:ring-red-500 bg-gray-800">
-                        <span class="text-sm text-red-400 font-medium">Risco de Suicídio</span>
-                    </label>
-                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-900/50 rounded-xl cursor-pointer hover:bg-red-900/40">
-                        <input type="checkbox" name="tags_risco" value="Violência" class="rounded border-red-600 text-red-500 focus:ring-red-500 bg-gray-800">
-                        <span class="text-sm text-red-400 font-medium">Violência</span>
-                    </label>
-                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-orange-900/20 border border-orange-900/50 rounded-xl cursor-pointer hover:bg-orange-900/40">
-                        <input type="checkbox" name="tags_risco" value="Luto" class="rounded border-orange-600 text-orange-500 focus:ring-orange-500 bg-gray-800">
-                        <span class="text-sm text-orange-400 font-medium">Luto Profundo</span>
-                    </label>
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Nível de Crise Atual</label>
+                    <select name="nivel_crise" class="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors">
+                        <option value="1" {% if pessoa and pessoa.nivel_crise == 1 %}selected{% endif %}>1 - Saudável (Acompanhamento Básico)</option>
+                        <option value="2" {% if pessoa and pessoa.nivel_crise == 2 %}selected{% endif %}>2 - Leve (Precisa de conselhos leves)</option>
+                        <option value="3" {% if pessoa and pessoa.nivel_crise == 3 %}selected{% endif %}>3 - Moderado (Situação requer atenção frequente)</option>
+                        <option value="4" {% if pessoa and pessoa.nivel_crise == 4 %}selected{% endif %}>4 - Grave (Risco de danos ou crise aguda)</option>
+                        <option value="5" {% if pessoa and pessoa.nivel_crise == 5 %}selected{% endif %}>5 - Alerta Máximo (Risco de vida, violência, suicídio)</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Selecione o nível de urgência/crise que esta pessoa se encontra no momento.</p>
                 </div>
             </div>
+
+
 
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Anotações Iniciais (Público aos pastores)</label>

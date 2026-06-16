@@ -40,12 +40,14 @@
 </div>
 
 <!-- Modal Detalhes do Dia (Simulação lateral ou Modal) -->
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.11/locales-all.global.min.js'></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             locale: 'pt-br',
+            themeSystem: 'standard',
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',

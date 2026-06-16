@@ -46,7 +46,6 @@ urlpatterns = [
     path('casais/', include('ministerio_casais.urls')),
     path('gabinete-pastoral/', include('atendimento_pastoral.urls')),
     path('', include('midia_lgpd.urls')),
-    path('api/', include('api.urls')),
     path('tesouraria/', include('tesouraria.urls')),
     path('permissoes/', include('permissoes.urls')),
     path('sw.js', pwa_service_worker, name='sw.js'),

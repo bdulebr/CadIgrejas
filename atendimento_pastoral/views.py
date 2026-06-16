@@ -31,7 +31,10 @@ def dashboard_agenda(request):
         )
 
         if start and end:
-            agendamentos = agendamentos.filter(data_agendamento__gte=start, data_agendamento__lte=end)
+            # Pega apenas a parte da data (YYYY-MM-DD) do formato ISO 8601
+            start_date = start[:10]
+            end_date = end[:10]
+            agendamentos = agendamentos.filter(data_agendamento__gte=start_date, data_agendamento__lte=end_date)
 
         events = []
         for ag in agendamentos:
@@ -87,6 +90,7 @@ def criar_pessoa(request):
         estado_civil = request.POST.get('estado_civil')
         data_nasc = request.POST.get('data_nascimento')
         anotacoes = request.POST.get('anotacoes_gerais')
+        nivel = request.POST.get('nivel_crise', 1)
 
         tags = request.POST.getlist('tags_risco')
 
@@ -98,6 +102,7 @@ def criar_pessoa(request):
             estado_civil=estado_civil,
             data_nascimento=data_nasc if data_nasc else None,
             anotacoes_gerais=anotacoes,
+            nivel_crise=nivel,
             tags_risco=tags
         )
         messages.success(request, 'Cadastro criado com sucesso!')
