@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/fila_aprovacoes.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 
 {% block title %}Aprovações Pendentes - Almoxarifado{% endblock title %}
@@ -24,15 +34,15 @@
                     <div class="absolute top-0 right-0 w-16 h-16 bg-yellow-500/10 rounded-bl-full flex justify-end items-start p-3">
                         <i data-lucide="clock" class="w-5 h-5 text-yellow-500"></i>
                     </div>
-                    
+
                     <div class="p-6">
                         <div class="mb-4">
                             <span class="px-2 py-1 bg-yellow-900/50 text-yellow-500 text-xs font-black uppercase rounded-md border border-yellow-700/50">Aguardando Liberação</span>
                         </div>
-                        
+
                         <h3 class="text-xl font-bold text-white mb-1">{{ mov.item.nome }}</h3>
                         <p class="text-sm text-gray-400 font-mono mb-4">ID: {{ mov.item.id_unico }}</p>
-                        
+
                         <div class="bg-gray-800/50 rounded-xl p-4 space-y-3 mb-6">
                             <div class="flex justify-between items-center text-sm">
                                 <span class="text-gray-400">Qtd Solicitada:</span>
@@ -47,7 +57,7 @@
                                 <span class="font-bold {% if mov.item.quantidade_estoque >= mov.quantidade %}text-green-400{% else %}text-red-400{% endif %}">{{ mov.item.quantidade_estoque }} un</span>
                             </div>
                         </div>
-                        
+
                         <div class="border-t border-gray-800 pt-4 mb-6">
                             <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Solicitante</p>
                             <div class="flex items-center gap-3">
@@ -60,7 +70,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="flex gap-3">
                             <form action="{% url 'processar_aprovacao' mov.id 'rejeitar' %}" method="POST" class="flex-1">
                                 {% csrf_token %}

@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: escalas/templates/escalas/gerenciar_cultos.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -21,16 +31,16 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             <!-- FORMULÁRIO DE CADASTRO -->
             <div class="bg-gray-900/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] border border-gray-700/50 h-fit relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-600 to-blue-500"></div>
-                
+
                 <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
                     <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400"></i>
                     Novo Culto ou Evento
                 </h3>
-                
+
                 <form method="POST" action="{% url 'criar_culto' %}" class="space-y-4">
                     {% csrf_token %}
                     <div>
@@ -88,7 +98,7 @@
                             Programação Ativa
                         </h3>
                     </div>
-                    
+
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
@@ -126,7 +136,7 @@
                                         <button onclick="abrirModalEdicao('{{ culto.id }}', '{{ culto.nome }}', '{{ culto.tipo }}', '{{ culto.dia_semana|default:'' }}', '{{ culto.data_evento|date:'Y-m-d' }}', '{{ culto.horario_inicio|time:'H:i' }}', '{{ culto.horario_fim|time:'H:i' }}')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-bold border border-gray-600 transition-colors">
                                             Editar
                                         </button>
-                                        
+
                                         <!-- Form Excluir -->
                                         {% if not culto.chave_slug %}
                                         <form method="POST" action="{% url 'excluir_culto' culto.id %}" onsubmit="return confirm('Deseja excluir este culto permanentemente?')" class="inline m-0">
@@ -162,7 +172,7 @@
             <i data-lucide="x" class="w-6 h-6"></i>
         </button>
         <h3 class="text-xl font-bold mb-4 text-white">Editar Culto/Evento</h3>
-        
+
         <form method="POST" id="formEditar" class="space-y-4">
             {% csrf_token %}
             <div>
@@ -221,7 +231,7 @@ function abrirModalEdicao(id, nome, tipo, diaSemana, dataEvento, inicio, fim) {
     document.getElementById('editNome').value = nome;
     document.getElementById('editHorarioInicio').value = inicio;
     document.getElementById('editHorarioFim').value = fim;
-    
+
     if (tipo === 'padrao') {
         document.getElementById('editCampoDiaSemana').classList.remove('hidden');
         document.getElementById('editCampoDataEvento').classList.add('hidden');
@@ -231,7 +241,7 @@ function abrirModalEdicao(id, nome, tipo, diaSemana, dataEvento, inicio, fim) {
         document.getElementById('editCampoDataEvento').classList.remove('hidden');
         document.getElementById('editDataEvento').value = dataEvento;
     }
-    
+
     document.getElementById('modalEdicao').classList.remove('hidden');
 }
 

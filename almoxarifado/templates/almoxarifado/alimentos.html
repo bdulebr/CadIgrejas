@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/alimentos.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 
 {% block title %}Controle de Alimentos - PVE{% endblock title %}
@@ -5,7 +15,7 @@
 {% block content %}
 <div class="min-h-screen bg-transparent p-8" x-data="{ openNovoLote: false }">
     <div class="max-w-6xl mx-auto">
-        
+
         <div class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-bold text-white">Estoque de Alimentos</h1>
@@ -34,7 +44,7 @@
                     </div>
                     <span class="bg-gray-800/60 backdrop-blur-md border border-white/10 text-white text-sm font-bold px-3 py-1 rounded-full">{{ lote.quantidade_atual }} un</span>
                 </div>
-                
+
                 <div class="space-y-2 text-sm text-gray-300 mb-6">
                     <div class="flex items-center gap-2">
                         <i data-lucide="calendar" class="text-gray-400"></i> Vencimento: <span class="{% if lote.is_vencido %}text-red-600 font-bold{% else %}text-white font-medium{% endif %}">{{ lote.data_vencimento|date:"d/m/Y" }}</span>
@@ -45,7 +55,7 @@
                     </div>
                     {% endif %}
                 </div>
-                
+
                 <div class="flex justify-end pt-4 border-t border-white/10">
                     <form method="POST" action="{% url 'deletar_alimento' lote.id %}" onsubmit="return confirm('Deseja sinalizar este lote como consumido ou removê-lo do estoque?')">
                         {% csrf_token %}
@@ -61,13 +71,13 @@
             </div>
             {% endfor %}
         </div>
-        
+
     </div>
 
     <!-- MODAL: CADASTRAR LOTE -->
     <div x-show="openNovoLote" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="openNovoLote" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openNovoLote = false"></div>
+            <div x-show="openNovoLote" class="fixed inset-0 bg-blue-950/80 backdrop-blur-md transition-opacity" @click="openNovoLote = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="openNovoLote" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <form method="POST" action="{% url 'adicionar_alimento' %}" enctype="multipart/form-data">

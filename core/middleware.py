@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/middleware.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 import threading
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -11,7 +21,7 @@ def get_current_request():
 class RequestMiddleware:
     """
     Middleware para capturar o request globalmente por thread.
-    Isso permite que os models saibam quem é o usuário e qual é o IP sem precisarem 
+    Isso permite que os models saibam quem é o usuário e qual é o IP sem precisarem
     receber o request explicitamente em cada view.
     """
     def __init__(self, get_response):
@@ -33,7 +43,7 @@ class MaintenanceMiddleware:
         # Allow access to sysadmin and admin panels unconditionally for admins
         if request.path.startswith('/sysadmin/') or request.path.startswith('/admin/'):
             return self.get_response(request)
-            
+
         try:
             config = ConfiguracaoSistema.objects.get(id=1)
             is_maintenance = config.is_maintenance
@@ -44,12 +54,12 @@ class MaintenanceMiddleware:
             # Allow static files and login/logout
             if request.path.startswith('/static/') or request.path in [reverse('login'), reverse('logout')]:
                 return self.get_response(request)
-                
+
             # Allow super_admins
             if request.user.is_authenticated:
                 if request.user.nivel_hierarquico == 'super_admin' or request.user.is_superuser:
                     return self.get_response(request)
-            
+
             # Everyone else gets maintenance page
             return render(request, 'core/pages/maintenance.html', status=503)
 
@@ -72,5 +82,5 @@ class ForcarTrocaSenhaMiddleware:
                     # Checa se o membro tem a flag
                     if getattr(request.user, 'senha_padrao', False):
                         return redirect('forcar_troca_senha')
-                        
+
         return self.get_response(request)

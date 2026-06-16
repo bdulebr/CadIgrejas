@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: gestao_membros/templates/gestao_membros/form_membro.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 
 {% block title %}{{ acao }} Membro - PVE{% endblock title %}
@@ -15,7 +25,7 @@
 
         <form method="POST" enctype="multipart/form-data" class="space-y-5">
             {% csrf_token %}
-            
+
             {% include 'core/components/form_perfil_mestre.html' with membro=membro is_lider_view=True %}
 
             <div class="pt-4 border-t border-white/10 mt-8">

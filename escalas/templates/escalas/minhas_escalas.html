@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: escalas/templates/escalas/minhas_escalas.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -89,13 +99,13 @@
         <!-- Disponibilidade Fixa (Trabalho / Estudo) -->
         <div class="mt-8 bg-gray-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-gray-700/50 shadow-[0_0_30px_rgba(0,0,0,0.3)] relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
-            
+
             <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
                 <i data-lucide="clock" class="w-5 h-5 text-blue-400"></i>
                 Disponibilidade (Trabalho / Estudo)
             </h3>
             <p class="text-sm text-gray-400 mb-6">Esses dados ajudam o Motor de Escalas Automático a não escalar você no seu horário de expediente ou nos dias em que você trabalha e estuda.</p>
-            
+
             <form method="POST" action="{% url 'salvar_disponibilidade_fixa' %}" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                 {% csrf_token %}
                 <div>
@@ -106,7 +116,7 @@
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Fim do Expediente</label>
                     <input type="time" name="horario_trabalho_fim" value="{{ request.user.horario_trabalho_fim|time:'H:i'|default:'' }}" class="w-full px-4 py-3 rounded-xl bg-gray-950/60 border border-gray-700/80 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm">
                 </div>
-                
+
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Dias Trabalhados na Semana</label>
                     <div class="flex flex-wrap gap-3">
@@ -118,7 +128,7 @@
                         {% endfor %}
                     </div>
                 </div>
-                
+
                 <div class="md:col-span-2 flex justify-end">
                     <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] whitespace-nowrap">
                         SALVAR DISPONIBILIDADE
@@ -130,13 +140,13 @@
         <!-- Registro de Folga / Indisponibilidade -->
         <div class="mt-8 bg-gray-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-gray-700/50 shadow-[0_0_30px_rgba(0,0,0,0.3)] relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-orange-500"></div>
-            
+
             <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
                 <i data-lucide="calendar-minus" class="w-5 h-5 text-red-400"></i>
                 Registrar Indisponibilidade
             </h3>
             <p class="text-sm text-gray-400 mb-6">Vai viajar, tem um compromisso de trabalho ou por motivos de saúde não poderá servir? Informe abaixo para que o líder não o adicione acidentalmente nesses dias.</p>
-            
+
             <form method="POST" action="{% url 'registrar_indisponibilidade' %}" class="flex flex-col md:flex-row gap-4 items-end">
                 {% csrf_token %}
                 <div class="w-full md:w-auto">
@@ -155,7 +165,7 @@
                     REGISTRAR AUSÊNCIA
                 </button>
             </form>
-            
+
             {% if historico_indisponibilidades %}
             <div class="mt-8 border-t border-gray-800/50 pt-6">
                 <h4 class="text-sm font-bold text-gray-300 mb-4 uppercase tracking-wider">Seu Histórico de Ausências</h4>

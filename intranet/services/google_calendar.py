@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: intranet/services/google_calendar.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 import os
 from django.conf import settings
 from google.oauth2 import service_account
@@ -9,14 +19,14 @@ SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirn
 def get_calendar_service():
     if not os.path.exists(SERVICE_ACCOUNT_FILE):
         return None
-        
+
     creds = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-        
+
     # Usa o e-mail do admin para impersonar via Domain-Wide Delegation no Workspace
     if hasattr(settings, 'EMAIL_HOST_USER') and settings.EMAIL_HOST_USER:
         creds = creds.with_subject(settings.EMAIL_HOST_USER)
-        
+
     service = build('calendar', 'v3', credentials=creds)
     return service
 

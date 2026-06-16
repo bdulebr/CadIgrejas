@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/utils_forensics.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 import requests
 from django.utils import timezone
 from core.models import LogAuditoria
@@ -12,7 +22,7 @@ def get_client_ip(request):
 
 def registrar_log_forense(request, acao, tabela, diff_json, usuario=None):
     """
-    Registra um log na blockchain local (Zero-Trust) com captura avançada 
+    Registra um log na blockchain local (Zero-Trust) com captura avançada
     de IP, Geolocation e User-Agent.
     """
     if request:
@@ -23,10 +33,10 @@ def registrar_log_forense(request, acao, tabela, diff_json, usuario=None):
         ip = '127.0.0.1'
         user_agent = 'System Daemon / Background'
         usuario_acao = usuario
-        
+
     cidade = 'Desconhecida'
     isp = 'Desconhecido'
-    
+
     # Busca GeoIP (Não falha se der erro de rede)
     if ip and ip not in ['127.0.0.1', 'localhost']:
         try:
@@ -39,7 +49,7 @@ def registrar_log_forense(request, acao, tabela, diff_json, usuario=None):
                     isp = data.get('isp', '')[:145]
         except Exception:
             pass # Failsafe: continua a gravar o log mesmo sem net
-            
+
     LogAuditoria.objects.create(
         usuario_acao=usuario_acao,
         acao_realizada=acao,

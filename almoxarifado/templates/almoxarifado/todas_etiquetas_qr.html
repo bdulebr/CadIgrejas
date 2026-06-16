@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/todas_etiquetas_qr.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -87,19 +97,19 @@
                 <h1 class="titulo">{{ obj.item.nome }}</h1>
                 <p class="patrimonio">PATRIMÔNIO ID: <b>{{ obj.item.id_unico }}</b></p>
             </div>
-            
+
             <div class="qr-container">
                 <div class="qr-box">
                     <img src="data:image/png;base64,{{ obj.qr_retirar_b64 }}" class="qr-image">
                     <p class="qr-label">1. RETIRAR ITEM</p>
                 </div>
-                
+
                 <div class="qr-box">
                     <img src="data:image/png;base64,{{ obj.qr_devolver_b64 }}" class="qr-image">
                     <p class="qr-label">2. DEVOLVER ITEM</p>
                 </div>
             </div>
-            
+
             <div class="footer">
                 Ao ler o QR Code com a câmera do celular, o sistema registrará a movimentação automaticamente.<br>
                 Igreja Palavra de Vida Enseada - Gestão Zero-Trust
@@ -111,7 +121,7 @@
         <h2>Nenhum item cadastrado no Almoxarifado para gerar etiquetas.</h2>
     </div>
     {% endfor %}
-    
+
     <script>
         // Auto print when page loads
         window.onload = function() {

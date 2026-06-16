@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/alimento_detalhe.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 
 {% block title %}Detalhes do Estoque - PVE{% endblock title %}
@@ -13,7 +23,7 @@
                     <p class="text-gray-400 font-mono">Depto Responsável: {{ lote.departamento.nome }} | Loc: {{ lote.localizacao|default:"Não informada" }}</p>
                 </div>
             </div>
-            
+
             <div class="flex gap-2">
                 <button @click="openTransacao = true; tipoTransacao = 'entrada'" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition-colors">
                     + Entrada (+ qtd)
@@ -31,7 +41,7 @@
                 <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm {% if lote.is_vencido %}border-red-300 bg-red-50{% else %}border-brand-200 bg-blue-900/40 backdrop-blur-md border border-blue-500/20 text-white{% endif %} p-8 text-center relative">
                     <p class="text-sm font-bold uppercase tracking-wider mb-2 text-gray-400">Saldo Atual em Estoque</p>
                     <h2 class="text-6xl font-black {% if lote.is_vencido %}text-red-700{% else %}text-blue-400{% endif %}">{{ lote.quantidade_atual }}<span class="text-2xl ml-1 text-gray-400">un</span></h2>
-                    
+
                     <div class="mt-6 flex justify-center items-center gap-2 text-sm font-bold {% if lote.is_vencido %}text-red-600{% else %}text-white{% endif %}">
                         <i data-lucide="calendar"></i> Vence em: {{ lote.data_vencimento|date:"d/m/Y" }}
                     </div>
@@ -65,13 +75,13 @@
             <div class="col-span-1 lg:col-span-2">
                 <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-sm border-white/10 p-6 h-full">
                     <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2"><i data-lucide="book-open" class="text-gray-400 w-5 h-5"></i> Diário de Transações (Livro Razão)</h3>
-                    
+
                     <div class="space-y-0">
                         {% for t in transacoes %}
                         <div class="relative pl-6 pb-6 border-l-2 {% if t.tipo == 'entrada' %}border-green-200{% else %}border-red-200{% endif %} last:border-0 last:pb-0">
                             <!-- Indicator -->
                             <div class="absolute -left-1.5 top-0 w-3 h-3 rounded-full {% if t.tipo == 'entrada' %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
-                            
+
                             <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg p-4 border-white/10">
                                 <div class="flex justify-between items-start mb-2">
                                     <div>
@@ -83,7 +93,7 @@
                                     <span class="text-xs text-gray-400 font-mono">{{ t.data_transacao|date:"d/m/Y H:i" }}</span>
                                 </div>
                                 <p class="text-sm text-gray-300 mb-3">{{ t.observacao|default:"Nenhuma observação." }}</p>
-                                
+
                                 <div class="flex justify-between items-center text-xs text-gray-400 font-medium pt-3 border-t border-white/10">
                                     <span>Registrado por: {{ t.membro_responsavel.first_name }}</span>
                                     {% if t.anexo_comprovante %}
@@ -106,19 +116,19 @@
     <!-- MODAL DE TRANSAÇÃO (Entrada/Saída) -->
     <div x-show="openTransacao" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="openTransacao" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openTransacao = false"></div>
+            <div x-show="openTransacao" class="fixed inset-0 bg-blue-950/80 backdrop-blur-md transition-opacity" @click="openTransacao = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             <div x-show="openTransacao" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <form method="POST" action="{% url 'transacionar_alimento' lote.id %}" enctype="multipart/form-data">
                     {% csrf_token %}
                     <input type="hidden" name="tipo" x-model="tipoTransacao">
-                    
+
                     <div class="bg-gray-900/40 backdrop-blur-md border border-white/10 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <h3 class="text-lg font-bold mb-4" :class="tipoTransacao == 'entrada' ? 'text-green-700' : 'text-red-700'">
                             <span x-show="tipoTransacao == 'entrada'">Registrar Entrada no Lote</span>
                             <span x-show="tipoTransacao == 'saida'">Registrar Saída/Doação do Lote</span>
                         </h3>
-                        
+
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-300">Quantidade (Unidades/Caixas)</label>

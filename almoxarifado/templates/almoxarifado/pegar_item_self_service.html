@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/pegar_item_self_service.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 {% block title %}Self-Service Almoxarifado{% endblock %}
@@ -11,10 +21,10 @@
             </h1>
             <p class="text-gray-400 mt-2 text-sm">Preencha os dados para registrar a retirada do item.</p>
         </div>
-        
+
         <form method="POST" class="p-8 space-y-6">
             {% csrf_token %}
-            
+
             <!-- Código do Item (Manual ou QR Scanner) -->
             <div x-data="{ scannerOpen: false }">
                 <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Código do Patrimônio</label>
@@ -26,12 +36,12 @@
                     </button>
                     {% endif %}
                 </div>
-                
+
                 <div x-show="scannerOpen" class="mt-4 p-4 bg-black rounded-xl border border-gray-800 text-center text-gray-400 h-48 flex items-center justify-center">
                     (Câmera / Scanner API Aqui)
                 </div>
             </div>
-            
+
             <!-- Membro -->
             <div>
                 <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Seu Nome (Responsável)</label>
@@ -42,7 +52,7 @@
                     {% endfor %}
                 </select>
             </div>
-            
+
             <!-- Tipo de Retirada -->
             <div x-data="{ tipo: 'temporario' }">
                 <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Tipo de Retirada</label>
@@ -60,27 +70,27 @@
                         </div>
                     </label>
                 </div>
-                
+
                 <!-- Campos condicionais -->
                 <div class="mt-6">
                     <div x-show="tipo === 'temporario'" x-transition>
                         <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Devolver quando?</label>
                         <input type="date" name="data_devolucao" class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none shadow-inner">
                     </div>
-                    
+
                     <div x-show="tipo === 'permanente'" x-transition style="display: none;">
                         <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Para onde vai o item?</label>
                         <input type="text" name="localizacao" placeholder="Ex: Sala Multimídia, Palco..." class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none shadow-inner">
                     </div>
                 </div>
             </div>
-            
+
             <!-- Observações -->
             <div>
                 <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Observações (Opcional)</label>
                 <textarea name="observacao" rows="2" placeholder="Ex: Tem algum cabo faltando?" class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none resize-none shadow-inner"></textarea>
             </div>
-            
+
             <!-- Submit -->
             <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all uppercase tracking-wider">
                 Confirmar Retirada

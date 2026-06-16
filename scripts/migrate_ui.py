@@ -1,10 +1,20 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: scripts/migrate_ui.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 import os
 import glob
 import re
 
 def run():
     html_files = glob.glob('**/*.html', recursive=True)
-    
+
     class_map = {
         'bg-white': 'bg-gray-900/40 backdrop-blur-md border border-white/10',
         'bg-gray-50': 'bg-gray-900/40 backdrop-blur-md border border-white/10',
@@ -22,7 +32,7 @@ def run():
     for path in html_files:
         if 'base.html' in path or 'login.html' in path or 'dashboard.html' in path or 'painel.html' in path:
             continue
-            
+
         with open(path, 'r', encoding='utf-8') as f:
             content = f.read()
 
@@ -40,7 +50,7 @@ def run():
             return 'class="' + ' '.join(new_classes_dedup) + '"'
 
         new_content = re.sub(r'class="([^"]*)"', replacer, content)
-        
+
         if content != new_content:
             with open(path, 'w', encoding='utf-8') as f:
                 f.write(new_content)

@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/livro_caixa.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 {% block title %}Livro Caixa - Almoxarifado{% endblock %}
@@ -11,7 +21,7 @@
             </div>
             <a href="{% url 'painel_inventario' %}" class="px-5 py-2.5 bg-gray-800/80 backdrop-blur-md hover:bg-gray-700 text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg">Voltar ao Almoxarifado</a>
         </div>
-        
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Coluna 1: Histórico de Empréstimos Recentes -->
             <div class="bg-gray-900/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[75vh]">

@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: midia_lgpd/templates/midia_lgpd/pv_drive_lixeira.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -8,7 +18,7 @@
 {% block content %}
 <div class="min-h-screen bg-transparent p-4 md:p-8">
     <div class="max-w-7xl mx-auto">
-        
+
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
@@ -18,7 +28,7 @@
                 </h1>
                 <p class="text-gray-400 mt-1">Arquivos excluídos. Eles permanecem aqui antes da deleção definitiva.</p>
             </div>
-            
+
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'pv_drive_home' %}" class="px-5 py-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg font-medium transition-all shadow-sm border border-gray-600 backdrop-blur-md flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -29,7 +39,7 @@
 
         <!-- Trash Container -->
         <div class="bg-gray-900/60 backdrop-blur-xl border border-red-500/30 rounded-2xl shadow-2xl overflow-hidden min-h-[600px] flex flex-col p-6">
-            
+
             {% if not arquivos %}
             <div class="flex flex-col items-center justify-center h-full text-gray-500 pt-20">
                 <svg class="w-24 h-24 mb-4 opacity-50" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
@@ -37,7 +47,7 @@
                 <p class="mt-2 text-sm">Arquivos excluídos aparecerão aqui.</p>
             </div>
             {% else %}
-            
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -70,9 +80,9 @@
                     </tbody>
                 </table>
             </div>
-            
+
             {% endif %}
-            
+
         </div>
     </div>
 </div>

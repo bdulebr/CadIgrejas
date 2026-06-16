@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/models.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 from django.db import models
 from core.models import Membro
 from gestao_membros.models import Departamento
@@ -45,14 +55,14 @@ class ItemAlmoxarifado(models.Model):
         ('consumo', 'Item de Consumo (Alimentos/Descartáveis)'),
         ('fixo', 'Ativo Fixo (Alocado Permanentemente, não devolvido)'),
     )
-    
+
     PAGAMENTO_CHOICES = (
         ('quitado', 'Quitado'),
         ('parcelado', 'Parcelado'),
         ('doacao', 'Doação/Grátis'),
         ('nao_se_aplica', 'Não se Aplica')
     )
-    
+
     CONDICAO_CHOICES = (
         ('nova', 'Nova / Excelente'),
         ('boa', 'Boa'),
@@ -88,7 +98,7 @@ class ItemAlmoxarifado(models.Model):
     observacao = models.TextField(blank=True)
     foto_item = models.ImageField(upload_to='fotos/almoxarifado/', blank=True, null=True, validators=img_validators)
     pasta_pv_drive = models.ForeignKey(PastaVirtual, on_delete=models.SET_NULL, null=True, blank=True, help_text="Pasta com todas as NF e comprovantes do item")
-    
+
     # Controle de Alto Volume
     exige_aprovacao = models.BooleanField(default=False, help_text="Se marcado, a retirada deste item ficará pendente até aprovação de um Gestor.")
 

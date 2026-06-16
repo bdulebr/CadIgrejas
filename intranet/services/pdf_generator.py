@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: intranet/services/pdf_generator.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -16,25 +26,25 @@ def gerar_pdf_contrato(documento_gerado):
     import io
     import re
     from django.core.files.base import ContentFile
-    
+
     html = documento_gerado.template.html_canva
     css = documento_gerado.template.css_canva
     conteudo = documento_gerado.template.conteudo_base
     dados = documento_gerado.dados_preenchidos or {}
-    
+
     if html:
         # Modo Avançado (Canva / GrapesJS)
         from xhtml2pdf import pisa
-        
+
         # Substituir variáveis no HTML
         for match in re.finditer(r'\{\{(.*?)\}\}', html):
             campo = match.group(1).strip()
             valor = dados.get(campo, f"[{campo} não preenchido]")
             html = html.replace(match.group(0), str(valor))
-            
+
         assinatura_base64 = dados.get('assinatura_base64', '')
         assinatura_img_html = f'<img src="{assinatura_base64}" style="max-height: 100px; display: block; margin: 0 auto; margin-bottom: 10px;">' if assinatura_base64 else '<p>___________________________________________________</p>'
-        
+
         assinatura_block = f'''
         <div style="margin-top: 50px; text-align: center;">
             {assinatura_img_html}
@@ -45,7 +55,7 @@ def gerar_pdf_contrato(documento_gerado):
             <p><strong>Autenticidade (Hash Único):</strong> {documento_gerado.token_acesso}</p>
         </div>
         '''
-        
+
         full_html = f'''
         <html>
         <head>
@@ -60,14 +70,14 @@ def gerar_pdf_contrato(documento_gerado):
         </body>
         </html>
         '''
-        
+
         buffer = io.BytesIO()
         pisa_status = pisa.CreatePDF(io.StringIO(full_html), dest=buffer)
-        
+
         if not pisa_status.err:
             pdf_content = buffer.getvalue()
             buffer.close()
-            
+
             filename = f"{documento_gerado.template.titulo[:30]}_{documento_gerado.token_acesso.hex[:8]}.pdf".replace(' ', '_')
             documento_gerado.arquivo_pdf_final.save(filename, ContentFile(pdf_content), save=True)
             return True
@@ -79,7 +89,7 @@ def gerar_pdf_contrato(documento_gerado):
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     elements = []
     styles = getSampleStyleSheet()
-    
+
     title_style = ParagraphStyle(
         'TitleStyle',
         parent=styles['Heading1'],
@@ -89,7 +99,7 @@ def gerar_pdf_contrato(documento_gerado):
         spaceAfter=20,
         alignment=1 # Center
     )
-    
+
     text_style = ParagraphStyle(
         'TextStyle',
         parent=styles['Normal'],
@@ -107,24 +117,24 @@ def gerar_pdf_contrato(documento_gerado):
     # Processar o conteudo base
     conteudo = documento_gerado.template.conteudo_base
     dados = documento_gerado.dados_preenchidos or {}
-    
+
     # Substituir variáveis como {{NOME}}
     for match in re.finditer(r'\{\{(.*?)\}\}', conteudo):
         campo = match.group(1).strip()
         valor = dados.get(campo, f"[{campo} não preenchido]")
         conteudo = conteudo.replace(match.group(0), str(valor))
-        
+
     # Quebras de linha para Paragrafos
     paragrafos = conteudo.split('\n')
     for p in paragrafos:
         if p.strip():
             elements.append(Paragraph(p.strip(), text_style))
-            
+
     elements.append(Spacer(1, 30))
-    
+
     # Assinatura Block
     assinatura_style = ParagraphStyle('Assinatura', parent=styles['Normal'], alignment=1, fontSize=10)
-    
+
     assinatura_base64 = dados.get('assinatura_base64', '')
     if assinatura_base64 and ',' in assinatura_base64:
         from reportlab.platypus import Image
@@ -139,7 +149,7 @@ def gerar_pdf_contrato(documento_gerado):
             elements.append(Paragraph("___________________________________________________", assinatura_style))
     else:
         elements.append(Paragraph("___________________________________________________", assinatura_style))
-    
+
     nome_assinante = documento_gerado.nome_destino or documento_gerado.email_destino
     elements.append(Paragraph(f"Assinado Eletronicamente por: {nome_assinante}", assinatura_style))
     elements.append(Paragraph(f"E-mail: {documento_gerado.email_destino}", assinatura_style))
@@ -150,10 +160,10 @@ def gerar_pdf_contrato(documento_gerado):
     elements.append(Paragraph(f"Autenticidade (Hash Único): {documento_gerado.token_acesso}", assinatura_style))
 
     doc.build(elements)
-    
+
     pdf_content = buffer.getvalue()
     buffer.close()
-    
+
     filename = f"{documento_gerado.template.titulo[:30]}_{documento_gerado.token_acesso.hex[:8]}.pdf".replace(' ', '_')
     documento_gerado.arquivo_pdf_final.save(filename, ContentFile(pdf_content), save=True)
     return True

@@ -1,20 +1,30 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: scripts/fix_ui_pass2.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 import os
 import glob
 import re
 
 def run():
     html_files = glob.glob('**/*.html', recursive=True)
-    
+
     count = 0
     for path in html_files:
         if 'venv' in path or 'base.html' in path or 'login.html' in path or 'painel.html' in path:
             continue
-            
+
         with open(path, 'r', encoding='utf-8') as f:
             content = f.read()
 
         new_content = content
-        
+
         # 1. Consertar botões "Voltar" com bg-gray-200 e hover:bg-gray-300
         # Ex: class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-300 rounded-lg font-medium transition-colors"
         # Vamos usar regex para capturar qualquer botão/link de voltar com bg-gray-200
@@ -41,7 +51,7 @@ def run():
 
         # 4. Consertar bg-gray-50 ou bg-gray-100 que sobraram e viraram fundos inteiros brancos
         new_content = new_content.replace('bg-brand-50', 'bg-blue-900/40 backdrop-blur-md border border-blue-500/20 text-white')
-        
+
         # Consertar textos em bubbles bg-brand-100 text-brand-700 -> bg-blue-900 text-blue-300
         new_content = new_content.replace('bg-brand-100', 'bg-blue-900/60 border border-blue-500/30')
         new_content = new_content.replace('text-brand-700', 'text-blue-400')

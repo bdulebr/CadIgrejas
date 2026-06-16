@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/templates/core/pages/forcar_troca_senha.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -5,17 +15,17 @@
 
 {% block content %}
 <!-- Background with 3D Church lighting -->
-<div class="relative min-h-screen w-full bg-cover bg-center bg-no-repeat overflow-hidden flex items-center justify-center" 
+<div class="relative min-h-screen w-full bg-cover bg-center bg-no-repeat overflow-hidden flex items-center justify-center"
      style="background-image: url('{% static 'img/bg_igreja.png' %}');">
-    
+
     <!-- Dark/Blue Overlay for contrast -->
     <div class="absolute inset-0 bg-blue-950/70 backdrop-blur-md z-0"></div>
 
     <!-- Main Container -->
     <div class="relative z-10 w-full max-w-lg mx-auto px-4 py-8">
-        
+
         <div class="bg-gray-900/85 backdrop-blur-2xl border border-red-500/50 rounded-3xl shadow-[0_0_50px_rgba(220,38,38,0.3)] overflow-hidden transition-all duration-300 relative">
-            
+
             <!-- Glowing top border -->
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-red-700 via-orange-500 to-red-700"></div>
 
@@ -31,21 +41,21 @@
 
                 <form method="POST" action="{% url 'forcar_troca_senha' %}" class="space-y-5">
                     {% csrf_token %}
-                    
+
                     <div>
                         <label class="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wider uppercase">Nova Senha</label>
                         <input type="password" name="nova_senha" required minlength="8"
-                               class="w-full px-4 py-3.5 rounded-xl bg-gray-950/60 border border-gray-700/80 focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-gray-600 transition-all shadow-inner outline-none" 
+                               class="w-full px-4 py-3.5 rounded-xl bg-gray-950/60 border border-gray-700/80 focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-gray-600 transition-all shadow-inner outline-none"
                                placeholder="Mínimo de 8 caracteres">
                     </div>
-                    
+
                     <div>
                         <label class="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wider uppercase">Confirme a Nova Senha</label>
                         <input type="password" name="confirmar_senha" required minlength="8"
-                               class="w-full px-4 py-3.5 rounded-xl bg-gray-950/60 border border-gray-700/80 focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-gray-600 transition-all shadow-inner outline-none" 
+                               class="w-full px-4 py-3.5 rounded-xl bg-gray-950/60 border border-gray-700/80 focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-gray-600 transition-all shadow-inner outline-none"
                                placeholder="Repita a senha">
                     </div>
-                    
+
                     <button type="submit" class="w-full mt-6 group relative flex justify-center py-4 px-4 border border-transparent rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-red-500 transition-all overflow-hidden shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.6)]">
                         <span class="absolute right-0 w-8 h-32 -mt-12 transition-all duration-1000 transform translate-x-12 bg-gray-900/40 backdrop-blur-md border border-white/10 opacity-10 rotate-12 group-hover:-translate-x-96 ease"></span>
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>

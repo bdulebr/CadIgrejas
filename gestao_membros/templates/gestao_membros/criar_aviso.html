@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: gestao_membros/templates/gestao_membros/criar_aviso.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 
 {% block title %}{{ acao }} Aviso - PVE{% endblock title %}
@@ -12,16 +22,16 @@
             </h2>
             <p class="text-sm text-gray-400 mt-1">Publique recados, instruções ou links importantes para sua equipe.</p>
         </div>
-        
+
         <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
             {% csrf_token %}
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Título do Aviso *</label>
                     <input type="text" name="titulo" value="{{ aviso.titulo|default:'' }}" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
                 </div>
-                
+
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Departamento *</label>
                     <select name="departamento" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
@@ -30,7 +40,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                
+
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Duração (Expiração) *</label>
                     <select name="duracao" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
@@ -44,23 +54,23 @@
                     <p class="text-xs text-gray-500 mt-1">Expira atual: {{ aviso.data_expiracao|date:"d/m/Y H:i" }}</p>
                     {% endif %}
                 </div>
-                
+
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mensagem *</label>
                     <textarea name="mensagem" rows="6" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">{{ aviso.mensagem|default:'' }}</textarea>
                 </div>
-                
+
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Link Externo (Opcional)</label>
                     <input type="url" name="link_externo" value="{{ aviso.link_externo|default:'' }}" placeholder="Ex: https://forms.google.com/..." class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
                 </div>
-                
+
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Anexos (PDF, Imagens, etc)</label>
                     <input type="file" name="anexos" multiple class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 file:cursor-pointer">
                     <p class="text-xs text-gray-500 mt-2">Você pode selecionar múltiplos arquivos segurando a tecla Ctrl.</p>
                 </div>
-                
+
                 {% if aviso and aviso.anexos.all %}
                 <div class="md:col-span-2 bg-gray-950/40 p-4 rounded-xl border border-gray-800">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Anexos Atuais (Selecione para remover)</label>
@@ -79,7 +89,7 @@
             </div>
 
             <div class="border-t border-gray-800 my-6"></div>
-            
+
             <div class="space-y-4">
                 <label class="flex items-center gap-3 cursor-pointer p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/20 transition-colors">
                     <input type="checkbox" name="fixado" {% if aviso and aviso.fixado %}checked{% endif %} class="w-5 h-5 bg-gray-900 border-gray-700 rounded text-yellow-500 focus:ring-yellow-500">
@@ -97,7 +107,7 @@
                     </div>
                 </label>
             </div>
-            
+
             <div class="pt-6 flex justify-end gap-4">
                 <a href="{% url 'painel_avisos' %}" class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg border border-gray-600">Cancelar</a>
                 <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all">

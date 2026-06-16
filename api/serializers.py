@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: api/serializers.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 
 from rest_framework import serializers
 from core.models import Membro
@@ -41,9 +51,10 @@ class IndisponibilidadeSerializer(serializers.ModelSerializer):
 
 class CompetenciaSerializer(serializers.ModelSerializer):
     departamento_nome = serializers.CharField(source='departamento.nome', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
     class Meta:
         model = CompetenciaEscala
-        fields = ['id', 'mes_ano', 'is_fechada', 'departamento_nome', 'departamento']
+        fields = ['id', 'mes_ano', 'status', 'status_display', 'departamento_nome', 'departamento']
 
 class SlotSerializer(serializers.ModelSerializer):
     class Meta:

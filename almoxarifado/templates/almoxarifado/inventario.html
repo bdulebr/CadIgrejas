@@ -153,7 +153,7 @@
     <!-- MODAL: CADASTRAR ATIVO -->
     <div x-show="openNovoAtivo" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="openNovoAtivo" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openNovoAtivo = false"></div>
+            <div x-show="openNovoAtivo" class="fixed inset-0 bg-blue-950/80 backdrop-blur-md transition-opacity" @click="openNovoAtivo = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="openNovoAtivo" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <form method="POST" action="{% url 'registrar_novo_ativo' %}" enctype="multipart/form-data">
@@ -227,7 +227,7 @@
     <!-- MODAL: REGISTRAR EMPRÉSTIMO -->
     <div x-show="openEmprestimo" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="openEmprestimo" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openEmprestimo = false"></div>
+            <div x-show="openEmprestimo" class="fixed inset-0 bg-blue-950/80 backdrop-blur-md transition-opacity" @click="openEmprestimo = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="openEmprestimo" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <form method="POST" action="{% url 'registrar_emprestimo' %}">
@@ -275,7 +275,7 @@
     <!-- MODAL: ETIQUETA QR CODE -->
     <div x-show="openQr" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="openQr" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openQr = false"></div>
+            <div x-show="openQr" class="fixed inset-0 bg-blue-950/80 backdrop-blur-md transition-opacity" @click="openQr = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="openQr" class="inline-block align-bottom bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-lg text-center overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full p-8">
                 <h3 class="text-xl font-bold text-white mb-1" x-text="ativoNome"></h3>

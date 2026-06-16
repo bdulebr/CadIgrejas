@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/templates/core/pages/sysadmin_dashboard.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 
 {% block title %}Painel do Servidor - PVE{% endblock title %}
@@ -274,7 +284,7 @@
         <div x-show="activeTab === 'seguranca'" style="display: none;" x-transition>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                
+
             <!-- GO-LIVE: ONE CLICK DEPLOY -->
             {% if not config.sistema_implantado %}
             <div class="bg-indigo-950/40 backdrop-blur-md border-2 border-indigo-500/50 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-6 mb-8 relative overflow-hidden group">

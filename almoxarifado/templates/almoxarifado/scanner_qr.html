@@ -1,19 +1,29 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/scanner_qr.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 
 {% block title %}Scanner de Patrimônio - PVE{% endblock title %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-900 p-4 md:p-8 flex flex-col items-center justify-center">
-    
+
     <div class="max-w-md w-full bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
         <div class="p-6 text-center border-b border-white/10 bg-gray-900/40 backdrop-blur-md border border-white/10">
             <h1 class="text-2xl font-bold text-white mb-2">Scanner Inteligente</h1>
             <p class="text-sm text-gray-400">Aponte a câmera para a etiqueta QR Code do equipamento para abrir a Ficha de Raio-X.</p>
         </div>
-        
+
         <div class="p-6">
             <div id="reader" class="w-full rounded-2xl overflow-hidden border-4 border-dashed border-white/10"></div>
-            
+
             <div id="result" class="mt-6 text-center hidden">
                 <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-3">
                     <i data-lucide="check-circle" class="w-6 h-6"></i>
@@ -22,12 +32,12 @@
                 <p class="text-gray-400 text-sm mt-1 mb-4 font-mono" id="qr-result-text"></p>
                 <p class="text-xs text-gray-400">Redirecionando para o Raio-X do Ativo...</p>
             </div>
-            
+
             <div id="error-message" class="mt-4 p-4 bg-red-900/20 text-red-700 text-sm rounded-lg hidden text-center border border-red-200">
                 Ativo não encontrado na base de dados com este código.
             </div>
         </div>
-        
+
         <div class="p-4 bg-gray-900/40 backdrop-blur-md border border-white/10 border-t border-white/10 text-center">
             <a href="{% url 'painel_inventario' %}" class="text-sm font-medium text-gray-300 hover:text-white">Voltar ao Almoxarifado</a>
         </div>
@@ -44,21 +54,21 @@
         function onScanSuccess(decodedText, decodedResult) {
             // Desliga o scanner para evitar múltiplas leituras
             html5QrcodeScanner.clear();
-            
+
             document.getElementById('reader').classList.add('hidden');
             document.getElementById('result').classList.remove('hidden');
             document.getElementById('qr-result-text').textContent = "Código: " + decodedText;
-            
+
             // O código de patrimônio no DB é texto/string.
             // Precisamos procurar o Ativo. Porém, o scanner_qr não recebe POST nativo ainda.
             // Para resolver isso de forma elegante sem recriar uma API JSON,
             // podemos fazer um window.location.href passando o decodedText para uma URL.
             // Mas ativo_detalhe espera ID numérico. Então eu vou fazer um fetch
             // para uma view rápida ou, melhor ainda, criar um form hidden e enviar.
-            
+
             // Mas espera, como a view 'ativo_detalhe' requer o ID, eu vou redirecionar com o código_patrimonio.
             // Vou usar uma busca rápida.
-            
+
             window.location.href = "{% url 'painel_inventario' %}?busca_codigo=" + encodeURIComponent(decodedText);
         }
 

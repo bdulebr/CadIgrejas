@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/management/commands/rotina_meia_noite.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 import os
 import datetime
 from django.core.management.base import BaseCommand
@@ -27,10 +37,10 @@ class Command(BaseCommand):
         try:
             daqui_7_dias = timezone.now().date() + datetime.timedelta(days=7)
             lotes_vencendo = AlimentoLote.objects.filter(
-                data_vencimento__lte=daqui_7_dias, 
+                data_vencimento__lte=daqui_7_dias,
                 quantidade_atual__gt=0
             )
-            
+
             if lotes_vencendo.exists():
                 admin_bot = Membro.objects.filter(is_superuser=True).first()
                 if admin_bot:
@@ -38,14 +48,14 @@ class Command(BaseCommand):
                         if lote.departamento:
                             titulo = f"ALERTA: Lote Vencendo ({lote.nome})"
                             mensagem = f"Atenção equipe! O lote de '{lote.nome}' ({lote.quantidade_atual} un) está próximo do vencimento (Vence dia: {lote.data_vencimento.strftime('%d/%m/%Y')}). Por favor, priorize o consumo ou doação imediata."
-                            
+
                             # Evitar flood de avisos repetidos
                             aviso_existente = AvisoMural.objects.filter(
                                 departamento=lote.departamento,
                                 titulo=titulo,
                                 data_postagem__gte=timezone.now() - datetime.timedelta(days=1)
                             ).exists()
-                            
+
                             if not aviso_existente:
                                 AvisoMural.objects.create(
                                     departamento=lote.departamento,

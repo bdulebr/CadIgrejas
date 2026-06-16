@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/painel_inventario.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -18,7 +28,7 @@
                     <p class="text-gray-400">Itens próximos da data de vencimento</p>
                 </div>
             </div>
-            
+
             <div class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                 {% for item in itens_vencendo %}
                 <div class="p-3 bg-red-950/30 border border-red-900/50 rounded-xl flex justify-between items-center">
@@ -48,7 +58,7 @@
                 <i data-lucide="tags" class="w-5 h-5"></i>
                 <span class="hidden sm:inline">Categorias</span>
             </a>
-            
+
             <!-- Dropdown QR Codes Globais -->
             <div x-data="{ openQR: false }" class="relative">
                 <button @click="openQR = !openQR" class="flex items-center gap-2 bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30 px-5 py-3 rounded-xl font-bold transition-all">
@@ -56,7 +66,7 @@
                     <span class="hidden sm:inline">Placas QR Code</span>
                     <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 </button>
-                
+
                 <div x-show="openQR" @click.away="openQR = false" class="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden" style="display: none;">
                     <div class="p-3 border-b border-gray-800 text-xs text-gray-400 font-bold uppercase tracking-wider text-center">Auto-Atendimento</div>
                     <a href="{% url 'baixar_qr_generico' 'retirada' %}" target="_blank" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition-colors border-b border-gray-800/50">
@@ -116,7 +126,7 @@
         </div>
     </div>
 
-    
+
     <!-- Filtros e Busca Visíveis e Avançados -->
     <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl">
         <form method="GET" class="flex flex-col gap-4">
@@ -130,7 +140,7 @@
                         <input type="text" name="q" value="{{ q }}" placeholder="O que você está procurando?" class="w-full bg-gray-950 border border-gray-800 text-white pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                     </div>
                 </div>
-                
+
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Categoria</label>
                     <select name="categoria" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
@@ -140,7 +150,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                
+
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Origem</label>
                     <select name="origem" class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">

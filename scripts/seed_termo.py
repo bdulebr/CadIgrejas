@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: scripts/seed_termo.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 import os
 import django
 
@@ -9,8 +19,8 @@ from midia_lgpd.models import TermoLGPD
 if not TermoLGPD.objects.filter(is_ativo=True).exists():
     TermoLGPD.objects.create(
         titulo="Termo de Consentimento para Uso de Imagem e Voz (LGPD)",
-        conteudo_juridico="""Considerando os termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018), 
-declaro que AUTORIZO o uso de minha imagem e voz em fotos e vídeos institucionais 
+        conteudo_juridico="""Considerando os termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018),
+declaro que AUTORIZO o uso de minha imagem e voz em fotos e vídeos institucionais
 captados nas dependências e eventos oficiais da Igreja Palavra de Vida Enseada.
 
 Esta autorização é concedida a título gratuito, isentando a instituição de quaisquer encargos,

@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: almoxarifado/templates/almoxarifado/editar_item.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -78,7 +88,7 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Data de Vencimento</label>
                 <input type="date" name="data_vencimento" value="{{ item.data_vencimento|date:'Y-m-d' }}" class="w-full bg-gray-950 border border-gray-800 text-gray-400 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
-            
+
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Status do Item</label>
                 <select name="status_item" required class="w-full bg-gray-950 border border-gray-800 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
@@ -178,7 +188,7 @@
             {% else %}
             <div></div>
             {% endif %}
-            
+
             <button type="submit" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)]">
                 Salvar Alterações
             </button>

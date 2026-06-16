@@ -100,7 +100,7 @@
     <!-- MODAL: UPLOAD ARQUIVO -->
     <div x-show="openUpload" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="openUpload" class="fixed inset-0 bg-white/50 bg-opacity-75 transition-opacity" @click="openUpload = false"></div>
+            <div x-show="openUpload" class="fixed inset-0 bg-blue-950/80 backdrop-blur-md transition-opacity" @click="openUpload = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="openUpload" class="inline-block align-bottom bg-white/5 backdrop-blur-md text-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <form method="POST" action="{% url 'upload_arquivo' %}" enctype="multipart/form-data">

@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: api/views.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+"""
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -89,7 +99,7 @@ class MotorIAView(APIView):
         depto_id = request.data.get('departamento_id')
         try:
             depto = Departamento.objects.get(id=depto_id, lideres=request.user)
-            comps = CompetenciaEscala.objects.filter(departamento=depto, is_fechada=False)
+            comps = CompetenciaEscala.objects.filter(departamento=depto, status='rascunho')
             if not comps.exists():
                 return Response({'error': 'Nenhuma competência em aberto.'}, status=400)
 

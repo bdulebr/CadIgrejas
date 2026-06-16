@@ -1,3 +1,13 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/templates/core/pages/partials/logs_table_body.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* LOG DE ALTERAÇÕES:
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+-->
 {% for log in logs %}
 <tr class="hover:bg-white/5 transition-colors border-b border-white/5 group">
     <td class="p-4 text-xs font-mono text-gray-400">
@@ -30,7 +40,7 @@
         {% endif %}
     </td>
     <td class="p-4">
-        <span class="px-2 py-1 rounded-md text-xs font-bold 
+        <span class="px-2 py-1 rounded-md text-xs font-bold
             {% if 'UX_Hover' in log.acao_realizada %}bg-purple-900/40 text-purple-400 border border-purple-500/30
             {% elif log.acao_realizada == 'Deletar' %}bg-red-900/40 text-red-400 border border-red-500/30
             {% elif log.acao_realizada == 'Editar' %}bg-yellow-900/40 text-yellow-400 border border-yellow-500/30
@@ -77,8 +87,8 @@
 {% if logs.has_next %}
 <tr id="replaceMe">
     <td colspan="6" class="p-4 text-center">
-        <button hx-get="?q={{ q }}&page={{ logs.next_page_number }}" 
-                hx-target="#replaceMe" 
+        <button hx-get="?q={{ q }}&page={{ logs.next_page_number }}"
+                hx-target="#replaceMe"
                 hx-swap="outerHTML"
                 class="px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded-lg text-sm font-bold transition-colors w-full">
             Carregar mais logs antigos...
