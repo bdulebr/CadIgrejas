@@ -499,6 +499,16 @@ def sysadmin_desbloquear_ip(request):
 @login_required
 @csrf_exempt
 @requer_permissao('sysadmin', 'editar')
+def sysadmin_limpar_cache(request):
+    if request.method == 'POST':
+        from django.core.cache import cache
+        cache.clear()
+        messages.success(request, "Cache do Redis/RAM limpo com sucesso!")
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_toggle_debug(request):
 
     if request.method == 'POST':

@@ -154,6 +154,28 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# Caching (Redis/LocMem)
+USE_REDIS = env.bool('USE_REDIS', default=False)
+REDIS_URL = env('REDIS_URL', default='redis://127.0.0.1:6379/1')
+
+if USE_REDIS:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'dev-cache-pve',
+        }
+    }
+
 DATABASES = {
     'default': env.db('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }

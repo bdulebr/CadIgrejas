@@ -44,6 +44,7 @@ urlpatterns = [
     path('sysadmin/backup/<int:backup_id>/restaurar/', views.sysadmin_restaurar_backup, name='sysadmin_restaurar_backup'),
     path('sysadmin/zerar/', views.sysadmin_zerar_banco, name='sysadmin_zerar_banco'),
     path('sysadmin/desbloquear-ip/', views.sysadmin_desbloquear_ip, name='sysadmin_desbloquear_ip'),
+    path('sysadmin/limpar-cache/', views.sysadmin_limpar_cache, name='sysadmin_limpar_cache'),
     path('sysadmin/toggle-debug/', views.sysadmin_toggle_debug, name='sysadmin_toggle_debug'),
     path('sysadmin/salvar-env/', views.sysadmin_salvar_env, name='sysadmin_salvar_env'),
     path('sysadmin/deploy/', views.sysadmin_deploy_producao, name='sysadmin_deploy_producao'),
