@@ -105,17 +105,17 @@ def adicionar_turma(request, curso_id):
 
 @login_required
 def excluir_turma(request, turma_id):
+    turma = get_object_or_404(TurmaCurso, id=turma_id)
+    curso_id = turma.curso.id
     if request.method == 'POST':
-        turma = get_object_or_404(TurmaCurso, id=turma_id)
-        curso_id = turma.curso.id
         turma.delete()
         messages.success(request, 'Turma excluída com sucesso.')
-        return redirect('gestao_turmas_curso', curso_id=curso_id)
+    return redirect('gestao_turmas_curso', curso_id=curso_id)
 
 @login_required
 def adicionar_professor(request, turma_id):
+    turma = get_object_or_404(TurmaCurso, id=turma_id)
     if request.method == 'POST':
-        turma = get_object_or_404(TurmaCurso, id=turma_id)
         professor_id = request.POST.get('professor_id')
 
         if ProfessorTurma.objects.filter(turma=turma, professor_id=professor_id).exists():
@@ -128,12 +128,12 @@ def adicionar_professor(request, turma_id):
 
 @login_required
 def remover_professor(request, vinculo_id):
+    vinculo = get_object_or_404(ProfessorTurma, id=vinculo_id)
+    curso_id = vinculo.turma.curso.id
     if request.method == 'POST':
-        vinculo = get_object_or_404(ProfessorTurma, id=vinculo_id)
-        curso_id = vinculo.turma.curso.id
         vinculo.delete()
         messages.success(request, 'Professor removido da turma.')
-        return redirect('gestao_turmas_curso', curso_id=curso_id)
+    return redirect('gestao_turmas_curso', curso_id=curso_id)
 
 @login_required
 def cadastrar_professor_externo(request, curso_id):
@@ -220,22 +220,22 @@ def nova_postagem(request, turma_id):
 
 @login_required
 def excluir_postagem(request, postagem_id):
+    postagem = get_object_or_404(PostagemCurso, id=postagem_id)
+    turma_id = postagem.turma.id
     if request.method == 'POST':
-        postagem = get_object_or_404(PostagemCurso, id=postagem_id)
-        turma_id = postagem.turma.id
         postagem.delete()
         messages.success(request, 'Postagem removida.')
-        return redirect('mural_professor_turma', turma_id=turma_id)
+    return redirect('mural_professor_turma', turma_id=turma_id)
 
 @login_required
 def gerar_link_magico(request, matricula_id):
+    matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
     if request.method == 'POST':
-        matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
         if not matricula.token_acesso:
             matricula.token_acesso = str(uuid.uuid4())
             matricula.save()
         messages.success(request, 'Link mágico gerado com sucesso.')
-        return redirect('mural_professor_turma', turma_id=matricula.turma.id)
+    return redirect('mural_professor_turma', turma_id=matricula.turma.id)
 
 from django.utils import timezone
 from .models import AulaTurma, PresencaAula
