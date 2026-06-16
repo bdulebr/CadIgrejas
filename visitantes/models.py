@@ -51,7 +51,7 @@ class VisitaCulto(models.Model):
 
     visitante = models.ForeignKey(Visitante, on_delete=models.CASCADE, related_name='visitas', verbose_name="Visitante")
     data_culto = models.DateField(default=timezone.now, verbose_name="Data do Culto/Evento")
-    nome_culto = models.CharField(max_length=255, verbose_name="Qual Culto/Evento", default="Culto da Família")
+    nome_culto = models.CharField(max_length=255, verbose_name="Qual Culto/Evento")
     modalidade = models.CharField(max_length=50, choices=MODALIDADE_CHOICES, default='Presencial', verbose_name="Modalidade")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações", help_text="Ex: Fez apelo, Veio com a família, etc.")
 

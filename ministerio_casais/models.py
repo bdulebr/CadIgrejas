@@ -95,6 +95,7 @@ class TurmaCurso(models.Model):
     )
     curso = models.ForeignKey(CursoCasal, on_delete=models.CASCADE, related_name='turmas')
     nome_turma = models.CharField('Nome/Número da Turma', max_length=100)
+    data_inicio = models.DateField('Data de Início', blank=True, null=True)
     status = models.CharField('Status da Turma', max_length=50, choices=STATUS_TURMA, default='Aberta')
 
     # Configurações Movidas do Curso

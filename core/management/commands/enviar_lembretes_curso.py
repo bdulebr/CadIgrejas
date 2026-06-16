@@ -10,7 +10,7 @@
 """
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from ministerio_casais.models import CursoCasal, MatriculaCursoCasal
+from ministerio_casais.models import TurmaCurso, MatriculaCursoCasal
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -18,15 +18,15 @@ from django.conf import settings
 from core.models import ConfiguracaoSistema
 
 class Command(BaseCommand):
-    help = 'Envia e-mails de lembrete para casais matriculados em cursos que começam amanhã'
+    help = 'Envia e-mails de lembrete para casais matriculados em turmas que começam amanhã'
 
     def handle(self, *args, **options):
         amanha = timezone.now().date() + timezone.timedelta(days=1)
 
-        cursos_amanha = CursoCasal.objects.filter(data_inicio=amanha)
+        turmas_amanha = TurmaCurso.objects.filter(data_inicio=amanha)
 
-        if not cursos_amanha.exists():
-            self.stdout.write(self.style.SUCCESS(f'Nenhum curso começando em {amanha}.'))
+        if not turmas_amanha.exists():
+            self.stdout.write(self.style.SUCCESS(f'Nenhuma turma começando em {amanha}.'))
             return
 
         sys_config = ConfiguracaoSistema.objects.first()
@@ -40,8 +40,8 @@ class Command(BaseCommand):
 
         emails_enviados = 0
 
-        for curso in cursos_amanha:
-            matriculas = MatriculaCursoCasal.objects.filter(curso=curso)
+        for turma in turmas_amanha:
+            matriculas = MatriculaCursoCasal.objects.filter(turma=turma)
             for matricula in matriculas:
                 casal = matricula.casal
                 destinatarios = []
@@ -55,7 +55,8 @@ class Command(BaseCommand):
 
                 html_message = render_to_string('ministerio_casais/email_lembrete_curso.html', {
                     'casal': casal,
-                    'curso': curso,
+                    'curso': turma.curso,
+                    'turma': turma,
                     'logo_url': logo_url,
                     'base_url': base_url
                 })
@@ -63,7 +64,7 @@ class Command(BaseCommand):
 
                 try:
                     send_mail(
-                        subject=f'Lembrete: O curso "{curso.nome}" começa amanhã!',
+                        subject=f'Lembrete: O curso "{turma.curso.nome}" começa amanhã!',
                         message=plain_message,
                         from_email=settings.DEFAULT_FROM_EMAIL,
                         recipient_list=destinatarios,
