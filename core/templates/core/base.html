@@ -275,29 +275,29 @@
             <div x-show="sidebarOpen" class="text-[10px] uppercase font-bold text-red-500 tracking-widest pl-3 mt-4 mb-1">Administração</div>
             <nav class="flex flex-col gap-1 px-2">
                 <a href="{% url 'pv_drive_home' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
-                    <i data-lucide="cloud" class="w-5 h-5 text-gray-400 group-hover:text-blue-400"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap">PV Drive</span>
+                    <i data-lucide="cloud" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-blue-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">PV Drive</span>
                 </a>
 
                 <a href="{% url 'departamentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
-                    <i data-lucide="network" class="w-5 h-5 text-gray-400 group-hover:text-purple-400"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap">Departamentos</span>
+                    <i data-lucide="network" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-purple-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">Departamentos</span>
                 </a>
                 {% if request.user.nivel_hierarquico == 'super_admin' %}
                 <a href="{% url 'painel_membros' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
-                    <i data-lucide="users-round" class="w-5 h-5 text-gray-400 group-hover:text-indigo-400"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap">Gestão de Membros</span>
+                    <i data-lucide="users" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-indigo-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">Membros</span>
                 </a>
                 {% endif %}
                 {% if request.user.nivel_hierarquico == 'super_admin' %}
                 <a href="{% url 'sysadmin_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Configurações do Sistema">
-                    <i data-lucide="settings" class="w-5 h-5 text-gray-400 group-hover:text-gray-200"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap">Configurações Sysadmin</span>
+                    <i data-lucide="server" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-gray-200"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">SysAdmin</span>
                 </a>
 
                 <a href="{% url 'permissoes:dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Gerenciador de Permissões (RBAC)">
-                    <i data-lucide="shield-check" class="w-5 h-5 text-gray-400 group-hover:text-blue-400"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap">Permissões (Acessos)</span>
+                    <i data-lucide="shield" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-blue-400"></i>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">Permissões</span>
                 </a>
                 {% endif %}
             </nav>
