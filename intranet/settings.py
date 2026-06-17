@@ -108,6 +108,7 @@ MIDDLEWARE = [
     'core.middleware.RequestMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
     'core.error_middleware.JsonErrorLoggerMiddleware',
+    'core.middleware.AIAutoEngineerMiddleware',
 ]
 
 # Configurações do Django-Axes (Proteção contra Força Bruta)

@@ -84,3 +84,39 @@ class ForcarTrocaSenhaMiddleware:
                         return redirect('forcar_troca_senha')
 
         return self.get_response(request)
+
+class AIAutoEngineerMiddleware:
+    """
+    Middleware que atua como Cão de Guarda (Watchdog).
+    Se o sistema estourar um erro fatal 500 para um usuário,
+    este middleware intercepta o crash e engatilha o Motor de IA Autônoma
+    no background para caçar e corrigir o erro imediatamente.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_exception(self, request, exception):
+        # A fatal bug happened! Trigger the AI in background.
+        from django.core.management import call_command
+        import threading
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"AI Watchdog interceptou erro fatal: {str(exception)}. Acordando IA Autônoma.")
+
+        def run_ai():
+            try:
+                # O comando foi codificado para rodar e consertar sem derrubar a thread
+                call_command('ai_auto_engineer')
+            except Exception as e:
+                logger.error(f"AI Auto-Engineer falhou ao operar no background: {e}")
+
+        # Inicia a IA em uma thread separada para não travar a resposta de erro atual
+        thread = threading.Thread(target=run_ai)
+        thread.start()
+
+        # Retorna None para permitir que o Django continue o fluxo normal de erro 500
+        return None
