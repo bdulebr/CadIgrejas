@@ -65,7 +65,11 @@ class Command(BaseCommand):
         {alvo_erro}
 
         Seu objetivo:
-        Descubra qual arquivo Python no sistema (provavelmente em core/views.py, core/urls.py ou em outro módulo) deve ser modificado.
+        1. Descubra qual arquivo Python ou HTML no sistema deve ser corrigido para consertar esse erro.
+        2. OU se você perceber que o erro não é do sistema, mas sim uma falha no próprio robô Spider de testes (falso positivo, ou falta de uma trava), você PODE E DEVE aprimorar o código do spider (em 'core/management/commands/run_spider.py').
+
+        Regra de Segurança Estrita: Você só tem permissão para modificar arquivos dentro das pastas dos apps de negócio (core/, almoxarifado/, escalas/, tesouraria/, etc.). NUNCA modifique settings.py, wsgi.py, asgi.py ou manage.py.
+
         Forneça EXATAMENTE um JSON com as alterações sugeridas. O JSON deve ter este formato rigoroso:
         {{
             "target_file": "caminho/do/arquivo.py",
@@ -73,7 +77,7 @@ class Command(BaseCommand):
             "replace_content": "código novo corrigido"
         }}
         Importante: não retorne NADA ALÉM do JSON válido, sem tags ```json. O arquivo_target deve ser o caminho relativo, ex: core/views.py.
-        O search_content deve ser um techo preciso de código (evite arquivos inteiros).
+        O search_content deve ser um trecho preciso de código (evite arquivos inteiros).
         """
 
         try:
@@ -86,9 +90,16 @@ class Command(BaseCommand):
 
             # Se a IA não conseguir gerar JSON válido, vai pro except e aborta a operação segura
             acao = json.loads(texto_limpo)
-            target_file = acao.get("target_file", "")
+            target_file = acao.get("target_file", "").lstrip('/')
             search_content = acao.get("search_content", "")
             replace_content = acao.get("replace_content", "")
+
+            # TRAVA DE SEGURANÇA (LIMITAÇÕES DE ESCOPO MÁXIMO)
+            arquivos_proibidos = ['settings.py', 'wsgi.py', 'asgi.py', 'manage.py']
+            if any(proibido in target_file for proibido in arquivos_proibidos) or '..' in target_file:
+                self.stderr.write(f"Violacão de Segurança: IA tentou modificar um arquivo crítico ({target_file}). Abortando.")
+                AIEngineerLog.objects.create(erro_analisado=alvo_erro, status='FALHA_DE_SEGURANCA', detalhes=f"Tentativa de alteração em {target_file}")
+                return
 
             if not os.path.exists(target_file):
                 self.stderr.write(f"A IA propôs alterar {target_file}, mas o arquivo não existe.")
