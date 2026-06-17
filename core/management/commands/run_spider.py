@@ -77,7 +77,46 @@ class Command(BaseCommand):
             pass
 
         # ==========================================
-        # FASE 3: VARREDURA E FUZZING DE ROTAS
+        # FASE 1.5: PROFILE COMPLETENESS SECURITY CHECK
+        # ==========================================
+        log_lines.append("\n--- [FASE 1.5: PROFILE COMPLETENESS CHECK] ---")
+        try:
+            # Cria um usuário com dados incompletos
+            incomplete_user, _ = Membro.objects.get_or_create(username='incomplete_spider', defaults={
+                'email': 'inc@spider.com', 'cpf': '', 'telefone': ''
+            })
+            incomplete_user.set_password('password123')
+            incomplete_user.save()
+
+            client.logout()
+            client.login(username='incomplete_spider', password='password123')
+
+            # Testa a trava de segurança no dashboard (Login simulado já redireciona no fluxo POST, mas GET no dashboard não trava direto no login_view)
+            # A trava real fica na view de POST do login. Como test client.login() pula a view, chamaremos o POST de login para testar a trava.
+            res_login = client.post('/', {'username': 'incomplete_spider', 'password': 'password123'})
+            if res_login.status_code == 302 and 'perfil' in res_login.url:
+                log_lines.append("[SECURITY OK] Trava de Perfil Incompleto ativa no Login. Redirecionamento correto.")
+            else:
+                log_lines.append(f"[SECURITY WARNING] Usuário não foi redirecionado ao logar com perfil incompleto.")
+
+            # Testa se o HTML do formulário de perfil obriga os dados vitais
+            res_perfil = client.get('/perfil/')
+            html = res_perfil.content.decode('utf-8')
+            if 'name="telefone"' in html and 'required' in html.split('name="telefone"')[1][:200]:
+                log_lines.append("[SECURITY OK] Formulário garante preenchimento de dados vitais (Tags 'required' detectadas).")
+            else:
+                log_lines.append("[SECURITY ERROR] Campos vitais do Perfil (Telefone/CPF) não possuem a trava 'required' no HTML.")
+                errors_found += 1
+
+            client.logout()
+            # Retorna o contexto pro admin
+            client.login(username='admin_spider', password='password123')
+        except Exception as e:
+            log_lines.append(f"[SECURITY ERROR] Falha no teste de Perfil Incompleto: {str(e)}")
+            errors_found += 1
+
+        # ==========================================
+        # FASE 2: VARREDURA E FUZZING DE ROTAS
         # ==========================================
         log_lines.append("\n--- [FASE 2: ROUTE SCAN & FUZZING] ---")
 
