@@ -99,24 +99,22 @@ class AIAutoEngineerMiddleware:
         return self.get_response(request)
 
     def process_exception(self, request, exception):
-        # A fatal bug happened! Trigger the AI in background.
-        from django.core.management import call_command
-        import threading
+        # A fatal bug happened! Put it in the queue for the AI Daemon.
+        from core.models import AIEngineerLog
         import logging
+        import traceback
 
         logger = logging.getLogger(__name__)
-        logger.error(f"AI Watchdog interceptou erro fatal: {str(exception)}. Acordando IA Autônoma.")
+        erro_str = f"Exception: {str(exception)}\nPath: {request.path}\nTraceback: {traceback.format_exc()}"
 
-        def run_ai():
-            try:
-                # O comando foi codificado para rodar e consertar sem derrubar a thread
-                call_command('ai_auto_engineer')
-            except Exception as e:
-                logger.error(f"AI Auto-Engineer falhou ao operar no background: {e}")
-
-        # Inicia a IA em uma thread separada para não travar a resposta de erro atual
-        thread = threading.Thread(target=run_ai)
-        thread.start()
+        # Só insere na fila se não houver erro igual pendente para evitar spam
+        if not AIEngineerLog.objects.filter(status='PENDENTE', erro_analisado=str(exception)).exists():
+            AIEngineerLog.objects.create(
+                erro_analisado=str(exception),
+                status='PENDENTE',
+                detalhes=erro_str[:2000] # Limita tamanho no banco
+            )
+            logger.error(f"AI Watchdog inseriu novo erro na fila do AI Daemon: {str(exception)}")
 
         # Retorna None para permitir que o Django continue o fluxo normal de erro 500
         return None

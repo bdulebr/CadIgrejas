@@ -10,6 +10,9 @@ from intranet.services.groq_ai import obter_client_groq
 class Command(BaseCommand):
     help = 'IA Autônoma: Roda testes, identifica bugs, programa correções, testa e aplica via Git (ou faz Rollback)'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--target_log_id', type=int, help='ID of the AIEngineerLog to process')
+
     def handle(self, *args, **options):
         self.stdout.write("==================================================")
         self.stdout.write("🤖 MOTOR DE IA AUTÔNOMA INICIADO (AI AUTO-ENGINEER)")
@@ -20,35 +23,49 @@ class Command(BaseCommand):
             self.stderr.write("Erro: API Key do Groq não configurada. Impossível operar.")
             return
 
-        # 1. Roda o Spider para coletar o estado inicial
-        self.stdout.write("[1/5] Executando Auditoria do Spider...")
-        try:
-            call_command('run_spider')
-        except Exception as e:
-            self.stderr.write(f"Falha ao rodar o spider internamente: {e}")
+        target_log_id = options.get('target_log_id')
+        log_registro = None
+        alvo_erro = ""
 
-        # Pega o último log do spider
-        spider_log = SpiderTestLog.objects.order_by('-data_execucao').first()
-        if not spider_log:
-            self.stderr.write("Nenhum log do Spider encontrado.")
-            return
+        if target_log_id:
+            # Acionado pelo Daemon a partir de um Erro 500
+            self.stdout.write(f"[1/5] Lendo Bug do Cão de Guarda (Log ID {target_log_id})...")
+            log_registro = AIEngineerLog.objects.filter(id=target_log_id).first()
+            if not log_registro:
+                self.stderr.write("Log não encontrado.")
+                return
+            alvo_erro = log_registro.detalhes
+            erros_antes = 1 # O erro atual conta como 1
+        else:
+            # Acionado manualmente pelo painel SysAdmin
+            self.stdout.write("[1/5] Executando Auditoria Completa do Spider...")
+            try:
+                call_command('run_spider')
+            except Exception as e:
+                self.stderr.write(f"Falha ao rodar o spider internamente: {e}")
 
-        # 2. Analisa os Erros
-        erros_antes = spider_log.erros_encontrados
-        self.stdout.write(f"[2/5] Análise do Spider: {erros_antes} erros detectados.")
+            spider_log = SpiderTestLog.objects.order_by('-data_execucao').first()
+            if not spider_log:
+                self.stderr.write("Nenhum log do Spider encontrado.")
+                return
 
-        if erros_antes == 0:
-            self.stdout.write("🎉 Sistema 100% íntegro. A IA não encontrou trabalho para fazer.")
-            return
+            erros_antes = spider_log.erros_encontrados
+            self.stdout.write(f"[2/5] Análise do Spider: {erros_antes} erros detectados.")
 
-        # Pega o log de erro real para mandar para a IA
-        linhas_erro = [linha for linha in spider_log.log_texto.split('\n') if '[ERROR' in linha or '[SECURITY ERROR]' in linha]
-        if not linhas_erro:
-            self.stdout.write("Nenhuma linha de erro decifrável no log do spider.")
-            return
+            if erros_antes == 0:
+                self.stdout.write("🎉 Sistema 100% íntegro. A IA não encontrou trabalho para fazer.")
+                return
 
-        alvo_erro = linhas_erro[0] # Foca em resolver um erro por vez
-        self.stdout.write(f"🛑 Erro Alvo Escolhido: {alvo_erro}")
+            linhas_erro = [linha for linha in spider_log.log_texto.split('\n') if '[ERROR' in linha or '[SECURITY ERROR]' in linha]
+            if not linhas_erro:
+                self.stdout.write("Nenhuma linha de erro decifrável no log do spider.")
+                return
+
+            alvo_erro = linhas_erro[0]
+            # Cria o registro pendente pra dar sequencia no fluxo padrao
+            log_registro = AIEngineerLog.objects.create(erro_analisado=alvo_erro, status='PROCESSANDO', detalhes=alvo_erro)
+
+        self.stdout.write(f"🛑 Erro Alvo Escolhido: {alvo_erro[:100]}...")
 
         # 3. Engenharia de IA (Prompt e Correção)
         self.stdout.write("[3/5] Consultando Inteligência Artificial (Groq Llama-3) para programar a solução...")
@@ -123,11 +140,17 @@ class Command(BaseCommand):
                 f.write(conteudo_novo)
 
             # 4. Homologação (Rodar Spider Novamente)
-            self.stdout.write("[5/5] Testando Modificação (Homologação Autônoma)...")
-            call_command('run_spider')
+            self.stdout.write("[5/5] Testando Modificação (Aguardando Hupper reiniciar o servidor)...")
+            # Espera 5 segundos para o Hupper reiniciar o Waitress com o novo código
+            import time
+            time.sleep(5)
+
+            self.stdout.write("Rodando Spider Test em um novo processo isolado...")
+            # Usar subprocess garante que a memória Python limpa veja os arquivos novos!
+            subprocess.run(['venv\\Scripts\\python', 'manage.py', 'run_spider'])
 
             spider_pos = SpiderTestLog.objects.order_by('-data_execucao').first()
-            erros_depois = spider_pos.erros_encontrados
+            erros_depois = spider_pos.erros_encontrados if spider_pos else erros_antes
 
             # 5. Avaliação Humana (Rollback ou Git)
             if erros_depois < erros_antes:

@@ -37,7 +37,12 @@ echo.
 echo Pressione CTRL+C para derrubar o servidor e S (Sim) para sair do loop.
 echo.
 set USE_HTTPS=False
-waitress-serve --port=8000 intranet.wsgi:application
+
+echo [HOT-RELOAD] Iniciando Cão de Guarda (Daemon da IA) em background...
+start /B venv\Scripts\python manage.py ai_daemon
+
+echo [HOT-RELOAD] Iniciando Servidor Web com monitoramento (Hupper)...
+hupper -m waitress --port=8000 intranet.wsgi:application
 echo.
 echo Servidor reiniciando (loop ativo)...
 timeout /t 2 > NUL
