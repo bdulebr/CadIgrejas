@@ -398,8 +398,9 @@ def sysadmin_dashboard(request):
     from core.models import DatabaseBackup
     backups_db = DatabaseBackup.objects.all()
 
-    from core.models import SpiderTestLog
+    from core.models import SpiderTestLog, AIEngineerLog
     spider_logs = SpiderTestLog.objects.all().order_by('-data_execucao')[:10]
+    ai_logs = AIEngineerLog.objects.all().order_by('-data_execucao')[:10]
 
     context = {
         'config': config,
@@ -421,7 +422,8 @@ def sysadmin_dashboard(request):
         'links_rapidos': links_rapidos,
         'email_logs': email_logs,
         'backups_db': backups_db,
-        'spider_logs': spider_logs
+        'spider_logs': spider_logs,
+        'ai_logs': ai_logs
     }
     return render(request, 'core/pages/sysadmin_dashboard.html', context)
 
@@ -1618,6 +1620,23 @@ def sysadmin_baixar_log_spider(request, log_id):
     response = HttpResponse(log.log_texto, content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename="spider_log_{log.id}_{log.data_execucao.strftime("%Y%m%d%H%M")}.txt"'
     return response
+
+@login_required
+def sysadmin_rodar_ai_engineer(request):
+    if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
+        return HttpResponseForbidden("Acesso restrito.")
+
+    def run_ai_thread():
+        try:
+            call_command('ai_auto_engineer')
+        except Exception as e:
+            print(f"Erro ao rodar AI Engineer: {e}")
+
+    thread = threading.Thread(target=run_ai_thread)
+    thread.start()
+
+    messages.success(request, 'O AI Auto-Engineer foi ativado em segundo plano. Os logs aparecerão na aba Spider em instantes.')
+    return HttpResponseRedirect(reverse('sysadmin'))
 
 @login_required
 @requer_permissao('sysadmin', 'editar')

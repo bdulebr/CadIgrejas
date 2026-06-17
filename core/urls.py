@@ -64,4 +64,6 @@ urlpatterns = [
     path('sysadmin/rodar-spider/', views.sysadmin_rodar_spider, name='sysadmin_rodar_spider'),
     path('sysadmin/baixar-spider-log/<int:log_id>/', views.sysadmin_baixar_log_spider, name='sysadmin_baixar_log_spider'),
 
+    # AI Auto Engineer
+    path('sysadmin/rodar-ai-engineer/', views.sysadmin_rodar_ai_engineer, name='sysadmin_rodar_ai_engineer'),
 ]

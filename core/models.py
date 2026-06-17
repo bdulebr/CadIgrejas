@@ -313,7 +313,17 @@ class SpiderTestLog(models.Model):
     log_texto = models.TextField()
 
     def __str__(self):
-        return f"Spider Test em {self.data_execucao.strftime('%d/%m/%Y %H:%M')} - Erros: {self.erros_encontrados}"
+        return f"Spider Test #{self.id} - {self.data_execucao.strftime('%d/%m/%Y %H:%M')}"
+
+class AIEngineerLog(models.Model):
+    data_execucao = models.DateTimeField(auto_now_add=True)
+    erro_analisado = models.TextField()
+    arquivo_modificado = models.CharField(max_length=255, null=True, blank=True)
+    status = models.CharField(max_length=50) # 'SUCESSO', 'ROLLBACK', 'ERRO'
+    detalhes = models.TextField()
+
+    def __str__(self):
+        return f"AI Engineer #{self.id} - {self.status} em {self.data_execucao.strftime('%d/%m/%Y %H:%M')}"
 
 
 import hashlib
