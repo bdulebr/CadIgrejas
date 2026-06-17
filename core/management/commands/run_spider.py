@@ -116,6 +116,48 @@ class Command(BaseCommand):
             errors_found += 1
 
         # ==========================================
+        # FASE 1.6: RBAC PERMISSIONS MODULE SCAN
+        # ==========================================
+        log_lines.append("\n--- [FASE 1.6: RBAC PERMISSIONS SCAN] ---")
+        try:
+            from permissoes.models import ModuloSistema, PermissaoMembro
+            rbac_user, _ = Membro.objects.get_or_create(username='rbac_spider', defaults={
+                'email': 'rbac@spider.com', 'cpf': '88888888888', 'telefone': '11999999999', 'data_nascimento': '1990-01-01', 'nivel_hierarquico': 'membro_comum'
+            })
+            rbac_user.set_password('password123')
+            rbac_user.save()
+
+            client.logout()
+            client.login(username='rbac_spider', password='password123')
+
+            # 1. Tenta acessar rota sysadmin protegida SEM permissão
+            res_denied = client.get('/sysadmin/')
+            if res_denied.status_code == 302:
+                log_lines.append("[SECURITY OK] Motor RBAC bloqueou acesso indevido à rota /sysadmin/ com sucesso.")
+            else:
+                log_lines.append(f"[SECURITY ERROR] Motor RBAC FALHOU! Rota protegida retornou status: {res_denied.status_code}")
+                errors_found += 1
+
+            # 2. Concede permissão dinamicamente
+            mod_sysadmin, _ = ModuloSistema.objects.get_or_create(slug='sysadmin', defaults={'nome': 'SysAdmin'})
+            PermissaoMembro.objects.get_or_create(membro=rbac_user, modulo=mod_sysadmin, defaults={'pode_editar': True, 'pode_ver': True})
+
+            # 3. Tenta acessar a rota NOVAMENTE
+            res_allowed = client.get('/sysadmin/')
+            if res_allowed.status_code == 200:
+                log_lines.append("[SECURITY OK] Motor RBAC permitiu acesso após concessão dinâmica de permissão.")
+            else:
+                log_lines.append(f"[SECURITY ERROR] Motor RBAC FALHOU ao liberar rota concedida! Status: {res_allowed.status_code}")
+                errors_found += 1
+
+            client.logout()
+            # Retorna o contexto pro admin
+            client.login(username='admin_spider', password='password123')
+        except Exception as e:
+            log_lines.append(f"[SECURITY ERROR] Falha no teste do motor RBAC: {str(e)}")
+            errors_found += 1
+
+        # ==========================================
         # FASE 2: VARREDURA E FUZZING DE ROTAS
         # ==========================================
         log_lines.append("\n--- [FASE 2: ROUTE SCAN & FUZZING] ---")
