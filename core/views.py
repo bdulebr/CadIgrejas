@@ -166,8 +166,21 @@ def gerar_insight_ia(user):
 
     return insight_data
 
+from django.http import JsonResponse
+from core.models import AIEngineerLog
+
+def eversinho_status_api(request, log_id):
+    try:
+        log = AIEngineerLog.objects.get(id=log_id)
+        return JsonResponse({'status': log.status})
+    except AIEngineerLog.DoesNotExist:
+        return JsonResponse({'status': 'NAO_ENCONTRADO'}, status=404)
+
 @login_required
 def dashboard_view(request):
+
+    termo_ativo = TermoLGPD.objects.filter(is_ativo=True).first()
+
     termo_ativo = TermoLGPD.objects.filter(is_ativo=True).first()
     assinou_lgpd = True
     if termo_ativo:

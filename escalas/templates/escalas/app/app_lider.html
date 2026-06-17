@@ -54,5 +54,90 @@
             </div>
         </div>
     </div>
+
+    <!-- Painel de Check-in (Ponto Eletrônico) -->
+    <div>
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-gray-400 font-semibold text-xs uppercase tracking-wider">Ponto de Hoje</h3>
+            <a href="{% url 'baixar_qrcode_checkin' %}" target="_blank" class="text-xs bg-gray-800 hover:bg-gray-700 text-blue-400 px-3 py-1.5 rounded-full border border-gray-700 flex items-center gap-1 transition-colors">
+                <i data-lucide="qr-code" class="w-3 h-3"></i> Baixar QR Code
+            </a>
+        </div>
+
+        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <div class="text-sm text-gray-300">
+                    <span class="text-white font-bold">{{ checkins_hoje.count }}</span> / {{ escalas_hoje_total }} presentes
+                </div>
+                <div class="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center gap-1">
+                    <i data-lucide="activity" class="w-3 h-3"></i> Ao Vivo
+                </div>
+            </div>
+            <div class="divide-y divide-gray-700">
+                {% for checkin in checkins_hoje %}
+                <div class="p-4 flex items-center justify-between hover:bg-gray-700/30 transition-colors">
+                    <div class="flex items-center gap-3">
+                        {% if checkin.membro_escalado.foto_perfil %}
+                            <img src="{{ checkin.membro_escalado.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover">
+                        {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 font-bold">
+                                {{ checkin.membro_escalado.first_name|first }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <div class="text-white font-medium text-sm">{{ checkin.membro_escalado.get_full_name }}</div>
+                            <div class="text-gray-400 text-xs flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i> {{ checkin.data_hora_checkin|date:"H:i" }} &bull; {{ checkin.departamento_alocado.nome }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-emerald-400"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500 text-sm">
+                    Nenhum check-in registrado para as escalas de hoje ainda.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden mt-4">
+            <div class="p-4 border-b border-gray-700 bg-gray-800/50">
+                <div class="text-sm text-gray-300 font-bold">Faltantes (Ainda não chegaram)</div>
+            </div>
+            <div class="divide-y divide-gray-700">
+                {% for escala in ausentes_hoje %}
+                <div class="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-gray-700/30 transition-colors">
+                    <div class="flex items-center gap-3">
+                        {% if escala.membro_escalado.foto_perfil %}
+                            <img src="{{ escala.membro_escalado.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover grayscale opacity-60">
+                        {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-500 font-bold">
+                                {{ escala.membro_escalado.first_name|first }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <div class="text-gray-300 font-medium text-sm">{{ escala.membro_escalado.get_full_name }}</div>
+                            <div class="text-gray-500 text-xs flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i> Previsto: {{ escala.horario_inicio|date:"H:i" }} &bull; {{ escala.departamento_alocado.nome }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'checkin_manual_lider' escala.id %}">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Confirmar check-in manual para {{ escala.membro_escalado.first_name }}?')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                            <i data-lucide="check" class="w-3 h-3"></i> Dar Presença Manual
+                        </button>
+                    </form>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500 text-sm">
+                    Nenhum voluntário pendente.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

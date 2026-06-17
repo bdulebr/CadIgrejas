@@ -10,7 +10,7 @@
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker, LinkRapido, NotificacaoGlobal, EmailLog, DatabaseBackup, SpiderTestLog
+from .models import LogImutavel, AIEngineerLog, Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker, LinkRapido, NotificacaoGlobal, EmailLog, DatabaseBackup, SpiderTestLog
 
 @admin.register(Membro)
 class MembroAdmin(UserAdmin):
@@ -90,3 +90,12 @@ class SpiderTestLogAdmin(admin.ModelAdmin):
     list_filter = ('data_execucao',)
     search_fields = ('log_texto',)
     readonly_fields = ('data_execucao',)
+
+
+@admin.register(AIEngineerLog)
+class AIEngineerLogAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(LogImutavel)
+class LogImutavelAdmin(admin.ModelAdmin):
+    pass

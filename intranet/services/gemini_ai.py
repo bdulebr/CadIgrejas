@@ -20,6 +20,33 @@ def get_gemini_client():
         raise Exception("Chave GEMINI_API_KEY não configurada no settings.py")
     return genai.Client(api_key=api_key)
 
+def consultar_gemini_json(prompt_text, retries=3):
+    """
+    Envia um prompt para o Gemini e retorna a string de resposta, esperando um JSON puro.
+    Usado pelo AI Auto-Engineer e AI Auto-Fix.
+    Em caso de QuotaExceeded (429), tenta novamente com exponential backoff.
+    """
+    import time
+    client = get_gemini_client()
+
+    for attempt in range(retries):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt_text
+            )
+            return response.text
+        except Exception as e:
+            if '429' in str(e) or 'RESOURCE_EXHAUSTED' in str(e):
+                if attempt < retries - 1:
+                    sleep_time = 20 * (attempt + 1)
+                    print(f"[Gemini API] Quota Excedida (429). Aguardando {sleep_time} segundos antes da próxima tentativa...")
+                    time.sleep(sleep_time)
+                else:
+                    raise e
+            else:
+                raise e
+
 def analisar_comprovante_tesouraria(file_obj, categorias=None):
     """
     Usa o Gemini 1.5 Flash para ler uma imagem ou PDF de um comprovante/nota fiscal

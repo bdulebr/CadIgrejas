@@ -1,0 +1,19 @@
+# Base de Conhecimento do Eversinho (Treinamento de IA)
+
+Esta base contém soluções aprendidas durante auditorias profundas. Ao analisar novos erros, consulte esta base antes de agir.
+
+## Lição 1: Erros 500 por Falta de Importação (NameError / ImportError)
+**Sintoma:** O Django lança `name 'timezone' is not defined` ou `cannot import name 'CultoEvento'`.
+**Solução:** Sempre verifique se o pacote `from django.utils import timezone` está no topo do arquivo. Se for um modelo de outro app, importe-o usando o caminho correto, ex: `from escalas.models import CultoEvento` (NÃO do `core`). Nunca assuma que os imports mágicos estão lá.
+
+## Lição 2: Modelos Órfãos no Admin
+**Sintoma:** Modelos recém-criados não aparecem no painel `/admin/`.
+**Solução:** Todo modelo novo (ex: `AIEngineerLog`, `LogImutavel`, etc.) DEVE ser registrado no respectivo arquivo `admin.py` usando o decorator `@admin.register(Modelo)` ou `admin.site.register(Modelo)`.
+
+## Lição 3: Validação Zero-Trust de Check-ins
+**Sintoma:** Check-ins manuais falham ou o botão "Gerar QR Code" abre uma visão distorcida (Mobile PWA em Desktop).
+**Solução:** O fluxo de celular (PWA) e o fluxo do painel do líder (Desktop) devem ser mantidos separados. Check-ins avulsos devem aceitar `membro_id`, `culto_id` e `departamento_id` explicitamente no formulário.
+
+## Lição 4: Spider Test Log
+**Sintoma:** Erros 404 dinâmicos (ex: `/gabinete-pastoral/sessao/1/gerar-aci/`).
+**Solução:** Muitos endpoints dependem da existência prévia de registros no banco (PKs e Slugs). Um 404 nesses casos é comportamento esperado e NÃO um bug no código, a menos que o objeto de fato devesse existir. Não perca cotas da API tentando consertar 404s que dependem do usuário criar o dado na interface.

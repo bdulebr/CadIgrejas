@@ -106,11 +106,24 @@
                                         {% endif %}
                                         <span class="text-xs font-bold text-blue-100 truncate w-32">{{ alocado.membro_nome }}</span>
                                     </div>
-                                    {% if competencia.status == 'rascunho' %}
-                                    <button type="button" class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity btn-remover" data-escala-id="{{ alocado.escala_id }}">
-                                        <i data-lucide="x" class="w-4 h-4"></i>
-                                    </button>
-                                    {% endif %}
+                                    <div class="flex items-center gap-2">
+                                        {% if alocado.checkin_realizado %}
+                                            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400" title="Presente"></i>
+                                        {% else %}
+                                            <form method="POST" action="{% url 'checkin_manual_lider' alocado.escala_id %}" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {% csrf_token %}
+                                                <button type="submit" onclick="return confirm('Confirmar check-in manual?')" class="text-blue-400 hover:text-blue-300" title="Dar Presença Manual">
+                                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if competencia.status == 'rascunho' %}
+                                        <button type="button" class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity btn-remover" data-escala-id="{{ alocado.escala_id }}">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 {% endfor %}
 

@@ -38,3 +38,8 @@ class VendaAdmin(admin.ModelAdmin):
 
 admin.site.register(MovimentoCaixa)
 admin.site.register(ConfiguracaoPDV)
+
+
+@admin.register(ItemVenda)
+class ItemVendaAdmin(admin.ModelAdmin):
+    pass

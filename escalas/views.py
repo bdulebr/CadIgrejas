@@ -961,7 +961,12 @@ def criar_culto(request):
 @login_required
 @requer_permissao('escalas', 'editar')
 def editar_culto(request, culto_id):
-    culto = get_object_or_404(CultoEvento, id=culto_id)
+    try:
+        culto = CultoEvento.objects.get(id=culto_id)
+    except CultoEvento.DoesNotExist:
+        messages.error(request, f'O Culto/Evento com ID {culto_id} não foi encontrado.')
+        return redirect('gerenciar_cultos')
+
     if request.method == 'POST':
         culto.nome = request.POST.get('nome')
         culto.horario_inicio = request.POST.get('horario_inicio')
@@ -1140,3 +1145,51 @@ def importar_escala_ocr(request):
             messages.error(request, f'Erro no processamento OCR (Groq): {str(e)}')
 
     return redirect('painel_escalas')
+
+
+@login_required
+def checkins_hoje_desktop(request):
+    if request.user.nivel_hierarquico in ['super_admin', 'pastor']:
+        departamentos_liderados = request.user.departamentos_liderados.model.objects.all()
+    else:
+        departamentos_liderados = request.user.departamentos_liderados.all()
+
+    from django.utils import timezone
+    hoje = timezone.now().date()
+    checkins_hoje = Escala.objects.filter(
+        departamento_alocado__in=departamentos_liderados,
+        data_escala=hoje,
+        checkin_realizado=True
+    ).order_by('-data_hora_checkin')
+
+    ausentes_hoje = Escala.objects.filter(
+        departamento_alocado__in=departamentos_liderados,
+        data_escala=hoje,
+        checkin_realizado=False
+    ).order_by('horario_inicio')
+
+    escalas_hoje_total = Escala.objects.filter(
+        departamento_alocado__in=departamentos_liderados,
+        data_escala=hoje
+    ).count()
+
+    todos_membros = []
+    for d in departamentos_liderados:
+        for m in d.membros_ativos.all():
+            if m not in todos_membros:
+                todos_membros.append(m)
+
+    from escalas.models import CultoEvento
+    dia_semana = hoje.weekday()
+    cultos_padrao = CultoEvento.objects.filter(tipo='padrao', dia_semana=dia_semana)
+    cultos_extra = CultoEvento.objects.filter(tipo='extra', data_evento=hoje)
+    cultos_hoje = list(cultos_padrao) + list(cultos_extra)
+
+    return render(request, 'escalas/checkins_hoje.html', {
+        'checkins_hoje': checkins_hoje,
+        'ausentes_hoje': ausentes_hoje,
+        'escalas_hoje_total': escalas_hoje_total,
+        'departamentos_liderados': departamentos_liderados,
+        'todos_membros': todos_membros,
+        'cultos_hoje': cultos_hoje
+    })

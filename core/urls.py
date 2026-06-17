@@ -15,6 +15,7 @@ from . import views
 
 urlpatterns = [
     path('', views.login_view, name='login'),
+    path('api/eversinho-status/<int:log_id>/', views.eversinho_status_api, name='eversinho_status_api'),
     # Recuperação de Senha Segura
     path('recuperar-senha/', views.CustomPasswordResetView.as_view(), name='password_reset'),
     path('recuperar-senha/bloqueado/', views.password_reset_blocked, name='password_reset_blocked'),

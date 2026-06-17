@@ -11,9 +11,12 @@
 
 from django.urls import path
 from . import views
+from . import checkin_views
+from . import app_views
 
 urlpatterns = [
     path('escalas/', views.painel_escalas, name='painel_escalas'),
+    path('escalas/checkins-hoje/', views.checkins_hoje_desktop, name='checkins_hoje_desktop'),
     path('escalas/competencia/nova/', views.nova_competencia, name='nova_competencia'),
     path('escalas/competencia/<int:comp_id>/editar/', views.editor_escala_manual, name='editor_escala_manual'),
     path('escalas/competencia/<int:comp_id>/excluir/', views.excluir_competencia, name='excluir_competencia'),
@@ -40,4 +43,11 @@ urlpatterns = [
     path('escalas/disponibilidade-fixa/', views.salvar_disponibilidade_fixa, name='salvar_disponibilidade_fixa'),
     path('escalas/baixar-publica/', views.baixar_escala_publica, name='baixar_escala_publica'),
     path('escalas/importar-ocr/', views.importar_escala_ocr, name='importar_escala_ocr'),
+
+    # Check-in QR Code Zero-Trust
+    path('escalas/checkin/', checkin_views.checkin_page, name='checkin_page'),
+    path('escalas/api/checkin/processar/', checkin_views.api_processar_checkin, name='api_processar_checkin'),
+    path('escalas/checkin/qrcode/baixar/', checkin_views.baixar_qrcode_checkin, name='baixar_qrcode_checkin'),
+    path('escalas/checkin/manual/<int:escala_id>/', checkin_views.checkin_manual_lider, name='checkin_manual_lider'),
+    path('escalas/checkin/manual/avulso/', checkin_views.checkin_manual_avulso, name='checkin_manual_avulso'),
 ]

@@ -1,13 +1,12 @@
-"""
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: pdv/tests.py
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
-"""
-from django.test import TestCase
+from django.test import TestCase, Client
+from core.models import Membro
 
-# Create your tests here.
+class DynamicAppTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = Membro.objects.create_user(username='testadmin', email='admin@test.com', password='password', is_staff=True, is_superuser=True, nivel_hierarquico='super_admin')
+        self.client.force_login(self.admin)
+
+    def test_app_views(self):
+        # Basic setup
+        pass

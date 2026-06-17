@@ -1,0 +1,152 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Check-ins Hoje - PVE{% endblock title %}
+
+{% block content %}
+<div class="min-h-screen bg-transparent p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Painel de Check-ins (Líder)</h1>
+                <p class="text-gray-300 font-medium">Controle de presença dos voluntários de hoje.</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'baixar_qrcode_checkin' %}" target="_blank" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
+                    <i data-lucide="qr-code" class="w-4 h-4 text-white"></i> Gerar QR Code do Culto
+                </a>
+                <a href="{% url 'painel_escalas' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg backdrop-blur-md border border-gray-600">Voltar às Escalas</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Lista de Presentes -->
+            <div class="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
+                <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="user-check" class="w-5 h-5 text-green-400"></i>
+                        Presentes Hoje
+                    </h3>
+                    <span class="text-sm bg-gray-900 text-gray-300 px-3 py-1 rounded-full border border-gray-700">
+                        <span class="text-white font-bold">{{ checkins_hoje.count }}</span> / {{ escalas_hoje_total }}
+                    </span>
+                </div>
+                <div class="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+                    {% for checkin in checkins_hoje %}
+                    <div class="bg-gray-800/50 rounded-xl p-4 flex items-center gap-4 border border-gray-700/50">
+                        {% if checkin.membro_escalado.foto_perfil %}
+                            <img src="{{ checkin.membro_escalado.foto_perfil.url }}" class="w-12 h-12 rounded-full object-cover border border-gray-600">
+                        {% else %}
+                            <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 font-bold text-lg border border-gray-600">
+                                {{ checkin.membro_escalado.first_name|first }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <div class="text-white font-bold">{{ checkin.membro_escalado.get_full_name }}</div>
+                            <div class="text-gray-400 text-sm flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i> {{ checkin.data_hora_checkin|date:"H:i" }} &bull; {{ checkin.departamento_alocado.nome }}
+                            </div>
+                        </div>
+                        <div class="ml-auto text-green-400 bg-green-400/10 p-2 rounded-full">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500">
+                        Nenhum check-in registrado ainda.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Registro Manual Avulso -->
+            <div class="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden md:col-span-2">
+                <div class="p-6 border-b border-gray-800 bg-gray-800/50">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-5 h-5 text-blue-400"></i>
+                        Registrar Presença Extra (Não Escalado)
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form method="POST" action="{% url 'checkin_manual_avulso' %}" class="flex flex-col md:flex-row gap-4 items-end">
+                        {% csrf_token %}
+                        <div class="flex-1 w-full">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Membro</label>
+                            <select name="membro_id" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
+                                <option value="">Selecione um membro...</option>
+                                {% for m in todos_membros %}
+                                    <option value="{{ m.id }}">{{ m.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex-1 w-full">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Culto/Evento de Hoje</label>
+                            <select name="culto_id" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
+                                <option value="">Selecione o culto...</option>
+                                {% for c in cultos_hoje %}
+                                    <option value="{{ c.id }}">{{ c.titulo }} - {{ c.horario_inicio|time:'H:i' }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex-1 w-full">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Departamento</label>
+                            <select name="departamento_id" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
+                                {% for d in departamentos_liderados %}
+                                    <option value="{{ d.id }}">{{ d.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Lançar Presença
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Pendentes -->
+            <div class="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
+                <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="user-minus" class="w-5 h-5 text-yellow-400"></i>
+                        Aguardando (Pendentes)
+                    </h3>
+                </div>
+                <div class="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+                    {% for escala in ausentes_hoje %}
+                    <div class="bg-gray-800/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-gray-700/50 hover:border-gray-600 transition-colors">
+                        <div class="flex items-center gap-4">
+                            {% if escala.membro_escalado.foto_perfil %}
+                                <img src="{{ escala.membro_escalado.foto_perfil.url }}" class="w-12 h-12 rounded-full object-cover grayscale opacity-60 border border-gray-600">
+                            {% else %}
+                                <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 font-bold text-lg border border-gray-700">
+                                    {{ escala.membro_escalado.first_name|first }}
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="text-gray-300 font-bold">{{ escala.membro_escalado.get_full_name }}</div>
+                                <div class="text-gray-500 text-sm flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3 h-3"></i> Previsto: {{ escala.horario_inicio|date:"H:i" }} &bull; {{ escala.departamento_alocado.nome }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{% url 'checkin_manual_lider' escala.id %}">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('Confirmar presença manual para {{ escala.membro_escalado.first_name }}?')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg font-medium text-sm">
+                                <i data-lucide="check-square" class="w-4 h-4"></i> Presença Manual
+                            </button>
+                        </form>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500">
+                        Nenhum voluntário pendente. Todos presentes!
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

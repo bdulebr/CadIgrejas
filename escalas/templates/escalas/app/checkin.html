@@ -1,0 +1,227 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Check-in de Presença{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4 py-8" x-data="checkinApp()">
+
+    <!-- HEADER -->
+    <div class="mb-8 text-center">
+        <div class="w-20 h-20 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            <i data-lucide="map-pin-check" class="w-10 h-10"></i>
+        </div>
+        <h1 class="text-3xl font-black text-white tracking-tight">Ponto Eletrônico</h1>
+        <p class="text-gray-400 mt-2">Registre sua presença na escala de hoje</p>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div class="w-full max-w-md bg-gray-800/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+
+        <!-- STATUS INDICATORS -->
+        <div class="flex items-center gap-2 mb-6 justify-center">
+            <div class="flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full"
+                 :class="gpsReady ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'">
+                <i data-lucide="satellite" class="w-3 h-3"></i>
+                <span x-text="gpsReady ? 'GPS Ativo' : 'Aguardando GPS...'"></span>
+            </div>
+            <div class="flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full bg-blue-500/20 text-blue-400">
+                <i data-lucide="shield-check" class="w-3 h-3"></i>
+                <span>Zero-Trust</span>
+            </div>
+        </div>
+
+        <!-- STAGE 1: GET GPS -->
+        <div x-show="stage === 'gps_wait'" class="text-center py-6">
+            <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-gray-300 font-medium">Buscando sua localização...</p>
+            <p class="text-sm text-gray-500 mt-2">Permita o acesso ao GPS no seu navegador para continuar.</p>
+        </div>
+
+        <!-- STAGE 2: PHONE INPUT -->
+        <div x-show="stage === 'phone_input'" style="display: none;">
+            <h2 class="text-xl font-bold text-white mb-2 text-center">Digite os 4 últimos dígitos do seu Celular</h2>
+            <div class="flex justify-center gap-3 my-6">
+                <template x-for="(digit, index) in 4">
+                    <input type="text" maxlength="1" class="w-14 h-16 bg-gray-900 border border-gray-700 rounded-xl text-center text-2xl font-bold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 transition-all digit-input"
+                           @input="handleInput($event, index, 'phone')"
+                           @keydown.backspace="handleBackspace($event, index, 'phone')"
+                           :id="'phone-' + index">
+                </template>
+            </div>
+            <button @click="submitPhone()" :disabled="!isPhoneComplete || loading"
+                    class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all flex justify-center items-center gap-2">
+                <span x-show="!loading">Confirmar Presença</span>
+                <div x-show="loading" class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+            </button>
+        </div>
+
+        <!-- STAGE 3: DOCUMENT FALLBACK (COLLISION) -->
+        <div x-show="stage === 'doc_input'" style="display: none;">
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
+                <div class="flex gap-3 text-amber-400">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0"></i>
+                    <p class="text-sm">Encontramos mais de uma pessoa com este final de telefone. Para sua segurança, digite os <strong>4 últimos dígitos do seu CPF ou RG</strong>.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-3 my-6">
+                <template x-for="(digit, index) in 4">
+                    <input type="text" maxlength="1" class="w-14 h-16 bg-gray-900 border border-gray-700 rounded-xl text-center text-2xl font-bold text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/50 transition-all doc-input"
+                           @input="handleInput($event, index, 'doc')"
+                           @keydown.backspace="handleBackspace($event, index, 'doc')"
+                           :id="'doc-' + index">
+                </template>
+            </div>
+            <button @click="submitDoc()" :disabled="!isDocComplete || loading"
+                    class="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(217,119,6,0.4)] transition-all flex justify-center items-center gap-2">
+                <span x-show="!loading">Desempatar e Confirmar</span>
+                <div x-show="loading" class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+            </button>
+        </div>
+
+        <!-- STAGE 4: SUCCESS -->
+        <div x-show="stage === 'success'" style="display: none;" class="text-center py-6">
+            <div class="w-24 h-24 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(16,185,129,0.4)]">
+                <i data-lucide="check-check" class="w-12 h-12"></i>
+            </div>
+            <h2 class="text-2xl font-black text-white mb-2" x-text="successMessage"></h2>
+            <p class="text-gray-400 mb-6">Sua presença foi registrada e um e-mail de confirmação foi enviado ao seu correio.</p>
+            <a href="/" class="text-blue-400 font-medium hover:text-blue-300">Voltar ao Início</a>
+        </div>
+
+        <!-- ERROR MESSAGE BOX -->
+        <div x-show="errorMessage" style="display: none;" class="mt-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3 text-red-400">
+            <i data-lucide="shield-alert" class="w-6 h-6 flex-shrink-0"></i>
+            <div>
+                <strong class="block text-sm uppercase tracking-wider mb-1">Acesso Bloqueado</strong>
+                <span class="text-sm" x-text="errorMessage"></span>
+            </div>
+            <button @click="resetFlow()" x-show="stage === 'error'" class="ml-auto underline text-xs">Tentar de novo</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function checkinApp() {
+    return {
+        stage: 'gps_wait',
+        gpsReady: false,
+        lat: null,
+        lng: null,
+        phoneDigits: ['', '', '', ''],
+        docDigits: ['', '', '', ''],
+        loading: false,
+        errorMessage: '',
+        successMessage: '',
+
+        get isPhoneComplete() { return this.phoneDigits.join('').length === 4; },
+        get isDocComplete() { return this.docDigits.join('').length === 4; },
+
+        init() {
+            // Request GPS immediately
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        this.lat = position.coords.latitude;
+                        this.lng = position.coords.longitude;
+                        this.gpsReady = true;
+                        this.stage = 'phone_input';
+                        setTimeout(() => document.getElementById('phone-0').focus(), 100);
+                    },
+                    (error) => {
+                        this.stage = 'error';
+                        this.errorMessage = "Você negou ou o navegador bloqueou o acesso ao GPS. O check-in requer localização para provar que você está na Igreja.";
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                this.stage = 'error';
+                this.errorMessage = "Seu navegador não suporta GPS.";
+            }
+        },
+
+        handleInput(e, index, type) {
+            let val = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = val;
+
+            if (type === 'phone') {
+                this.phoneDigits[index] = val;
+                if (val && index < 3) document.getElementById('phone-' + (index + 1)).focus();
+            } else {
+                this.docDigits[index] = val;
+                if (val && index < 3) document.getElementById('doc-' + (index + 1)).focus();
+            }
+        },
+
+        handleBackspace(e, index, type) {
+            if (!e.target.value && index > 0) {
+                let prevId = type + '-' + (index - 1);
+                document.getElementById(prevId).focus();
+            }
+            if (type === 'phone') this.phoneDigits[index] = '';
+            if (type === 'doc') this.docDigits[index] = '';
+        },
+
+        resetFlow() {
+            this.stage = 'phone_input';
+            this.errorMessage = '';
+            this.phoneDigits = ['', '', '', ''];
+            this.docDigits = ['', '', '', ''];
+            setTimeout(() => document.getElementById('phone-0').focus(), 100);
+        },
+
+        async sendData(payload) {
+            this.loading = true;
+            this.errorMessage = '';
+
+            try {
+                const response = await fetch('/escalas/api/checkin/processar/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    this.stage = 'success';
+                    this.successMessage = data.message;
+                } else if (data.status === 'collision') {
+                    this.stage = 'doc_input';
+                    this.errorMessage = '';
+                    setTimeout(() => document.getElementById('doc-0').focus(), 100);
+                } else {
+                    this.errorMessage = data.message;
+                    if(data.status === 'rh_blocked') {
+                        this.stage = 'error'; // Fica preso no erro e precisa reiniciar
+                    }
+                }
+            } catch (err) {
+                this.errorMessage = "Falha de conexão com o servidor.";
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        submitPhone() {
+            this.sendData({
+                digitos_telefone: this.phoneDigits.join(''),
+                lat: this.lat,
+                lng: this.lng
+            });
+        },
+
+        submitDoc() {
+            this.sendData({
+                digitos_telefone: this.phoneDigits.join(''),
+                digitos_documento: this.docDigits.join(''),
+                lat: this.lat,
+                lng: this.lng
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

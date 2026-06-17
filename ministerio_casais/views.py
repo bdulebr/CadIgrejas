@@ -467,14 +467,18 @@ def editar_curso(request, curso_id):
     return redirect('cursos_casais')
 
 @login_required
-@requer_permissao('casais', 'ver')
+@requer_permissao('casais', 'excluir')
 def excluir_curso(request, curso_id):
 
-    curso = get_object_or_404(CursoCasal, id=curso_id)
-    if request.method == 'POST':
-        curso.delete()
-        messages.success(request, 'Curso excluído com sucesso!')
-    return redirect('cursos_casais')
+    try:
+        curso = CursoCasal.objects.get(id=curso_id)
+        if request.method == 'POST':
+            curso.delete()
+            messages.success(request, 'Curso excluído com sucesso!')
+        return redirect('cursos_casais')
+    except CursoCasal.DoesNotExist:
+        messages.error(request, 'Curso não encontrado.')
+        return redirect('cursos_casais')
 
 @login_required
 @requer_permissao('casais', 'ver')

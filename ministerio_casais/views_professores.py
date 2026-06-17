@@ -128,7 +128,12 @@ def adicionar_professor(request, turma_id):
 
 @login_required
 def remover_professor(request, vinculo_id):
-    vinculo = get_object_or_404(ProfessorTurma, id=vinculo_id)
+    try:
+        vinculo = ProfessorTurma.objects.get(id=vinculo_id)
+    except ProfessorTurma.DoesNotExist:
+        messages.error(request, f'O vínculo de professor com ID {vinculo_id} não foi encontrado ou já foi removido.')
+        return redirect('dashboard') # Redireciona para um painel geral se o vínculo não existir
+
     curso_id = vinculo.turma.curso.id
     if request.method == 'POST':
         vinculo.delete()
@@ -178,11 +183,24 @@ def mural_professor_turma(request, turma_id):
 
 @login_required
 def matricular_aluno_mural(request, turma_id):
-    turma = get_object_or_404(TurmaCurso, id=turma_id)
+    from django.contrib import messages # Garante que messages está importado
+    from django.shortcuts import redirect # Garante que redirect está importado
+    from django.contrib.auth.hashers import make_password # Garante que make_password está importado, usado no bloco original
+    try:
+        turma = TurmaCurso.objects.get(id=turma_id)
+    except TurmaCurso.DoesNotExist:
+        messages.error(request, f'A turma com ID {turma_id} não foi encontrada.')
+        return redirect('dashboard') # Redireciona para um painel geral se a turma não existir
+
     if request.method == 'POST':
         casal_id = request.POST.get('casal_id')
         if casal_id:
-            casal = get_object_or_404(Casal, id=casal_id)
+            try:
+                casal = Casal.objects.get(id=casal_id)
+            except Casal.DoesNotExist:
+                messages.error(request, f'O casal com ID {casal_id} não foi encontrado.')
+                return redirect('mural_professor_turma', turma_id=turma.id) # Redireciona de volta para o mural da turma válida
+
             if not MatriculaCursoCasal.objects.filter(turma=turma, casal=casal).exists():
                 MatriculaCursoCasal.objects.create(turma=turma, casal=casal)
 
@@ -229,7 +247,14 @@ def excluir_postagem(request, postagem_id):
 
 @login_required
 def gerar_link_magico(request, matricula_id):
-    matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    try:
+        matricula = MatriculaCursoCasal.objects.get(id=matricula_id)
+    except MatriculaCursoCasal.DoesNotExist:
+        messages.error(request, f'A matrícula com ID {matricula_id} não foi encontrada ou já foi removida.')
+        return redirect('dashboard')
     if request.method == 'POST':
         if not matricula.token_acesso:
             matricula.token_acesso = str(uuid.uuid4())
@@ -362,7 +387,14 @@ def _verificar_reprovacoes_turma(turma):
 
 @login_required
 def remover_aluno_mural(request, matricula_id):
-    matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    try:
+        matricula = MatriculaCursoCasal.objects.get(id=matricula_id)
+    except MatriculaCursoCasal.DoesNotExist:
+        messages.error(request, f'A matrícula com ID {matricula_id} não foi encontrada ou já foi removida.')
+        return redirect('dashboard')
     turma_id = matricula.turma.id
     if request.method == 'POST':
         casal_nome = matricula.casal.nomes_juntos
@@ -372,7 +404,14 @@ def remover_aluno_mural(request, matricula_id):
 
 @login_required
 def enviar_email_acesso(request, matricula_id):
-    matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    try:
+        matricula = MatriculaCursoCasal.objects.get(id=matricula_id)
+    except MatriculaCursoCasal.DoesNotExist:
+        messages.error(request, f'A matrícula com ID {matricula_id} não foi encontrada ou já foi removida.')
+        return redirect('dashboard')
     turma_id = matricula.turma.id
 
     if not matricula.token_acesso:

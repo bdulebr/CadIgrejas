@@ -642,7 +642,14 @@ def salvar_configuracao_slot(request, dep_id):
 
 @login_required
 def remover_configuracao_slot(request, config_id):
-    config = get_object_or_404(ConfiguracaoSlotEscala, id=config_id)
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    try:
+        config = ConfiguracaoSlotEscala.objects.get(id=config_id)
+    except ConfiguracaoSlotEscala.DoesNotExist:
+        messages.error(request, f'A configuração de slot com ID {config_id} não foi encontrada ou já foi removida.')
+        return redirect('painel_lider')
     dep_id = config.departamento.id
 
     if not is_super_admin(request.user):

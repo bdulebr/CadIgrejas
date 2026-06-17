@@ -1,0 +1,315 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manutenção em Andamento - PV Enseada</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --primary-color: #3b82f6;
+            --accent-color: #10b981;
+            --error-color: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.15) 0px, transparent 50%);
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+            margin-bottom: 2rem;
+        }
+
+        .mascot-container {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+
+        /* Animação do Eversinho consertando */
+        .eversinho-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--primary-color);
+            animation: float 3s ease-in-out infinite;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .gear {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 2rem;
+            animation: spin 4s linear infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .blinking-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .timer {
+            font-size: 3.5rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 1rem;
+            color: #f8fafc;
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), #2563eb);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -10px var(--primary-color);
+            display: none; /* Escondido por padrão */
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -10px var(--primary-color);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1.5rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            transform-origin: left;
+            transition: transform 1s linear;
+        }
+
+        /* Status colors */
+        .status-success .status-text { color: var(--accent-color); }
+        .status-success .blinking-dot { background-color: var(--accent-color); animation: none; }
+        .status-error .status-text { color: var(--error-color); }
+        .status-error .blinking-dot { background-color: var(--error-color); animation: none; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container" id="mainContainer">
+        <div class="mascot-container">
+            <img src="{% static 'core/img/eversinho/ever_Triste.png' %}" class="eversinho-img" id="mascotImg" alt="Eversinho">
+            <div class="gear">⚙️</div>
+        </div>
+
+        <h1>Ops! Encontramos um curto-circuito.</h1>
+        <p id="mainDescription">Fique tranquilo, nossa IA <strong>Eversinho</strong> já detectou o problema e está reescrevendo o código do sistema neste exato momento!</p>
+
+        <div class="status-box">
+            <div class="status-title">Status do Eversinho</div>
+            <div class="status-text" id="statusText">
+                <span class="blinking-dot" id="statusDot"></span>
+                <span id="statusLabel">Arrumando...</span>
+            </div>
+            <div class="progress-bar-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="timer" id="timerDisplay">02:00</div>
+
+        <a href="" class="btn" id="reloadBtn">Recarregar Página</a>
+    </div>
+
+    <script>
+        const LOG_ID = '{{ log_id|default:"" }}';
+        const timerDisplay = document.getElementById('timerDisplay');
+        const progressBar = document.getElementById('progressBar');
+        const statusLabel = document.getElementById('statusLabel');
+        const mainContainer = document.getElementById('mainContainer');
+        const reloadBtn = document.getElementById('reloadBtn');
+        const mainDescription = document.getElementById('mainDescription');
+        const progressContainer = document.getElementById('progressContainer');
+
+        let timeLeft = 120; // 2 minutos
+        let pollInterval;
+        let countdownInterval;
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            // Progress bar
+            const scaleX = timeLeft / 120;
+            progressBar.style.transform = `scaleX(${scaleX})`;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                clearInterval(pollInterval);
+                handleFailure("O tempo limite foi atingido.");
+            }
+            timeLeft--;
+        }
+
+        function handleSuccess() {
+            clearInterval(countdownInterval);
+            clearInterval(pollInterval);
+            mainContainer.classList.add('status-success');
+            statusLabel.textContent = "Pronto!";
+            mainDescription.innerHTML = "O Eversinho terminou o reparo com sucesso! O sistema está integro novamente.";
+            timerDisplay.style.display = 'none';
+            progressContainer.style.display = 'none';
+            reloadBtn.style.display = 'inline-block';
+
+            // Change mascot expression
+            document.getElementById('mascotImg').src = "{% static 'core/img/eversinho/ever_Feliz.png' %}";
+            document.querySelector('.gear').style.display = 'none';
+        }
+
+        function handleFailure(reason) {
+            clearInterval(countdownInterval);
+            clearInterval(pollInterval);
+            mainContainer.classList.add('status-error');
+            statusLabel.textContent = "Reparo Humano Necessário";
+            mainDescription.innerHTML = "O Eversinho encontrou um bug persistente e não pôde consertar sozinho. <strong>Nossos desenvolvedores humanos já foram notificados por e-mail</strong> e assumirão o caso em breve.<br><br><small>Tente novamente mais tarde.</small>";
+            timerDisplay.style.display = 'none';
+            progressContainer.style.display = 'none';
+
+            // Change mascot expression
+            document.getElementById('mascotImg').src = "{% static 'core/img/eversinho/ever_bravo.png' %}";
+            document.querySelector('.gear').style.display = 'none';
+        }
+
+        async function checkStatus() {
+            if (!LOG_ID) {
+                // If there's no log ID, it means we can't track it.
+                handleFailure("Falha ao registrar o erro no Watchdog.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/eversinho-status/${LOG_ID}/`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const status = data.status;
+
+                    if (status === 'CORRIGIDO_HOMOLOGADO' || status === 'CORRIGIDO') {
+                        handleSuccess();
+                    } else if (status === 'FALHA_NA_GERACAO' || status === 'ERRO_BUSCA_CODIGO' ||
+                               status === 'ROLLBACK' || status === 'ERRO_SISTEMA' || status === 'FALHA_DE_SEGURANCA') {
+                        handleFailure("Falha no reparo automatizado.");
+                    }
+                    // If PENDENTE, just keep polling
+                }
+            } catch (error) {
+                console.error("Erro ao checar o status:", error);
+            }
+        }
+
+        // Start
+        updateTimer();
+        countdownInterval = setInterval(updateTimer, 1000);
+
+        // Start polling immediately, then every 3 seconds
+        checkStatus();
+        pollInterval = setInterval(checkStatus, 3000);
+    </script>
+</body>
+</html>

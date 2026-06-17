@@ -107,11 +107,32 @@ def app_lider(request):
         data_fim__gte=hoje
     ).count()
 
+    # Ponto de Check-in de hoje
+    checkins_hoje = Escala.objects.filter(
+        departamento_alocado__in=departamentos_liderados,
+        data_escala=hoje,
+        checkin_realizado=True
+    ).order_by('-data_hora_checkin')
+
+    ausentes_hoje = Escala.objects.filter(
+        departamento_alocado__in=departamentos_liderados,
+        data_escala=hoje,
+        checkin_realizado=False
+    ).order_by('horario_inicio')
+
+    escalas_hoje_total = Escala.objects.filter(
+        departamento_alocado__in=departamentos_liderados,
+        data_escala=hoje
+    ).count()
+
     return render(request, 'escalas/app/app_lider.html', {
         'is_lider': True,
         'departamentos_liderados': departamentos_liderados,
         'total_membros': total_membros,
-        'ausencias_ativas': ausencias_ativas
+        'ausencias_ativas': ausencias_ativas,
+        'checkins_hoje': checkins_hoje,
+        'ausentes_hoje': ausentes_hoje,
+        'escalas_hoje_total': escalas_hoje_total
     })
 
 @login_required

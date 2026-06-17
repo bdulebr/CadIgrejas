@@ -724,7 +724,11 @@ def upload_inteligente_ocr(request):
 @login_required
 @requer_permissao('midia_lgpd', 'ver')
 def cancelar_compartilhamento(request, permissao_id):
-    permissao = get_object_or_404(PermissaoPVDrive, id=permissao_id)
+    try:
+        permissao = PermissaoPVDrive.objects.get(id=permissao_id)
+    except PermissaoPVDrive.DoesNotExist:
+        messages.error(request, f'O compartilhamento com ID {permissao_id} não foi encontrado ou já foi cancelado.')
+        return redirect('pv_drive_home')
 
     # Valida se o usuário pode cancelar (é o dono da pasta, o criador original ou admin)
     if not (request.user.nivel_hierarquico in ['super_admin', 'pastor_regente'] or

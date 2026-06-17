@@ -1,3 +1,12 @@
-from django.test import TestCase
+from django.test import TestCase, Client
+from core.models import Membro
 
-# Create your tests here.
+class DynamicAppTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = Membro.objects.create_user(username='testadmin', email='admin@test.com', password='password', is_staff=True, is_superuser=True, nivel_hierarquico='super_admin')
+        self.client.force_login(self.admin)
+
+    def test_app_views(self):
+        # Basic setup
+        pass

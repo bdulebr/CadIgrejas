@@ -72,6 +72,7 @@ class CompetenciaEscala(models.Model):
 class Escala(models.Model):
     STATUS_CHOICES = (
         ('confirmado', 'Confirmado'),
+        ('presente', 'Presente (Check-in Realizado)'),
         ('substituido', 'Substituído'),
         ('falta_justificada', 'Falta Justificada'),
     )
@@ -87,6 +88,9 @@ class Escala(models.Model):
 
     tipo_evento = models.CharField(max_length=200)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='confirmado')
+
+    checkin_realizado = models.BooleanField(default=False)
+    data_hora_checkin = models.DateTimeField(null=True, blank=True)
 
     data_criacao = models.DateTimeField(auto_now_add=True)
 

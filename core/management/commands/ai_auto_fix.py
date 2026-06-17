@@ -14,7 +14,8 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from core.models import Membro, LogAuditoria
 from almoxarifado.models import ItemAlmoxarifado
-from intranet.services.groq_ai import obter_client_groq
+from intranet.services.gemini_ai import consultar_gemini_json
+from django.conf import settings
 
 class Command(BaseCommand):
     help = 'Roda o Motor de Automação de IA para encontrar e corrigir inconsistências'
@@ -22,9 +23,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Iniciando Motor de Automação de IA...")
 
-        client = obter_client_groq()
-        if not client:
-            self.stderr.write("Erro: API Key do Groq não configurada.")
+        api_key = getattr(settings, 'GEMINI_API_KEY', '')
+        if not api_key:
+            self.stderr.write("Erro: API Key do Google Gemini não configurada.")
             return
 
         anomalias = self._coletar_anomalias()
@@ -34,7 +35,7 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Anomalias encontradas: {len(anomalias)}. Enviando para a IA...")
 
-        prompt = """
+        prompt = f"""
         Você é o Motor de Automação e Autocorreção de Banco de Dados da Palavra de Vida Enseada.
         Recebi a seguinte lista de registros anômalos no formato JSON.
         Sua função é propor a correção de cada registro.
@@ -43,22 +44,24 @@ class Command(BaseCommand):
         1. Se for 'Item Vencido', mude o 'status_item' para 'consumido' (já que venceu e não está mais disponível).
         2. Para outras anomalias que tenham uma solução lógica direta, informe a correção.
 
-        Retorne ESTRITAMENTE um JSON no seguinte formato (uma lista de dicionários):
-        [
-          {"model": "ItemAlmoxarifado", "id": 12, "update": {"status_item": "consumido"}},
-          ...
-        ]
-        Não retorne nenhum texto markdown (como ```json), devolva apenas a string JSON crua.
+        DADOS DAS ANOMALIAS:
+        {json.dumps(anomalias, default=str)}
+
+        Retorne ESTRITAMENTE um JSON no seguinte formato:
+        {{
+          "acoes": [
+            {{"model": "ItemAlmoxarifado", "id": 12, "update": {{"status_item": "consumido"}}}},
+            ...
+          ]
+        }}
+        Não retorne nenhum texto markdown, devolva apenas o objeto JSON.
         """
 
         try:
-            response = client.models.generate_content(
-                model='llama-3.3-70b-versatile',
-                contents=[json.dumps(anomalias, default=str), prompt]
-            )
-
-            texto_limpo = response.text.replace('```json', '').replace('```', '').strip()
-            acoes = json.loads(texto_limpo)
+            texto_limpo = consultar_gemini_json(prompt)
+            texto_limpo = texto_limpo.replace('```json', '').replace('```', '').strip()
+            resultado = json.loads(texto_limpo)
+            acoes = resultado.get("acoes", [])
 
             self._aplicar_correcoes(acoes)
 

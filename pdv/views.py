@@ -277,7 +277,14 @@ def novo_produto(request):
 
 @login_required
 def editar_produto(request, produto_id):
-    produto = get_object_or_404(Produto, id=produto_id)
+    from django.contrib import messages # Importar messages
+    from django.shortcuts import redirect # Importar redirect
+    try:
+        produto = Produto.objects.get(id=produto_id)
+    except Produto.DoesNotExist:
+        messages.error(request, f'O produto com ID {produto_id} não foi encontrado ou já foi removido.')
+        return redirect('pdv_lista_produtos')
+
     if request.method == 'POST':
         produto.nome = request.POST.get('nome')
         produto.codigo_barras = request.POST.get('codigo_barras')
