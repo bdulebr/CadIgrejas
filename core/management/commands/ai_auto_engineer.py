@@ -146,8 +146,8 @@ class Command(BaseCommand):
             time.sleep(5)
 
             self.stdout.write("Rodando Spider Test em um novo processo isolado...")
-            # Usar subprocess garante que a memória Python limpa veja os arquivos novos!
-            subprocess.run(['venv\\Scripts\\python', 'manage.py', 'run_spider'])
+            import sys
+            subprocess.run([sys.executable, 'manage.py', 'run_spider'])
 
             spider_pos = SpiderTestLog.objects.order_by('-data_execucao').first()
             erros_depois = spider_pos.erros_encontrados if spider_pos else erros_antes
