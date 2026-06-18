@@ -145,7 +145,7 @@ def app_motor_ia(request):
         depto_id = request.POST.get('departamento_id')
         if not depto_id:
             messages.error(request, "Departamento inválido.")
-            return redirect('app_lider')
+            return redirect('painel_escalas')
 
         depto = get_object_or_404(Departamento, id=depto_id)
 
@@ -178,4 +178,4 @@ def app_motor_ia(request):
 
         messages.success(request, f"Motor de IA acionado para a competência {mes_ano_str} do departamento {depto.nome}!")
 
-    return redirect('app_lider')
+    return redirect('painel_escalas')

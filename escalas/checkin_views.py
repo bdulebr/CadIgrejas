@@ -216,7 +216,7 @@ def checkin_manual_lider(request, escala_id):
         from escalas.app_views import is_lider_any_dept
         if not is_lider_any_dept(request.user):
             messages.error(request, "Acesso Negado.")
-            return redirect('app_lider')
+            return redirect('checkins_hoje_desktop')
 
         is_owner = False
         if request.user.nivel_hierarquico in ['super_admin', 'pastor']:
@@ -226,7 +226,7 @@ def checkin_manual_lider(request, escala_id):
 
         if not is_owner:
             messages.error(request, "Acesso Negado para este departamento.")
-            return redirect('app_lider')
+            return redirect('checkins_hoje_desktop')
 
         escala.checkin_realizado = True
         escala.data_hora_checkin = timezone.now()
@@ -241,12 +241,12 @@ def checkin_manual_lider(request, escala_id):
         )
 
         messages.success(request, f"Check-in manual realizado para {escala.membro_escalado.get_full_name()}!")
-        return redirect('app_lider')
+        return redirect('checkins_hoje_desktop')
 
     from django.shortcuts import redirect
     from django.contrib import messages
     messages.error(request, "Método não permitido.")
-    return redirect('app_lider')
+    return redirect('checkins_hoje_desktop')
 
 @login_required
 def checkin_manual_avulso(request):

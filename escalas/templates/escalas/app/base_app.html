@@ -94,9 +94,9 @@
             </a>
 
             {% if is_lider %}
-            <a href="{% url 'app_lider' %}" class="flex flex-col items-center justify-center w-full h-full space-y-1 relative {% if request.resolver_match.url_name == 'app_lider' %}text-brand-400{% else %}text-gray-400 hover:text-gray-200{% endif %}">
-                <i data-lucide="shield-check" class="w-6 h-6"></i>
-                <span class="text-[10px] font-medium">Líder</span>
+            <a href="{% url 'checkins_hoje_desktop' %}" class="flex flex-col items-center justify-center w-full h-full space-y-1 relative {% if request.resolver_match.url_name == 'checkins_hoje_desktop' %}text-brand-400{% else %}text-gray-400 hover:text-gray-200{% endif %}">
+                <i data-lucide="shield" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold tracking-wide uppercase">Líder</span>
                 <span class="absolute top-2 right-6 w-2 h-2 rounded-full bg-red-500"></span>
             </a>
             {% endif %}
