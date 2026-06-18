@@ -54,4 +54,4 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Inicia Hupper em foreground
-hupper -m waitress --port=8000 intranet.wsgi:application
+hupper -m waitress --port=8005 intranet.wsgi:application
