@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
 from django.core.exceptions import PermissionDenied
 from datetime import datetime
-from .models import Produto, CategoriaProduto, Venda, ItemVenda, FechamentoCaixa, Caixa, Cliente, ConfiguracaoPDV, MovimentoCaixa, OperadorCaixa
+from .models import Produto, CategoriaProduto, Venda, ItemVenda, Caixa, Cliente, ConfiguracaoPDV, MovimentoCaixa, OperadorCaixa
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from functools import wraps
