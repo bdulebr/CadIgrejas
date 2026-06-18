@@ -54,10 +54,10 @@ class ConfiguracaoSistemaAdmin(admin.ModelAdmin):
 
 @admin.register(NoticiaTicker)
 class NoticiaTickerAdmin(admin.ModelAdmin):
-    list_display = ('texto', 'ativo', 'ordem')
+    list_display = ('titulo', 'ativo', 'ordem')
     list_filter = ('ativo',)
     list_editable = ('ativo', 'ordem')
-    search_fields = ('texto',)
+    search_fields = ('titulo', 'mensagem')
 
 @admin.register(LinkRapido)
 class LinkRapidoAdmin(admin.ModelAdmin):

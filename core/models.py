@@ -208,17 +208,18 @@ class ConfiguracaoSistema(models.Model):
         return f"Configurações Gerais (Manutenção: {self.is_maintenance})"
 
 class NoticiaTicker(models.Model):
-    texto = models.CharField(max_length=255, help_text="Ex: CULTOS AOS DOMINGOS 09:30 E 19:30")
+    titulo = models.CharField(max_length=100, default='Destaque', help_text="Título da notícia")
+    mensagem = models.TextField(help_text="Conteúdo da notícia", default='')
     ativo = models.BooleanField(default=True)
     ordem = models.IntegerField(default=0, help_text="Ordem de exibição")
 
     class Meta:
-        verbose_name = 'Notícia Plantão (Letreiro)'
-        verbose_name_plural = 'Notícias Plantão (Letreiro)'
+        verbose_name = 'Notícia Global (Dashboard)'
+        verbose_name_plural = 'Notícias Globais (Dashboard)'
         ordering = ['ordem']
 
     def __str__(self):
-        return self.texto
+        return self.titulo
 
 
 class LinkRapido(models.Model):
