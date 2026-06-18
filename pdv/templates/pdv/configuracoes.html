@@ -81,24 +81,56 @@
                 <!-- Secao Fiscal -->
                 <div>
                     <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Fiscal</h2>
-                    <div class="p-5 bg-blue-900/10 border border-blue-500/20 rounded-xl">
+                    <div class="p-5 bg-blue-900/10 border border-blue-500/20 rounded-xl mb-4">
                         <label class="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" name="nfce_ativado" {% if config.nfce_ativado %}checked{% endif %} class="w-5 h-5 accent-blue-500 rounded">
                             <span class="text-gray-300 font-bold">Ativar Emissão de NFC-e (Modo Fiscal)</span>
                         </label>
                         <p class="text-xs text-blue-400 mt-2 ml-8">Para funcionar, os certificados A1 devem estar instalados via painel master SysAdmin.</p>
                     </div>
+
+                    <div class="p-4 bg-gray-950/50 rounded-xl border border-gray-800">
+                        <h4 class="text-white font-bold text-sm mb-1">Certificado Digital A1 (.pfx)</h4>
+                        {% if config.certificado_a1 %}
+                            <p class="text-xs text-green-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Certificado Instalado</p>
+                        {% else %}
+                            <p class="text-xs text-red-400 flex items-center gap-1"><i data-lucide="x-circle" class="w-3 h-3"></i> Nenhum Certificado</p>
+                        {% endif %}
+                        <p class="text-xs text-gray-500 mt-2">O sistema está 100% preparado para rodar com Webservice GOV. Cadastre no Admin para ativar a geração da NFC-e com QrCode (CSC).</p>
+                    </div>
                 </div>
 
                 <!-- Acoes -->
                 <div class="pt-6 flex justify-end gap-3 border-t border-gray-700">
-                    <a href="{% url 'pdv_dashboard' %}" class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold transition">Cancelar</a>
+                    <a href="{% url 'pdv_dashboard' %}" class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold transition">Voltar</a>
                     <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black shadow-[0_0_15px_rgba(37,99,235,0.4)] transition">
                         SALVAR CONFIGURAÇÕES
                     </button>
                 </div>
             </form>
         </div>
+
+        <!-- XML Import Form -->
+        <div class="mt-8 bg-gray-900/50 backdrop-blur-md rounded-xl p-8 border border-white/10 shadow-2xl">
+            <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
+                <i data-lucide="file-code" class="w-5 h-5 text-blue-400"></i> Importação de NFe (Estoque Automático)
+            </h2>
+            <p class="text-sm text-gray-400 mb-6">Suba o XML da nota do fornecedor para cadastrar e atualizar o estoque automaticamente. (Sistemas Governamentais Ready)</p>
+
+            <form action="{% url 'importar_xml_fornecedor' %}" method="POST" enctype="multipart/form-data" class="space-y-4 max-w-xl">
+                {% csrf_token %}
+                <div class="relative w-full border-2 border-dashed border-gray-700 hover:border-blue-500 rounded-xl p-8 text-center transition-colors">
+                    <input type="file" name="xml_file" accept=".xml" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <i data-lucide="upload-cloud" class="w-12 h-12 text-gray-500 mx-auto mb-3"></i>
+                    <p class="text-white font-medium">Clique ou arraste o arquivo .XML</p>
+                    <p class="text-xs text-gray-500 mt-1">Apenas XML de NFe (SEFAZ)</p>
+                </div>
+                <button type="submit" class="w-full px-5 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-md">
+                    PROCESSAR ESTOQUE
+                </button>
+            </form>
+        </div>
+
     </div>
 </div>
 {% endblock content %}

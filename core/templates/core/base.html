@@ -14,7 +14,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% if sys_config.nome_fantasia %}{{ sys_config.nome_fantasia }} - Intranet{% else %}Intranet - Palavra de Vida Enseada{% endif %}{% endblock %}</title>
+    <title>{% block title %}{% if sys_config.nome_fantasia %}{{ sys_config.nome_fantasia }} - Sistema{% else %}Sistema - Palavra de Vida Enseada{% endif %}{% endblock %}</title>
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -221,9 +221,9 @@
             </a>
             {% endif %}
 
-            <a href="{% url 'visitantes_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="CRM e Visitantes">
+            <a href="{% url 'visitantes_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Controle de Visitantes">
                 <i data-lucide="contact-2" class="w-5 h-5 min-w-[20px] text-yellow-400 group-hover:text-yellow-300"></i>
-                <span x-show="sidebarOpen" class="whitespace-nowrap">CRM Visitantes</span>
+                <span x-show="sidebarOpen" class="whitespace-nowrap">Visitantes</span>
             </a>
 
             <!-- Ministério de Casais (Zero-Trust) -->
@@ -269,6 +269,10 @@
                 <i data-lucide="wallet" class="w-5 h-5 min-w-[20px] text-emerald-400 group-hover:text-emerald-300"></i>
                 <span x-show="sidebarOpen" class="whitespace-nowrap">Tesouraria</span>
             </a>
+            <a href="{% url 'pdv_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Módulo PDV">
+                <i data-lucide="shopping-cart" class="w-5 h-5 min-w-[20px] text-green-400 group-hover:text-green-300"></i>
+                <span x-show="sidebarOpen" class="whitespace-nowrap">Módulo PDV</span>
+            </a>
             {% endif %}
 
             {% if user.nivel_hierarquico == 'super_admin' or user.is_superuser %}
@@ -276,7 +280,7 @@
             <nav class="flex flex-col gap-1 px-2">
                 <a href="{% url 'pv_drive_home' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
                     <i data-lucide="cloud" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-blue-400"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">PV Drive</span>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">Arquivos</span>
                 </a>
 
                 <a href="{% url 'departamentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
@@ -292,7 +296,7 @@
                 {% if request.user.nivel_hierarquico == 'super_admin' %}
                 <a href="{% url 'sysadmin_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Configurações do Sistema">
                     <i data-lucide="server" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-gray-200"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">SysAdmin</span>
+                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">Configurações</span>
                 </a>
 
                 <a href="{% url 'permissoes:dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Gerenciador de Permissões (RBAC)">
@@ -326,7 +330,7 @@
                 <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 bg-gray-800 text-white rounded-lg">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
-                <h1 class="text-2xl font-bold text-white">{% block header_title %}Painel Geral{% endblock %}</h1>
+                <h1 class="text-2xl font-bold text-white">{% block header_title %}Página Inicial{% endblock %}</h1>
             </div>
 
             <!-- Global Search (Omnisearch) -->

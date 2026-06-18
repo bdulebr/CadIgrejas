@@ -28,6 +28,7 @@ class Membro(AbstractUser):
     )
 
     STATUS_CHOICES = (
+        ('pendente', 'Pendente de Aprovação'),
         ('ativo', 'Ativo'),
         ('inativo', 'Inativo'),
         ('bloqueado', 'Bloqueado'),

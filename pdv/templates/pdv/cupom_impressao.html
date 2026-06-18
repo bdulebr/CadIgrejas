@@ -1,0 +1,133 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupom Venda #{{ venda.id }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            background-color: white;
+            color: black;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            margin: 0;
+            padding: 10px;
+            width: 80mm; /* Padrão Bobina Térmica 80mm */
+        }
+
+        @page {
+            margin: 0;
+            size: 80mm auto;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .bold { font-weight: bold; }
+
+        .header { margin-bottom: 10px; }
+        .header h1 { font-size: 16px; margin: 5px 0; }
+        .header p { margin: 2px 0; font-size: 11px; }
+
+        .divider { border-top: 1px dashed black; margin: 8px 0; }
+        .divider-solid { border-top: 1px solid black; margin: 8px 0; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 2px 0; vertical-align: top; font-size: 11px; }
+
+        .totais { margin-top: 10px; }
+        .totais .linha { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .totais .grande { font-size: 16px; font-weight: bold; }
+
+        .footer { text-align: center; margin-top: 20px; font-size: 10px; padding-bottom: 30px; }
+
+        /* Auto print on load */
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+
+    <div class="header text-center">
+        <h1>PALAVRA DE VIDA ENSEADA</h1>
+        <p>CNPJ: 00.000.000/0001-00</p>
+        <p>Rua Exemplo, 123 - Centro</p>
+        <p>Cidade - UF | CEP: 00000-000</p>
+        <div class="divider-solid"></div>
+        <p class="bold">DOCUMENTO NÃO FISCAL</p>
+        <p>RECIBO DE VENDA #{{ venda.id|stringformat:"06d" }}</p>
+    </div>
+
+    <div style="font-size: 11px; margin-bottom: 5px;">
+        DATA: {{ venda.data_venda|date:"d/m/Y H:i:s" }}<br>
+        CAIXA: 01 | OP: {{ venda.caixa.operador.username|upper }}<br>
+        {% if venda.cliente %}
+        CLIENTE: {{ venda.cliente.nome|upper }}<br>
+        {% if venda.cliente.cpf %}CPF: {{ venda.cliente.cpf }}{% endif %}
+        {% else %}
+        CLIENTE: CONSUMIDOR FINAL
+        {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-left" style="width: 10%;">ITEM</th>
+                <th class="text-left" style="width: 40%;">DESCRIÇÃO</th>
+                <th class="text-center" style="width: 15%;">QTD</th>
+                <th class="text-right" style="width: 15%;">VL.UN</th>
+                <th class="text-right" style="width: 20%;">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in venda.itens.all %}
+            <tr>
+                <td class="text-left">{{ forloop.counter|stringformat:"03d" }}</td>
+                <td class="text-left">{{ item.produto.nome|truncatechars:20|upper }}</td>
+                <td class="text-center">{{ item.quantidade }}</td>
+                <td class="text-right">{{ item.valor_unitario }}</td>
+                <td class="text-right">{{ item.valor_total }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="totais">
+        <div class="linha">
+            <span>SUBTOTAL:</span>
+            <span>R$ {{ venda.subtotal }}</span>
+        </div>
+        {% if venda.desconto > 0 %}
+        <div class="linha">
+            <span>DESCONTO:</span>
+            <span>- R$ {{ venda.desconto }}</span>
+        </div>
+        {% endif %}
+        <div class="linha grande mt-2">
+            <span>TOTAL A PAGAR:</span>
+            <span>R$ {{ venda.total }}</span>
+        </div>
+        <div class="divider"></div>
+        <div class="linha">
+            <span>FORMA DE PAGAMENTO:</span>
+            <span>{{ venda.forma_pagamento|upper }}</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Agradecemos a preferência!</p>
+        <p>Visite nosso site: www.pvenseada.org</p>
+        <br>
+        <p>*** FIM DO RECIBO ***</p>
+    </div>
+
+</body>
+</html>

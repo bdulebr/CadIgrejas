@@ -1,0 +1,58 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: gestao_membros/templates/gestao_membros/email_boas_vindas.html
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 18/06/2026 13:20
+* LOG DE ALTERAÇÕES:
+* - 18/06/2026 13:20: Auditoria e padronização global (Goal)
+-->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px; color: #18181b; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #2563eb; font-size: 24px; margin: 0; }
+        .content { line-height: 1.6; font-size: 16px; color: #3f3f46; }
+        .content p { margin: 15px 0; }
+        .credentials { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: left; }
+        .credentials p { margin: 8px 0; font-family: monospace; font-size: 15px; }
+        .credentials strong { color: #1e293b; }
+        .button-container { text-align: center; margin: 30px 0; }
+        .button { background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block; }
+        .button:hover { background-color: #1d4ed8; }
+        .footer { text-align: center; font-size: 13px; color: #71717a; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e4e4e7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bem-vindo ao Sistema! 🎉</h1>
+        </div>
+        <div class="content">
+            <p>Olá, <strong>{{ nome }}</strong>!</p>
+            <p>Seu cadastro foi <strong>aprovado</strong> pela liderança com sucesso.</p>
+            <p>Abaixo estão as suas credenciais de acesso geradas automaticamente. Recomendamos que você altere a senha assim que acessar o sistema pela primeira vez.</p>
+
+            <div class="credentials">
+                <p><strong>Usuário (E-mail):</strong> {{ email }}</p>
+                <p><strong>Senha:</strong> {{ senha }}</p>
+            </div>
+
+            <div class="button-container">
+                <a href="{{ link_acesso }}" class="button">Acessar o Sistema</a>
+            </div>
+
+            <p>Se tiver qualquer dúvida ou dificuldade para acessar, procure o seu líder.</p>
+        </div>
+        <div class="footer">
+            <p>Este é um e-mail automático enviado pelo sistema. Por favor, não responda.</p>
+            <p>&copy; 2026 Palavra de Vida Enseada - Intranet</p>
+        </div>
+    </div>
+</body>
+</html>

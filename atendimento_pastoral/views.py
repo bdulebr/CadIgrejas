@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: atendimento_pastoral/views.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 18/06/2026 13:20
+* LOG DE ALTERAÇÕES:
+* - 18/06/2026 13:20: Auditoria e padronização global (Goal)
+"""
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages

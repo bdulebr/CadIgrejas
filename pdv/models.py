@@ -62,12 +62,23 @@ class Produto(models.Model):
     def __str__(self):
         return f"{self.codigo_barras} - {self.nome}"
 
+class OperadorCaixa(models.Model):
+    nome = models.CharField(max_length=100)
+    pin = models.CharField(max_length=4, help_text="Senha de 4 dígitos para login no Caixa")
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name_plural = 'Operadores de Caixa'
+
+    def __str__(self):
+        return self.nome
+
 class Caixa(models.Model):
     STATUS_CHOICES = (
         ('aberto', 'Aberto'),
         ('fechado', 'Fechado')
     )
-    operador = models.ForeignKey(Membro, on_delete=models.CASCADE)
+    operador = models.ForeignKey(OperadorCaixa, on_delete=models.CASCADE, null=True, blank=True)
     data_abertura = models.DateTimeField(auto_now_add=True)
     data_fechamento = models.DateTimeField(blank=True, null=True)
     saldo_inicial = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -76,7 +87,8 @@ class Caixa(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='aberto')
 
     def __str__(self):
-        return f"Caixa {self.id} - {self.operador.username} ({self.status})"
+        op_nome = self.operador.nome if self.operador else "Desconhecido"
+        return f"Caixa {self.id} - {op_nome} ({self.status})"
 
 class Venda(models.Model):
     STATUS_CHOICES = (

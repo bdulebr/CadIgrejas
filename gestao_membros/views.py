@@ -52,15 +52,18 @@ def painel_lider(request):
         departamentos = request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
         departamentos = departamentos.distinct()
 
-    membros_pendentes = Membro.objects.filter(is_active=False)
-
     depto_id = request.GET.get('depto_id') or request.GET.get('depto')
     if depto_id:
         departamento_ativo = get_object_or_404(Departamento, id=depto_id)
     else:
         departamento_ativo = departamentos.first() if departamentos.exists() else None
 
-    membros_aprovados = departamento_ativo.membros_ativos.filter(is_active=True) if departamento_ativo else []
+    if departamento_ativo:
+        membros_pendentes = departamento_ativo.membros_ativos.filter(status_conta='pendente', is_active=False)
+        membros_aprovados = departamento_ativo.membros_ativos.filter(is_active=True)
+    else:
+        membros_pendentes = []
+        membros_aprovados = []
 
     # Indisponibilidades reais
     from gestao_membros.models import Indisponibilidade, AvisoMural
@@ -121,14 +124,41 @@ def painel_lider(request):
         'aniversariantes': aniversariantes
     })
 
+import string
+import random
+
 @login_required
 @requer_permissao('membros', 'editar')
 def aprovar_membro(request, membro_id):
     membro = get_object_or_404(Membro, id=membro_id)
+
+    # Gerar senha aleatória de 6 caracteres
+    chars = string.ascii_letters + string.digits
+    senha_gerada = ''.join(random.choice(chars) for _ in range(6))
+
+    membro.set_password(senha_gerada)
     membro.is_active = True
     membro.status_conta = 'ativo'
     membro.save()
-    messages.success(request, 'Membro aprovado.')
+
+    try:
+        from intranet.services.gmail_service import enviar_email_html
+        context = {
+            'nome': membro.first_name,
+            'email': membro.email,
+            'senha': senha_gerada,
+            'link_acesso': request.build_absolute_uri('/')
+        }
+        enviar_email_html(
+            destinatario=membro.email,
+            assunto='Bem-vindo ao Sistema - Credenciais de Acesso',
+            template_name='gestao_membros/email_boas_vindas.html',
+            context=context
+        )
+        messages.success(request, f'Membro aprovado. E-mail com a senha foi enviado para {membro.email}.')
+    except Exception as e:
+        messages.warning(request, f'Membro aprovado, mas houve um erro ao enviar o e-mail: {e}')
+
     return redirect('painel_lider')
 
 @login_required

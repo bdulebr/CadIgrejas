@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: escalas/checkin_views.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 18/06/2026 13:20
+* LOG DE ALTERAÇÕES:
+* - 18/06/2026 13:20: Auditoria e padronização global (Goal)
+"""
 import json
 import math
 from datetime import date

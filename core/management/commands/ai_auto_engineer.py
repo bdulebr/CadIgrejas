@@ -1,3 +1,13 @@
+"""
+* PROJETO: Palavra de Vida Enseada - Intranet
+* ARQUIVO: core/management/commands/ai_auto_engineer.py
+* DESCRIÇÃO: Código-fonte do módulo
+* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
+* VERSÃO: 0.0.1
+* DATA DA ÚLTIMA ALTERAÇÃO: 18/06/2026 13:20
+* LOG DE ALTERAÇÕES:
+* - 18/06/2026 13:20: Auditoria e padronização global (Goal)
+"""
 import os
 import sys
 import datetime
@@ -141,28 +151,57 @@ class Command(BaseCommand):
                 except Exception:
                     pass
 
-        # === LÓGICA DO CÉREBRO: LER HISTÓRICO ===
-        cerebro_dir = os.path.join(base_dir, 'docs', 'meu_cerebro', 'ai_daemon')
-        os.makedirs(cerebro_dir, exist_ok=True)
+        # === LÓGICA DO CÉREBRO: LER HISTÓRICO DE ERROS ===
+        cerebro_historico_dir = os.path.join(base_dir, 'docs', 'meu_cerebro', 'ai_daemon')
+        os.makedirs(cerebro_historico_dir, exist_ok=True)
 
         historico_cerebro = ""
         try:
-            # Pega os 5 arquivos mais recentes
-            arquivos = [os.path.join(cerebro_dir, f) for f in os.listdir(cerebro_dir) if f.endswith('.md')]
-            arquivos.sort(key=os.path.getmtime, reverse=True)
-            recentes = arquivos[:5]
+            # Pega os 5 arquivos mais recentes de erros
+            arquivos_hist = [os.path.join(cerebro_historico_dir, f) for f in os.listdir(cerebro_historico_dir) if f.endswith('.md')]
+            arquivos_hist.sort(key=os.path.getmtime, reverse=True)
+            recentes = arquivos_hist[:5]
 
             for arq in recentes:
+                if arq.endswith('LESSONS.md'): continue
                 with open(arq, 'r', encoding='utf-8') as f:
-                    historico_cerebro += f"\n\n--- ARQUIVO DE MEMÓRIA: {os.path.basename(arq)} ---\n{f.read()}\n"
+                    historico_cerebro += f"\n\n--- HISTÓRICO DE ERRO: {os.path.basename(arq)} ---\n{f.read()}\n"
         except Exception as e:
-            self.stderr.write(f"Erro ao ler o cérebro da IA: {e}")
+            self.stderr.write(f"Erro ao ler o histórico de erros da IA: {e}")
 
-        knowledge_base_path = os.path.join(base_dir, 'eversinho_knowledge.txt')
-        knowledge = ''
-        if os.path.exists(knowledge_base_path):
-            with open(knowledge_base_path, 'r', encoding='utf-8') as kf:
-                knowledge = kf.read()
+        # === MEMÓRIA DE LONGO PRAZO (LESSONS.md) ===
+        lessons_path = os.path.join(cerebro_historico_dir, 'LESSONS.md')
+        if os.path.exists(lessons_path):
+            with open(lessons_path, 'r', encoding='utf-8') as f:
+                historico_cerebro += f"\n\n--- LIÇÕES APRENDIDAS (MEMÓRIA CONTÍNUA) ---\n{f.read()}\n"
+
+        # === LÓGICA DO CÉREBRO: LER BASE DE CONHECIMENTO (RAG COM CACHE) ===
+        from django.core.cache import cache
+        knowledge = cache.get('eversinho_rag_knowledge')
+
+        if not knowledge:
+            cerebro_conhecimento_dir = os.path.join(base_dir, 'docs', 'meu_cerebro')
+            knowledge = ''
+            try:
+                # Lê todos os arquivos MD diretamente na raiz do meu_cerebro (ignora subpastas)
+                if os.path.exists(cerebro_conhecimento_dir):
+                    arquivos_conhecimento = [
+                        f for f in os.listdir(cerebro_conhecimento_dir)
+                        if f.endswith('.md') and os.path.isfile(os.path.join(cerebro_conhecimento_dir, f))
+                    ]
+                    for arq in arquivos_conhecimento:
+                        caminho_arq = os.path.join(cerebro_conhecimento_dir, arq)
+                        with open(caminho_arq, 'r', encoding='utf-8') as kf:
+                            knowledge += f"\n\n--- DOCUMENTAÇÃO BASE: {arq} ---\n{kf.read()}\n"
+            except Exception as e:
+                self.stderr.write(f"Erro ao ler a base de conhecimento RAG da IA: {e}")
+
+            knowledge_base_path = os.path.join(base_dir, 'eversinho_knowledge.txt')
+            if os.path.exists(knowledge_base_path):
+                with open(knowledge_base_path, 'r', encoding='utf-8') as kf:
+                    knowledge += f"\n\n--- REGRAS LEGADAS (eversinho_knowledge.txt) ---\n{kf.read()}\n"
+
+            cache.set('eversinho_rag_knowledge', knowledge, 86400)
 
         prompt = f"""
         Você é a IA Autônoma (Engenheiro de Software) da Intranet PVE desenvolvida em Django.
@@ -191,7 +230,8 @@ class Command(BaseCommand):
         {{
             "target_file": "caminho/do/arquivo.py",
             "search_content": "código exato atual com problema para ser substituído",
-            "replace_content": "código novo corrigido"
+            "replace_content": "código novo corrigido",
+            "aprendizado": "Frase curta descrevendo o que você aprendeu com este erro para sua memória contínua."
         }}
         Importante: não retorne NADA ALÉM do JSON válido.
         O search_content DEVE ser uma cópia EXATA, caractere por caractere.
@@ -205,6 +245,7 @@ class Command(BaseCommand):
             target_file = acao.get("target_file", "").lstrip('/')
             search_content = acao.get("search_content", "")
             replace_content = acao.get("replace_content", "")
+            aprendizado_ia = acao.get("aprendizado", "Bug corrigido sem resumo.")
 
             # TRAVA DE SEGURANÇA (LIMITAÇÕES DE ESCOPO MÁXIMO)
             arquivos_proibidos = ['settings.py', 'wsgi.py', 'asgi.py', 'manage.py']
@@ -235,6 +276,18 @@ class Command(BaseCommand):
             with open(target_file, 'w', encoding='utf-8') as f:
                 f.write(conteudo_novo)
 
+            # === VALIDAÇÃO SINTÁTICA IMEDIATA ===
+            if target_file.endswith('.py'):
+                import py_compile
+                try:
+                    py_compile.compile(target_file, doraise=True)
+                except py_compile.PyCompileError as syntax_err:
+                    self.stderr.write(f"Validação Sintática Falhou! A IA gerou código com SyntaxError.")
+                    with open(target_file, 'w', encoding='utf-8') as f:
+                        f.write(conteudo_original)
+                    self.registrar_falha(log_registro, 'ERRO_SINTAXE', f"SyntaxError gerado pela IA. Rollback imediato.\n{str(syntax_err)}")
+                    return
+
             # 4. Homologação (Rodar Spider Novamente)
             self.stdout.write("[5/5] Testando Modificação (Aguardando Hupper reiniciar o servidor)...")
             import time
@@ -261,7 +314,12 @@ class Command(BaseCommand):
                 log_registro.status = 'CORRIGIDO_HOMOLOGADO'
                 log_registro.save()
 
-                agora_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                agora_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
+                # SALVA A LIÇÃO NA MEMÓRIA DE LONGO PRAZO
+                with open(lessons_path, 'a', encoding='utf-8') as lf:
+                    lf.write(f"- Em {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}: Erro resolvido em `{target_file}`. Aprendizado: {aprendizado_ia}\n")
+
                 relatorio_md = f"""# Relatório de Correção Autônoma ({agora_str})
 ## 1. Erro Detectado
 ```text
@@ -280,7 +338,7 @@ class Command(BaseCommand):
 ## 5. Resultado
 A correção diminuiu o número de erros detectados pelo Spider de {erros_antes} para {erros_depois}. O sistema foi homologado com sucesso.
 """
-                with open(os.path.join(cerebro_dir, f"{agora_str}.md"), 'w', encoding='utf-8') as f:
+                with open(os.path.join(cerebro_historico_dir, f"{agora_str}.md"), 'w', encoding='utf-8') as f:
                     f.write(relatorio_md)
             else:
                 self.stdout.write("[FAIL] FALHA! A correção não resolveu o problema. Realizando Rollback...")

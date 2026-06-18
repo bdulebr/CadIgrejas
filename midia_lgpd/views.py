@@ -35,7 +35,7 @@ def ler_assinar_termo(request):
         messages.warning(request, 'Nenhum termo ativo configurado no sistema no momento.')
         return redirect('dashboard')
 
-    ja_assinou = AssinaturaLGPD.objects.filter(membro=request.user, termo=termo_ativo).exists()
+    ja_assinou = AssinaturaLGPD.objects.filter(membro=request.user).exists()
 
     if request.method == 'POST' and not ja_assinou:
         # Obter IP do usuário (básico)

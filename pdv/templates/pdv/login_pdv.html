@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloqueio do Caixa - PDV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        body { background-color: #000a14; color: #ffffff; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .pos-font { font-family: 'Share Tech Mono', monospace; }
+        input[type="password"] { letter-spacing: 0.5em; text-align: center; }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+
+    <div class="bg-[#001f3f] border-4 border-[#004080] rounded-2xl p-10 max-w-md w-full text-center shadow-2xl relative" x-data="loginApp()">
+
+        <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-600 rounded-full p-4 border-4 border-[#000a14]">
+            <i data-lucide="lock" class="w-12 h-12 text-white"></i>
+        </div>
+
+        <h1 class="text-3xl font-black text-yellow-400 mt-8 mb-2 tracking-widest uppercase">Caixa Fechado</h1>
+        <p class="text-gray-400 text-sm font-bold uppercase mb-8">Insira seu PIN de 4 dígitos para liberar</p>
+
+        <div class="mb-8">
+            <input type="password" maxlength="4" readonly x-model="pin" class="w-full bg-[#001122] border-2 border-[#004080] p-4 text-5xl text-yellow-400 font-bold outline-none rounded-lg shadow-inner pos-font">
+        </div>
+
+        <!-- Numeric Keypad -->
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <template x-for="n in [1,2,3,4,5,6,7,8,9]" :key="n">
+                <button @click="addDigit(n)" class="bg-[#002a5c] hover:bg-[#004080] text-3xl font-bold py-6 rounded-xl border border-[#004080] transition pos-font shadow-md" x-text="n"></button>
+            </template>
+            <button @click="clearPin()" class="bg-red-900/50 hover:bg-red-800 text-red-400 font-bold py-6 rounded-xl border border-red-900 transition flex items-center justify-center shadow-md">
+                <i data-lucide="delete" class="w-8 h-8"></i>
+            </button>
+            <button @click="addDigit(0)" class="bg-[#002a5c] hover:bg-[#004080] text-3xl font-bold py-6 rounded-xl border border-[#004080] transition pos-font shadow-md">0</button>
+            <button @click="submitLogin()" class="bg-green-700 hover:bg-green-600 text-white font-bold py-6 rounded-xl border border-green-600 transition flex items-center justify-center shadow-md">
+                <i data-lucide="log-in" class="w-8 h-8"></i>
+            </button>
+        </div>
+
+        <div x-show="errorMsg" style="display: none;" class="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 rounded font-bold uppercase text-sm animate-pulse" x-text="errorMsg"></div>
+
+        <div class="mt-8">
+            <a href="{% url 'pdv_dashboard' %}" class="text-blue-400 hover:text-white text-xs font-bold uppercase tracking-widest transition"><i data-lucide="arrow-left" class="w-4 h-4 inline mb-1"></i> Voltar à Gestão (Dashboard)</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('loginApp', () => ({
+                pin: '',
+                errorMsg: '',
+
+                init() {
+                    // Allows physical keyboard numbers
+                    window.addEventListener('keydown', (e) => {
+                        if (e.key >= '0' && e.key <= '9') {
+                            this.addDigit(e.key);
+                        } else if (e.key === 'Backspace') {
+                            this.pin = this.pin.slice(0, -1);
+                        } else if (e.key === 'Enter') {
+                            this.submitLogin();
+                        } else if (e.key === 'Escape') {
+                            window.location.href = "{% url 'pdv_dashboard' %}";
+                        }
+                    });
+                },
+
+                addDigit(n) {
+                    this.errorMsg = '';
+                    if (this.pin.length < 4) {
+                        this.pin += String(n);
+                    }
+                    if (this.pin.length === 4) {
+                        // Optional: auto-submit when 4 digits are reached
+                        // this.submitLogin();
+                    }
+                },
+
+                clearPin() {
+                    this.pin = '';
+                    this.errorMsg = '';
+                },
+
+                async submitLogin() {
+                    if (this.pin.length !== 4) {
+                        this.errorMsg = 'PIN DEVE TER 4 DÍGITOS';
+                        this.pin = '';
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/pdv/login/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({ pin: this.pin })
+                        });
+
+                        const data = await res.json();
+                        if (data.success) {
+                            window.location.href = '/pdv/frente-caixa/';
+                        } else {
+                            this.errorMsg = data.message.toUpperCase();
+                            this.pin = '';
+                        }
+                    } catch (e) {
+                        this.errorMsg = 'ERRO DE CONEXÃO';
+                        this.pin = '';
+                    }
+                }
+            }));
+        });
+        lucide.createIcons();
+    </script>
+</body>
+</html>

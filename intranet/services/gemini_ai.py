@@ -138,6 +138,97 @@ def analisar_comprovante_tesouraria(file_obj, categorias=None):
         except:
             pass
 
+def analisar_escala_gemini(file_obj, departamentos_list, membros_list):
+    """
+    Função de OCR nativo (Multimodal) via Gemini com RAG embutido.
+    departamentos_list: list of dicts [{'id': ..., 'nome': ...}]
+    membros_list: list of dicts [{'id': ..., 'nome': ...}]
+    """
+    # Cria arquivo temporário
+    extensao = ".pdf"
+    if hasattr(file_obj, 'name'):
+        extensao = os.path.splitext(file_obj.name)[1].lower()
+
+    tmp_path = None
+    with tempfile.NamedTemporaryFile(delete=False, suffix=extensao) as tmp:
+        for chunk in file_obj.chunks():
+            tmp.write(chunk)
+        tmp_path = tmp.name
+
+    client = None
+    uploaded_file = None
+    try:
+        client = get_gemini_client()
+        uploaded_file = client.files.upload(file=tmp_path)
+
+        dept_str = "\n".join([f"ID: {d['id']} | Nome: {d['nome']}" for d in departamentos_list])
+        membros_str = "\n".join([f"ID: {m['id']} | Nome: {m['nome']}" for m in membros_list])
+
+        prompt = f"""
+        Você é um Motor Avançado de OCR para Escalas de Igreja.
+        Estou anexando um arquivo de escala (geralmente um PDF ou planilha). Leia-o visual e textualmente.
+
+        SUA MISSÃO RAG (MUITO IMPORTANTE):
+        Eu vou te dar a base de dados REAL do meu sistema.
+        Você só pode retornar IDs que existam nesta base de dados.
+        Se um nome na escala for "Kauêzinho" e na base de dados tiver "ID: 15 | Nome: Kauê Lira (Kauêzinho)", você deve mapear para o ID 15.
+
+        BASE DE DADOS DE DEPARTAMENTOS:
+        {dept_str}
+
+        BASE DE DADOS DE MEMBROS (ID | Nome | Apelido):
+        {membros_str}
+
+        O QUE VOCÊ DEVE RETORNAR:
+        Exatamente um JSON válido, e apenas ele (sem formatadores Markdown), neste modelo:
+        {{
+            "departamento_id": 12, // ID do departamento que melhor bate com o título do documento
+            "mes": "06", // Mês em 2 dígitos (ex: Junho -> 06)
+            "ano": "2026", // Ano em 4 dígitos
+            "escalas": [
+                {{
+                    "dia": "DD/MM/YYYY", // Data exata daquele culto
+                    "turno": "manha ou noite", // Deixe vazio se não souber
+                    "funcao": "Câmera", // A função escrita
+                    "membros_ids": [15, 20], // Lista INTEIROS com os IDs mapeados da base de dados!
+                    "observacao": "Alguma nota, caso exista"
+                }}
+            ]
+        }}
+
+        REGRAS VITAIS:
+        1. SEPARE FUNÇÕES! Se no dia 03/06 tiver "CÂMERA: ARTHUR / GERAL: PEDRO", você deve gerar dois blocos na lista 'escalas': um para Câmera (membros_ids do Arthur) e um para Geral (membros_ids do Pedro).
+        2. NÃO CRIE IDs. Use somente os listados na BASE DE DADOS. Se não achar ninguém parecido, omita a pessoa ou ponha uma lista vazia, mas não chute um ID.
+        """
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[uploaded_file, prompt]
+        )
+
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.endswith("```"):
+            text = text[:-3]
+
+        return json.loads(text.strip())
+
+    except Exception as e:
+        print("Erro no Gemini Escalas OCR:", e)
+        return []
+    finally:
+        if client and uploaded_file:
+            try:
+                client.files.delete(name=uploaded_file.name)
+            except:
+                pass
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+
 import openpyxl
 
 def analisar_planilha_importacao(file_obj, categorias=None):

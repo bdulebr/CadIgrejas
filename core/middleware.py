@@ -190,9 +190,45 @@ class AIAutoEngineerMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        return self.get_response(request)
+        response = self.get_response(request)
+
+        # INTERCEPTA ERROS HTTP QUE NÃO GERAM EXCEPTION (400 e 403)
+        if response.status_code in [400, 403]:
+            # Ignora rotas de login que dão 400 por senha errada
+            if '/login/' not in request.path:
+                from core.models import AIEngineerLog
+                import logging
+                logger = logging.getLogger(__name__)
+                erro_str = f"HTTP Error {response.status_code} gerado como Response na rota: {request.path}\nMethod: {request.method}"
+
+                pending_log = AIEngineerLog.objects.filter(status='PENDENTE', erro_analisado=erro_str).first()
+                if not pending_log:
+                    novo_log = AIEngineerLog.objects.create(
+                        erro_analisado=erro_str,
+                        status='PENDENTE',
+                        detalhes=erro_str
+                    )
+                    log_id = novo_log.id
+                    logger.error(f"AI Watchdog interceptou {response.status_code} e enviou para IA.")
+                else:
+                    log_id = pending_log.id
+                return render(request, 'core/pages/eversinho_500.html', {'log_id': log_id}, status=response.status_code)
+
+        return response
 
     def process_exception(self, request, exception):
+        from django.http import Http404
+        from django.core.exceptions import PermissionDenied
+
+        # Filtro Inteligente de Erros 404 (Ignora se o usuário digitou uma rota aleatória/typo)
+        if isinstance(exception, Http404):
+            referer = request.META.get('HTTP_REFERER', '')
+            host = request.get_host()
+            # Se não tem referer (digitado no navegador) ou veio de site externo, NÃO é bug do sistema.
+            if not referer or host not in referer:
+                return None
+            # Se tem referer interno, significa que algum botão ou link DA INTRANET está quebrado! A IA precisa consertar.
+
         # A fatal bug happened! Put it in the queue for the AI Daemon.
         from core.models import AIEngineerLog
         import logging

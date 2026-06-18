@@ -13,13 +13,19 @@ from . import views
 
 urlpatterns = [
     path('', views.pdv_dashboard, name='pdv_dashboard'),
+    path('login/', views.pdv_login, name='pdv_login'),
+    path('logout/', views.pdv_logout, name='pdv_logout'),
     path('frente-caixa/', views.pdv_frente_caixa, name='pdv_frente_caixa'),
     path('api/produto/<str:codigo>/', views.api_buscar_produto, name='api_buscar_produto'),
     path('api/venda/finalizar/', views.api_finalizar_venda, name='api_finalizar_venda'),
+    path('api/caixa/abrir/', views.api_abrir_caixa, name='api_abrir_caixa'),
+    path('api/caixa/fechar/', views.api_fechar_caixa, name='api_fechar_caixa'),
+    path('venda/<int:venda_id>/cupom/', views.imprimir_cupom, name='pdv_imprimir_cupom'),
     path('importar-xml/', views.importar_xml_fornecedor, name='importar_xml_fornecedor'),
     path('produtos/', views.lista_produtos, name='pdv_lista_produtos'),
     path('produtos/novo/', views.novo_produto, name='pdv_novo_produto'),
     path('produtos/<int:produto_id>/editar/', views.editar_produto, name='pdv_editar_produto'),
     path('configuracoes/', views.configuracoes_pdv, name='pdv_configuracoes'),
+    path('operadores/', views.gerenciar_operadores, name='pdv_gerenciar_operadores'),
     path('livro-caixa/', views.livro_caixa, name='pdv_livro_caixa'),
 ]

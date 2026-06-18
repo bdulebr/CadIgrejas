@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Gerenciar Operadores de PDV{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-white mb-2">Operadores de Caixa (PDV)</h1>
+        <p class="text-gray-400">Cadastre a equipe e gere os PINs de acesso rápido (4 dígitos) para a Frente de Caixa.</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{% url 'pdv_dashboard' %}" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition">Voltar</a>
+        <button onclick="document.getElementById('modalNovoOp').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Novo Operador
+        </button>
+    </div>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="mb-4 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-900/30 text-green-400 border border-green-500/30{% else %}bg-red-900/30 text-red-400 border border-red-500/30{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+{% endif %}
+
+<div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-gray-800/50 text-gray-400 uppercase text-xs font-bold">
+            <tr>
+                <th class="px-6 py-4">Nome do Operador</th>
+                <th class="px-6 py-4 text-center">PIN (Senha)</th>
+                <th class="px-6 py-4 text-center">Status</th>
+                <th class="px-6 py-4 text-right">Ações</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800 text-gray-300">
+            {% for op in operadores %}
+            <tr class="hover:bg-gray-800/20">
+                <td class="px-6 py-4 font-bold text-white">{{ op.nome }}</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="bg-gray-800 px-3 py-1 rounded text-yellow-500 font-mono tracking-widest font-bold">{{ op.pin }}</span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    {% if op.ativo %}
+                    <span class="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-bold uppercase">Ativo</span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs font-bold uppercase">Inativo</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                        <form method="POST" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="acao" value="desativar">
+                            <input type="hidden" name="op_id" value="{{ op.id }}">
+                            <button type="submit" class="text-gray-400 hover:text-white" title="Ativar/Desativar">
+                                <i data-lucide="power" class="w-5 h-5"></i>
+                            </button>
+                        </form>
+                        <form method="POST" class="inline" onsubmit="return confirm('Tem certeza que deseja EXCLUIR este operador?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="acao" value="excluir">
+                            <input type="hidden" name="op_id" value="{{ op.id }}">
+                            <button type="submit" class="text-red-400 hover:text-red-300" title="Excluir">
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                    Nenhum operador cadastrado. Clique no botão acima para adicionar.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Novo Operador -->
+<div id="modalNovoOp" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-gray-900 border border-gray-700 rounded-xl p-8 max-w-md w-full shadow-2xl relative">
+        <button onclick="document.getElementById('modalNovoOp').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <h2 class="text-2xl font-bold text-white mb-6">Novo Operador</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="novo">
+            <div class="mb-4">
+                <label class="block text-gray-400 text-sm font-bold mb-2">Nome Completo</label>
+                <input type="text" name="nome" required class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-400 text-sm font-bold mb-2">PIN (Senha 4 dígitos)</label>
+                <input type="text" name="pin" maxlength="4" pattern="[0-9]{4}" required placeholder="Ex: 1234" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white font-mono tracking-widest text-center text-xl focus:border-blue-500 outline-none">
+                <p class="text-xs text-gray-500 mt-1">Essa senha será usada para destravar a tela do caixa.</p>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow transition">
+                Cadastrar Operador
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

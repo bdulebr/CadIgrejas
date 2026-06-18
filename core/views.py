@@ -104,10 +104,11 @@ def register_view(request):
             membro = Membro.objects.create_user(
                 username=email,
                 email=email,
-                password='senha_padrao_mudar', # Na v1 pode haver fluxo de criar senha depois
+                password='senha_padrao_mudar', # Será alterada após aprovação
                 first_name=first_name,
                 last_name=last_name,
                 telefone=telefone,
+                status_conta='pendente',
                 is_active=False, # Aguardando aprovação
                 nivel_hierarquico='membro_voluntario'
             )
@@ -179,12 +180,8 @@ def eversinho_status_api(request, log_id):
 @login_required
 def dashboard_view(request):
 
-    termo_ativo = TermoLGPD.objects.filter(is_ativo=True).first()
-
-    termo_ativo = TermoLGPD.objects.filter(is_ativo=True).first()
-    assinou_lgpd = True
-    if termo_ativo:
-        assinou_lgpd = AssinaturaLGPD.objects.filter(membro=request.user, termo=termo_ativo).exists()
+    # Verifica se o usuário já assinou qualquer termo de LGPD previamente
+    assinou_lgpd = AssinaturaLGPD.objects.filter(membro=request.user).exists()
 
     # Pega os avisos dos departamentos que o membro faz parte ou lidera
     if request.user.nivel_hierarquico == 'super_admin':

@@ -19,7 +19,7 @@
     <div class="w-full md:w-1/2 max-w-md bg-gray-900/40 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
         <div class="p-6 text-center border-b {% if tipo == 'retirada' %}border-orange-500/30{% else %}border-green-500/30{% endif %} bg-gray-900/40 backdrop-blur-md">
             <h1 class="text-2xl font-bold text-white mb-2">
-                Scanner de {% if tipo == 'retirada' %}Retirada{% else %}Devolução{% endif %}
+                Leitor de {% if tipo == 'retirada' %}Retirada{% else %}Devolução{% endif %}
             </h1>
             <p class="text-sm text-gray-400">Escaneie quantos itens precisar antes de concluir.</p>
         </div>
@@ -41,7 +41,7 @@
         </div>
 
         <div class="p-4 bg-gray-900/40 backdrop-blur-md border-t border-white/10 text-center flex justify-between items-center">
-            <a href="{% url 'painel_inventario' %}" class="text-sm font-medium text-gray-300 hover:text-white">Sair do Modo Scanner</a>
+            <a href="{% url 'painel_inventario' %}" class="text-sm font-medium text-gray-300 hover:text-white">Fechar Leitor</a>
             <span class="px-2 py-1 bg-gray-800 rounded text-xs font-bold text-gray-400 uppercase">Acesso Livre</span>
         </div>
     </div>

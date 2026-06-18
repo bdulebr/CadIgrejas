@@ -9,9 +9,10 @@
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
 from django.contrib import admin
-from .models import CategoriaProduto, Fornecedor, Cliente, Produto, Caixa, Venda, ItemVenda, MovimentoCaixa, ConfiguracaoPDV
+from .models import CategoriaProduto, Fornecedor, Cliente, Produto, Caixa, Venda, ItemVenda, MovimentoCaixa, ConfiguracaoPDV, OperadorCaixa
 
 admin.site.register(CategoriaProduto)
+admin.site.register(OperadorCaixa)
 admin.site.register(Fornecedor)
 admin.site.register(Cliente)
 

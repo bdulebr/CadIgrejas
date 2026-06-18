@@ -186,7 +186,19 @@ def editor_escala_manual(request, comp_id):
     import json
 
     # Calcular datas do mes
-    mes, ano = map(int, comp.mes_ano.split('/'))
+    # Certificar que mes e ano são válidos antes de usar calendar.monthrange
+    try:
+        mes_str, ano_str = comp.mes_ano.split('/')
+        mes = int(mes_str)
+        ano = int(ano_str)
+    except (ValueError, IndexError):
+        messages.error(request, f'Formato inválido para mês/ano na competência: "{comp.mes_ano}". Esperado "MM/YYYY". Por favor, corrija os dados da competência.')
+        return redirect('painel_escalas')
+
+    if not (1 <= mes <= 12):
+        messages.error(request, f'Mês inválido ({mes}) na competência "{comp.mes_ano}". O mês deve ser entre 1 e 12. Por favor, corrija os dados da competência.')
+        return redirect('painel_escalas')
+
     num_days = calendar.monthrange(ano, mes)[1]
 
     # Obter configuração de slots do departamento
@@ -1007,18 +1019,32 @@ def importar_escala_ocr(request):
             return redirect('painel_escalas')
 
         try:
-            from intranet.services.groq_ai import analisar_planilha_escalas_groq
-            dados = analisar_planilha_escalas_groq(arquivo)
+            from gestao_membros.models import Departamento
+            from core.models import Membro
+            from intranet.services.gemini_ai import analisar_escala_gemini
+
+            departamentos_all = Departamento.objects.all()
+            membros_all = Membro.objects.filter(is_active=True)
+
+            dept_list = [{'id': d.id, 'nome': d.nome} for d in departamentos_all]
+            membros_list = [{'id': m.id, 'nome': f"{m.first_name} {m.last_name} ({m.apelido or ''})".strip()} for m in membros_all]
+
+            dados = analisar_escala_gemini(arquivo, dept_list, membros_list)
 
             if not dados or not isinstance(dados, dict) or 'escalas' not in dados:
-                messages.warning(request, 'O Groq não conseguiu extrair os dados no formato esperado.')
+                messages.warning(request, 'O Gemini não conseguiu extrair os dados no formato esperado.')
                 return redirect('painel_escalas')
 
-            dept_nome = dados.get('departamento', '')
+            dept_id = dados.get('departamento_id')
+            if not dept_id:
+                messages.error(request, 'O Gemini não conseguiu identificar a qual departamento esta escala pertence.')
+                return redirect('painel_escalas')
+
+            departamento = Departamento.objects.get(id=dept_id)
+
             mes = str(dados.get('mes', '')).strip().lower()
             ano = str(dados.get('ano', '')).strip()
 
-            # Map month name to number
             mes_map = {'janeiro': '01', 'fevereiro': '02', 'março': '03', 'marco': '03',
                        'abril': '04', 'maio': '05', 'junho': '06', 'julho': '07',
                        'agosto': '08', 'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'}
@@ -1030,34 +1056,12 @@ def importar_escala_ocr(request):
 
             mes_ano_str = f"{mes_num}/{ano}"
 
-            # Find department
-            from gestao_membros.models import Departamento
-            departamento = Departamento.objects.filter(nome__icontains=dept_nome).first()
-            if not departamento:
-                # Tentar achar algum que ocupe pelo menos metade das palavras
-                departamentos_all = Departamento.objects.all()
-                from thefuzz import process
-                nomes_deptos = {d.id: d.nome for d in departamentos_all}
-                best_match = process.extractOne(dept_nome, nomes_deptos)
-                if best_match and best_match[1] >= 65:
-                    departamento = Departamento.objects.get(id=best_match[2])
-                else:
-                    messages.error(request, f'Departamento "{dept_nome}" não encontrado no sistema. Crie o departamento primeiro.')
-                    return redirect('painel_escalas')
-
             from .models import CompetenciaEscala, Escala
-
             competencia, created = CompetenciaEscala.objects.get_or_create(
                 departamento=departamento,
                 mes_ano=mes_ano_str,
                 defaults={'status': 'rascunho'}
             )
-
-            # Fuzzy match setup for Members
-            from core.models import Membro
-            membros_dept = Membro.objects.filter(is_active=True)
-            # Para aumentar a precisão, priorizamos membros do sistema com o Apelido
-            membros_dict = {m.id: f"{m.first_name} {m.last_name} {m.apelido or ''}" for m in membros_dept}
 
             escalas_lidas = dados.get('escalas', [])
             count_sucesso = 0
@@ -1065,11 +1069,11 @@ def importar_escala_ocr(request):
 
             from datetime import datetime
             from thefuzz import process
+            from django.db import IntegrityError
 
             for esc in escalas_lidas:
                 data_str = esc.get('dia', '')
                 try:
-                    # try to parse DD/MM/YYYY
                     data_obj = datetime.strptime(data_str, '%d/%m/%Y').date()
                 except ValueError:
                     continue
@@ -1078,61 +1082,42 @@ def importar_escala_ocr(request):
                 horario_inicio = "19:30" if turno == "noite" else "09:00"
                 horario_fim = "21:30" if turno == "noite" else "11:30"
 
-                nomes = esc.get('membros_nomes', [])
-                if isinstance(nomes, str):
-                    nomes = [nomes]
+                membros_ids = esc.get('membros_ids', [])
+                if not isinstance(membros_ids, list):
+                    membros_ids = [membros_ids]
 
-                for nome in nomes:
-                    nome = nome.strip()
-                    if not nome: continue
+                funcao_str = esc.get('funcao', '').strip()
+                funcao_obj = None
+                if funcao_str and funcao_str.lower() != 'geral':
+                    from gestao_membros.models import Funcao
+                    funcoes_dept = Funcao.objects.filter(departamento=departamento)
+                    if funcoes_dept.exists():
+                        funcoes_dict = {f.id: f.nome for f in funcoes_dept}
+                        match_func = process.extractOne(funcao_str, funcoes_dict)
+                        if match_func and match_func[1] >= 65:
+                            funcao_obj = Funcao.objects.get(id=match_func[2])
 
-                    # Limpar títulos comuns
-                    nome_limpo = nome.lower().replace('miss ', '').replace('miss. ', '').replace('pr ', '').replace('pr. ', '').replace('ev ', '').strip()
+                for m_id in membros_ids:
+                    try:
+                        m_id = int(m_id)
+                        membro_escalado = Membro.objects.get(id=m_id)
 
-                    # Fuzzy match
-                    membro_escalado = None
-                    best_match_id = None
-
-                    if len(nome_limpo) > 2:
-                        match = process.extractOne(nome_limpo, membros_dict)
-                        if match and match[1] >= 75: # Tolerância alta (ex: Kauãzinho vs Kauã)
-                            best_match_id = match[2]
-                            membro_escalado = Membro.objects.get(id=best_match_id)
-
-                    # Fuzzy match para Funcao
-                    funcao_str = esc.get('funcao', '').strip()
-                    funcao_obj = None
-                    if funcao_str and funcao_str.lower() != 'geral':
-                        from gestao_membros.models import Funcao
-                        funcoes_dept = Funcao.objects.filter(departamento=departamento)
-                        if funcoes_dept.exists():
-                            funcoes_dict = {f.id: f.nome for f in funcoes_dept}
-                            match_func = process.extractOne(funcao_str, funcoes_dict)
-                            if match_func and match_func[1] >= 65:
-                                funcao_obj = Funcao.objects.get(id=match_func[2])
-
-                    if membro_escalado:
-                        try:
-                            # Previne crash cortando para 200 caracteres caso ainda venha algo enorme
-                            obs_text = str(esc.get('observacao', '') or esc.get('funcao', ''))[:199]
-                            Escala.objects.create(
-                                competencia=competencia,
-                                membro_escalado=membro_escalado,
-                                departamento_alocado=departamento,
-                                funcao_alocada=funcao_obj,
-                                data_escala=data_obj,
-                                horario_inicio=horario_inicio,
-                                horario_fim=horario_fim,
-                                tipo_evento=obs_text
-                            )
-                            count_sucesso += 1
-                        except IntegrityError:
-                            # Ignora erro de constraint única no BD
-                            pass
-                    else:
+                        obs_text = str(esc.get('observacao', '') or esc.get('funcao', ''))[:199]
+                        Escala.objects.create(
+                            competencia=competencia,
+                            membro_escalado=membro_escalado,
+                            departamento_alocado=departamento,
+                            funcao_alocada=funcao_obj,
+                            data_escala=data_obj,
+                            horario_inicio=horario_inicio,
+                            horario_fim=horario_fim,
+                            tipo_evento=obs_text
+                        )
+                        count_sucesso += 1
+                    except (ValueError, TypeError, Membro.DoesNotExist):
                         count_fallback += 1
-                        # Adicionar slot fantasma (se possivel) ou apenas ignorar
-                        # Como Escala exige membro_escalado, vamos apenas ignorar e incrementar contador
+                    except IntegrityError:
+                        pass
 
             msg = f"Escalas extraídas para {departamento.nome} ({mes_ano_str}). Inseridas: {count_sucesso}."
             if count_fallback > 0:

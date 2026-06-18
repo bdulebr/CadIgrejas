@@ -10,7 +10,7 @@
 -->
 {% extends 'core/base.html' %}
 {% load static %}
-{% block title %}Self-Service Almoxarifado{% endblock %}
+{% block title %}Retirada de Materiais{% endblock %}
 {% block content %}
 <div class="min-h-screen flex flex-col items-center justify-center p-4">
     <div class="max-w-xl w-full bg-gray-900/80 backdrop-blur-md border border-gray-800 rounded-3xl shadow-2xl overflow-hidden relative z-10">
@@ -27,7 +27,7 @@
 
             <!-- Código do Item (Manual ou QR Scanner) -->
             <div x-data="{ scannerOpen: false }">
-                <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Código do Patrimônio</label>
+                <label class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Código do Patrimônio (Manual ou Câmera)</label>
                 <div class="flex gap-2">
                     <input type="text" name="codigo_patrimonio" id="codigo_patrimonio" required placeholder="Digite ou escaneie o código" class="w-full bg-gray-950/80 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none shadow-inner">
                     {% if modo == 'qr' %}
@@ -38,7 +38,7 @@
                 </div>
 
                 <div x-show="scannerOpen" class="mt-4 p-4 bg-black rounded-xl border border-gray-800 text-center text-gray-400 h-48 flex items-center justify-center">
-                    (Câmera / Scanner API Aqui)
+                    (Câmera / Leitor Aqui)
                 </div>
             </div>
 

@@ -11,13 +11,43 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
-from django.http import JsonResponse
-from django.contrib import messages
-from .models import Produto, Venda, ItemVenda, Caixa, CategoriaProduto, ConfiguracaoPDV, MovimentoCaixa
+from django.core.exceptions import PermissionDenied
+from datetime import datetime
+from .models import Produto, CategoriaProduto, Venda, ItemVenda, FechamentoCaixa, Caixa, Cliente, ConfiguracaoPDV, MovimentoCaixa, OperadorCaixa
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from functools import wraps
+from django.http import JsonResponse
+from django.contrib import messages
 import json
 import xmltodict
+
+def pdv_auth_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if 'pdv_operador_id' not in request.session:
+            return redirect('pdv_login')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+def pdv_login(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            pin = data.get('pin', '')
+            operador = OperadorCaixa.objects.filter(pin=pin, ativo=True).first()
+            if operador:
+                request.session['pdv_operador_id'] = operador.id
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'message': 'PIN inválido.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return render(request, 'pdv/login_pdv.html')
+
+def pdv_logout(request):
+    if 'pdv_operador_id' in request.session:
+        del request.session['pdv_operador_id']
+    return redirect('pdv_login')
 
 def pdv_access_check(user):
     if user.nivel_hierarquico == 'super_admin':
@@ -41,22 +71,6 @@ def pdv_dashboard(request):
     # Caixa atual
     caixa_atual = Caixa.objects.filter(status='aberto').last()
 
-    if request.method == 'POST':
-        acao = request.POST.get('acao')
-        if acao == 'abrir_caixa' and not caixa_atual:
-            Caixa.objects.create(
-                operador=request.user,
-                saldo_inicial=float(request.POST.get('saldo_inicial', 0))
-            )
-            messages.success(request, 'Caixa aberto com sucesso.')
-        elif acao == 'fechar_caixa' and caixa_atual:
-            caixa_atual.status = 'fechado'
-            caixa_atual.data_fechamento = timezone.now()
-            caixa_atual.saldo_final_real = float(request.POST.get('saldo_final_real', 0))
-            caixa_atual.save()
-            messages.success(request, 'Caixa fechado com sucesso.')
-        return redirect('pdv_dashboard')
-
     vendas_hoje = Venda.objects.filter(data_venda__date=timezone.now().date(), status='concluida')
     total_vendas_hoje = sum(v.total for v in vendas_hoje)
     from django.db.models import F
@@ -69,23 +83,20 @@ def pdv_dashboard(request):
         'config': config
     })
 
-@login_required
-@requer_permissao('pdv', 'ver')
+@pdv_auth_required
 def pdv_frente_caixa(request):
     caixa_atual = Caixa.objects.filter(status='aberto').last()
-    if not caixa_atual:
-        messages.warning(request, 'Você precisa abrir o caixa primeiro.')
-        return redirect('pdv_dashboard')
-
+    operador = OperadorCaixa.objects.get(id=request.session['pdv_operador_id'])
     config, _ = ConfiguracaoPDV.objects.get_or_create(id=1)
     produtos_rapidos = Produto.objects.filter(estoque_atual__gt=0).order_by('nome')
     return render(request, 'pdv/frente_caixa.html', {
         'caixa_atual': caixa_atual,
+        'operador_pdv': operador,
         'config': config,
         'produtos_rapidos': produtos_rapidos
     })
 
-@login_required
+@pdv_auth_required
 def api_buscar_produto(request, codigo):
     try:
         produto = Produto.objects.get(codigo_barras=codigo)
@@ -100,7 +111,44 @@ def api_buscar_produto(request, codigo):
         return JsonResponse({'success': False, 'message': 'Produto não encontrado.'})
 
 @csrf_exempt
-@login_required
+@pdv_auth_required
+def api_abrir_caixa(request):
+    if request.method == 'POST':
+        caixa_atual = Caixa.objects.filter(status='aberto').last()
+        if caixa_atual:
+            return JsonResponse({'success': False, 'message': 'Já existe um caixa aberto.'})
+        try:
+            data = json.loads(request.body)
+            saldo_inicial = float(data.get('saldo_inicial', 0))
+            op_id = request.session.get('pdv_operador_id')
+            op = OperadorCaixa.objects.filter(id=op_id).first()
+            Caixa.objects.create(operador=op, saldo_inicial=saldo_inicial)
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False})
+
+@csrf_exempt
+@pdv_auth_required
+def api_fechar_caixa(request):
+    if request.method == 'POST':
+        caixa_atual = Caixa.objects.filter(status='aberto').last()
+        if not caixa_atual:
+            return JsonResponse({'success': False, 'message': 'Nenhum caixa aberto.'})
+        try:
+            data = json.loads(request.body)
+            saldo_final = float(data.get('saldo_final', 0))
+            caixa_atual.status = 'fechado'
+            caixa_atual.data_fechamento = timezone.now()
+            caixa_atual.saldo_final_real = saldo_final
+            caixa_atual.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False})
+
+@csrf_exempt
+@pdv_auth_required
 def api_finalizar_venda(request):
     if request.method == 'POST':
         caixa_atual = Caixa.objects.filter(status='aberto').last()
@@ -113,6 +161,16 @@ def api_finalizar_venda(request):
             forma_pagamento = data.get('forma_pagamento', 'Dinheiro')
             desconto = float(data.get('desconto', 0))
 
+            cpf_cliente = data.get('cpf', '')
+            nome_cliente = data.get('nome_cliente', '')
+
+            cliente = None
+            if cpf_cliente or nome_cliente:
+                cliente, _ = Cliente.objects.get_or_create(
+                    cpf=cpf_cliente,
+                    defaults={'nome': nome_cliente if nome_cliente else 'Cliente não identificado'}
+                )
+
             if not itens:
                 return JsonResponse({'success': False, 'message': 'Carrinho vazio.'})
 
@@ -121,6 +179,7 @@ def api_finalizar_venda(request):
 
             venda = Venda.objects.create(
                 caixa=caixa_atual,
+                cliente=cliente,
                 subtotal=subtotal,
                 desconto=desconto,
                 total=total,
@@ -154,6 +213,12 @@ def api_finalizar_venda(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+@pdv_auth_required
+def imprimir_cupom(request, venda_id):
+    venda = get_object_or_404(Venda, id=venda_id)
+    config = ConfiguracaoPDV.objects.first()
+    return render(request, 'pdv/cupom_impressao.html', {'venda': venda, 'config': config})
 
 @login_required
 @requer_permissao('pdv', 'ver')
@@ -207,7 +272,7 @@ def importar_xml_fornecedor(request):
         except Exception as e:
             messages.error(request, f'Erro ao processar XML: {str(e)}')
 
-    return redirect('pdv_dashboard')
+    return redirect('pdv_configuracoes')
 
 @login_required
 def lista_produtos(request):
@@ -334,6 +399,35 @@ def configuracoes_pdv(request):
     from core.models import Membro
     membros = Membro.objects.filter(is_active=True).order_by('first_name', 'username')
     return render(request, 'pdv/configuracoes.html', {'config': config, 'membros': membros})
+
+@login_required
+@requer_permissao('pdv', 'editar')
+def gerenciar_operadores(request):
+    if request.method == 'POST':
+        acao = request.POST.get('acao')
+        if acao == 'novo':
+            nome = request.POST.get('nome')
+            pin = request.POST.get('pin')
+            if len(pin) == 4 and pin.isdigit():
+                OperadorCaixa.objects.create(nome=nome, pin=pin, ativo=True)
+                messages.success(request, 'Operador criado com sucesso.')
+            else:
+                messages.error(request, 'O PIN deve ter exatamente 4 dígitos numéricos.')
+        elif acao == 'excluir':
+            op_id = request.POST.get('op_id')
+            OperadorCaixa.objects.filter(id=op_id).delete()
+            messages.success(request, 'Operador excluído.')
+        elif acao == 'desativar':
+            op_id = request.POST.get('op_id')
+            op = OperadorCaixa.objects.filter(id=op_id).first()
+            if op:
+                op.ativo = not op.ativo
+                op.save()
+                messages.success(request, 'Status alterado.')
+        return redirect('pdv_gerenciar_operadores')
+
+    operadores = OperadorCaixa.objects.all().order_by('nome')
+    return render(request, 'pdv/operadores.html', {'operadores': operadores})
 
 @login_required
 def livro_caixa(request):
