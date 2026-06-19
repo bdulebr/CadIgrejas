@@ -82,8 +82,7 @@ class PermissaoPVDrive(models.Model):
     ]
 
     pasta = models.ForeignKey(PastaVirtual, on_delete=models.CASCADE, related_name='permissoes', null=True, blank=True)
-    # Se aplicável apenas a um arquivo:
-    # arquivo = models.ForeignKey('ArquivoMidia', on_delete=models.CASCADE, related_name='permissoes', null=True, blank=True)
+    arquivo = models.ForeignKey('ArquivoMidia', on_delete=models.CASCADE, related_name='permissoes', null=True, blank=True)
 
     alvo_departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, null=True, blank=True, related_name='permissoes_recebidas')
     alvo_membro = models.ForeignKey(Membro, on_delete=models.CASCADE, null=True, blank=True, related_name='permissoes_recebidas')
@@ -92,6 +91,12 @@ class PermissaoPVDrive(models.Model):
     concedido_por = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True, related_name='permissoes_concedidas')
     data_concessao = models.DateTimeField(auto_now_add=True)
     validade = models.DateTimeField(null=True, blank=True, help_text="Se preenchido, o acesso expira nesta data.")
+
+    # Recursos Avançados de Compartilhamento (Missão Impossível)
+    senha_acesso = models.CharField(max_length=128, blank=True, null=True, help_text="Hash de senha para acesso seguro")
+    is_autodestruir = models.BooleanField(default=False, help_text="Se marcado, o arquivo some do compartilhamento após o primeiro acesso")
+    foi_acessado = models.BooleanField(default=False)
+
     is_ativo = models.BooleanField(default=True)
 
     def __str__(self):

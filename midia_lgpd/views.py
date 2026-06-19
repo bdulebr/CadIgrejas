@@ -230,6 +230,12 @@ def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
             return redirect('pv_drive_pessoal')
 
         pasta_raiz = PastaVirtual.objects.filter(tipo_pasta='departamento', departamento=dep_atual).first()
+        if pasta_raiz:
+            PastaVirtual.objects.get_or_create(
+                tipo_pasta='compartilhados',
+                departamento=dep_atual,
+                defaults={'nome': 'Compartilhados Comigo', 'is_sistema': True, 'parent': pasta_raiz}
+            )
     else:
         # Pessoal
         modo = 'pessoal'
@@ -237,6 +243,12 @@ def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
         if not pasta_raiz:
             messages.error(request, 'Seu Drive Pessoal ainda não foi gerado pelo sistema.')
             return redirect('dashboard')
+
+        PastaVirtual.objects.get_or_create(
+            tipo_pasta='compartilhados',
+            dono_membro=request.user,
+            defaults={'nome': 'Compartilhados Comigo', 'is_sistema': True, 'parent': pasta_raiz}
+        )
 
     if pasta_id:
         pasta_atual = get_object_or_404(PastaVirtual, id=pasta_id, is_excluida=False)
@@ -435,9 +447,55 @@ def upload_drive(request):
     return redirect('pv_drive_home')
 
 @login_required
+def check_arquivo_acesso(request, arquivo):
+    user = request.user
+    if is_super_admin(user): return True
+    if arquivo.dono_membro == user: return True
+
+    deptos_usuario = (user.departamentos_liderados.all() | user.departamentos_subliderados.all()).distinct()
+    if arquivo.departamento in deptos_usuario: return True
+
+    hoje = timezone.now()
+    from django.db.models import Q
+    permissoes = PermissaoPVDrive.objects.filter(
+        arquivo=arquivo, is_ativo=True
+    ).filter(
+        Q(validade__isnull=True) | Q(validade__gte=hoje)
+    )
+    for p in permissoes:
+        if p.alvo_membro == user or p.alvo_departamento in deptos_usuario:
+            if p.senha_acesso:
+                if request.session.get(f'acesso_liberado_{p.id}'):
+                    return True
+                else:
+                    return p.id # Precisa de senha
+            return True
+
+    p_pasta = arquivo.pasta
+    while p_pasta:
+        permissoes_pasta = PermissaoPVDrive.objects.filter(
+            pasta=p_pasta, is_ativo=True
+        ).filter(
+            Q(validade__isnull=True) | Q(validade__gte=hoje)
+        )
+        for p in permissoes_pasta:
+            if p.alvo_membro == user or p.alvo_departamento in deptos_usuario:
+                return True
+        p_pasta = p_pasta.parent
+
+    return False
+
+@login_required
 @requer_permissao('midia_lgpd', 'ver')
 def visualizar_arquivo(request, arquivo_id):
     arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
+
+    acesso = check_arquivo_acesso(request, arquivo)
+    if acesso is False:
+        messages.error(request, "Você não tem permissão para acessar este arquivo.")
+        return redirect('pv_drive_home')
+    elif type(acesso) == int:
+        return redirect('acesso_protegido_senha', permissao_id=acesso)
 
     if not arquivo.gdrive_file_id:
         if arquivo.arquivo:
@@ -462,6 +520,13 @@ def visualizar_arquivo(request, arquivo_id):
 @requer_permissao('midia_lgpd', 'ver')
 def baixar_arquivo(request, arquivo_id):
     arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
+
+    acesso = check_arquivo_acesso(request, arquivo)
+    if acesso is False:
+        messages.error(request, "Você não tem permissão para baixar este arquivo.")
+        return redirect('pv_drive_home')
+    elif type(acesso) == int:
+        return redirect('acesso_protegido_senha', permissao_id=acesso)
 
     if not arquivo.gdrive_file_id:
         if arquivo.arquivo:
@@ -551,63 +616,131 @@ from django.utils.dateparse import parse_datetime
 
 @login_required
 @requer_permissao('midia_lgpd', 'ver')
-def compartilhar_pasta(request, pasta_id):
+def processar_compartilhamento(request):
     if request.method == 'POST':
-        pasta = get_object_or_404(PastaVirtual, id=pasta_id, is_excluida=False)
-
-        if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente'] and pasta.dono_membro != request.user and pasta.criado_por != request.user:
-            messages.error(request, "Você não tem permissão para compartilhar esta pasta.")
-            return redirect('pv_drive_home')
-
+        item_tipo = request.POST.get('item_tipo') # 'pasta' ou 'arquivo'
+        item_id = request.POST.get('item_id')
         tipo_alvo = request.POST.get('tipo_alvo')
         alvo_id = request.POST.get('alvo_id')
         nivel = request.POST.get('nivel', 'leitor')
         validade_str = request.POST.get('validade')
+        senha = request.POST.get('senha')
+        is_autodestruir = request.POST.get('is_autodestruir') == 'on'
 
-        validade = None
-        if validade_str:
-            validade = parse_datetime(validade_str)
+        validade = parse_datetime(validade_str) if validade_str else None
 
-        service = get_drive_service()
-        pasta_compartilhados = None
+        pasta = None
+        arquivo = None
+        nome_item = ""
+
+        if item_tipo == 'pasta':
+            pasta = get_object_or_404(PastaVirtual, id=item_id, is_excluida=False)
+            if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente'] and pasta.dono_membro != request.user and pasta.criado_por != request.user:
+                messages.error(request, "Você não tem permissão para compartilhar esta pasta.")
+                return redirect('pv_drive_home')
+            nome_item = pasta.nome
+        else:
+            arquivo = get_object_or_404(ArquivoMidia, id=item_id, is_excluido=False)
+            if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente'] and arquivo.dono_membro != request.user and arquivo.enviado_por != request.user:
+                messages.error(request, "Você não tem permissão para compartilhar este arquivo.")
+                return redirect('pv_drive_home')
+            nome_item = arquivo.titulo
 
         if tipo_alvo == 'departamento':
             alvo = get_object_or_404(Departamento, id=alvo_id)
-            PermissaoPVDrive.objects.create(
-                pasta=pasta, alvo_departamento=alvo, nivel=nivel,
-                concedido_por=request.user, validade=validade
+            permissao = PermissaoPVDrive.objects.create(
+                pasta=pasta, arquivo=arquivo, alvo_departamento=alvo, nivel=nivel,
+                concedido_por=request.user, validade=validade,
+                senha_acesso=senha, is_autodestruir=is_autodestruir
             )
-            pasta_compartilhados = PastaVirtual.objects.filter(tipo_pasta='compartilhados', departamento=alvo).first()
-            msg = f"Pasta compartilhada com o departamento {alvo.nome}."
+            msg = f"Item compartilhado com o departamento {alvo.nome}."
         elif tipo_alvo == 'membro':
             from core.models import Membro
             alvo = get_object_or_404(Membro, id=alvo_id)
-            PermissaoPVDrive.objects.create(
-                pasta=pasta, alvo_membro=alvo, nivel=nivel,
-                concedido_por=request.user, validade=validade
+            permissao = PermissaoPVDrive.objects.create(
+                pasta=pasta, arquivo=arquivo, alvo_membro=alvo, nivel=nivel,
+                concedido_por=request.user, validade=validade,
+                senha_acesso=senha, is_autodestruir=is_autodestruir
             )
-            pasta_compartilhados = PastaVirtual.objects.filter(tipo_pasta='compartilhados', dono_membro=alvo).first()
-            msg = f"Pasta compartilhada com {alvo.get_full_name()}."
+            msg = f"Item compartilhado com {alvo.get_full_name()}."
 
-        # Cria atalho no GDrive dentro de Compartilhados Comigo
-        if pasta_compartilhados and pasta_compartilhados.gdrive_folder_id and pasta.gdrive_folder_id:
-            try:
-                shortcut_metadata = {
-                    'name': pasta.nome,
-                    'mimeType': 'application/vnd.google-apps.shortcut',
-                    'shortcutDetails': {
-                        'targetId': pasta.gdrive_folder_id
-                    },
-                    'parents': [pasta_compartilhados.gdrive_folder_id]
-                }
-                service.files().create(body=shortcut_metadata, fields='id', supportsAllDrives=True).execute()
-            except Exception as e:
-                print(f"Erro ao criar atalho no gdrive: {e}")
+            if senha:
+                # Enviar senha por e-mail para o membro
+                enviar_email_html(
+                    destinatario=alvo.email,
+                    assunto="Chave de Acesso - Arquivo Compartilhado",
+                    template_name="generico.html",
+                    context={
+                        'content': f"<h2 style='color:#1d4ed8;'>Arquivo Protegido no PV Drive</h2><p>O usuário <b>{request.user.first_name}</b> compartilhou o item <b>{nome_item}</b> com você.</p><p>A senha para acessá-lo é: <strong style='font-size:20px; color:#b91c1c;'>{senha}</strong></p><p>Acesse a aba 'Compartilhados Comigo' no PV Drive para desbloquear.</p>"
+                    }
+                )
 
         messages.success(request, msg)
         return redirect('pv_drive_home')
-
     return redirect('pv_drive_home')
+
+@login_required
+@requer_permissao('midia_lgpd', 'ver')
+def meus_compartilhamentos(request):
+    permissoes = PermissaoPVDrive.objects.filter(concedido_por=request.user).order_by('-data_concessao')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        from django.db.models import Q
+        permissoes = permissoes.filter(
+            Q(pasta__nome__icontains=q) |
+            Q(arquivo__titulo__icontains=q) |
+            Q(alvo_membro__first_name__icontains=q) |
+            Q(alvo_departamento__nome__icontains=q)
+        )
+
+    return render(request, 'midia_lgpd/meus_compartilhamentos.html', {
+        'permissoes': permissoes,
+        'q': q
+    })
+
+@login_required
+@requer_permissao('midia_lgpd', 'ver')
+def acesso_protegido_senha(request, permissao_id):
+    permissao = get_object_or_404(PermissaoPVDrive, id=permissao_id, is_ativo=True)
+
+    # Validar se o usuario tem direito a essa permissao (alvo)
+    tem_acesso = False
+    if permissao.alvo_membro == request.user:
+        tem_acesso = True
+    elif permissao.alvo_departamento:
+        deptos_usuario = (request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()).distinct()
+        if permissao.alvo_departamento in deptos_usuario:
+            tem_acesso = True
+
+    if not tem_acesso and not is_super_admin(request.user):
+        messages.error(request, 'Você não tem acesso a este compartilhamento.')
+        return redirect('pv_drive_home')
+
+    if request.method == 'POST':
+        senha_digitada = request.POST.get('senha')
+        if senha_digitada == permissao.senha_acesso:
+            # Senha Correta!
+
+            # Autodestruição (Missão Impossível)
+            if permissao.is_autodestruir:
+                permissao.foi_acessado = True
+                permissao.is_ativo = False
+                permissao.save()
+                messages.warning(request, 'AVISO: Este arquivo se auto-destruiu e não estará mais na sua pasta de compartilhados.')
+
+            # Pode ser pasta ou arquivo, mas geralmente auto-destruição é para arquivo
+            if permissao.arquivo:
+                return redirect('baixar_arquivo', arquivo_id=permissao.arquivo.id)
+            elif permissao.pasta:
+                # Opcional: Se for pasta, redireciona pro PV drive dentro dela (se quisermos suportar pasta com senha)
+                return redirect('pv_drive_home')
+        else:
+            messages.error(request, 'Senha incorreta!')
+
+    return render(request, 'midia_lgpd/acesso_protegido.html', {
+        'permissao': permissao
+    })
 
 from intranet.services.groq_ai import analisar_documento_para_roteamento
 from thefuzz import process

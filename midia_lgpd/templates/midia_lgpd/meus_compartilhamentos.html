@@ -1,0 +1,120 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Meus Compartilhamentos - PV Drive{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-white">Meus Compartilhamentos</h1>
+            <p class="text-gray-400 mt-1">Gerencie os arquivos e pastas que você compartilhou com outros membros ou departamentos.</p>
+        </div>
+        <a href="{% url 'pv_drive_home' %}" class="px-5 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold transition-colors">
+            Voltar para o Drive
+        </a>
+    </div>
+
+    <!-- Barra de Pesquisa -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl">
+        <form method="GET" class="flex gap-4">
+            <div class="flex-1 relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i data-lucide="search" class="w-5 h-5 text-gray-500"></i>
+                </div>
+                <input type="text" name="q" value="{{ q }}" placeholder="Buscar por arquivo, pasta ou usuário..." class="w-full bg-gray-950 border border-gray-800 text-white pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            <button type="submit" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors">
+                Pesquisar
+            </button>
+        </form>
+    </div>
+
+    <!-- Tabela -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-400">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-800/80">
+                    <tr>
+                        <th class="px-6 py-4 font-black">Item</th>
+                        <th class="px-6 py-4 font-black">Compartilhado Com</th>
+                        <th class="px-6 py-4 font-black">Nível</th>
+                        <th class="px-6 py-4 font-black">Expira em</th>
+                        <th class="px-6 py-4 font-black">Proteções</th>
+                        <th class="px-6 py-4 font-black text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {% for p in permissoes %}
+                    <tr class="hover:bg-gray-800/30 transition-colors">
+                        <td class="px-6 py-4">
+                            {% if p.pasta %}
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="folder" class="w-5 h-5 text-yellow-500"></i>
+                                <span class="font-bold text-white">{{ p.pasta.nome }}</span>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="file" class="w-5 h-5 text-blue-500"></i>
+                                <span class="font-bold text-white">{{ p.arquivo.titulo }}</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if p.alvo_membro %}
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">
+                                    {{ p.alvo_membro.first_name|make_list|first }}
+                                </div>
+                                <span class="text-white">{{ p.alvo_membro.get_full_name }}</span>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center gap-2 text-purple-400">
+                                <i data-lucide="users" class="w-4 h-4"></i>
+                                <span>{{ p.alvo_departamento.nome }}</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-xs">{{ p.get_nivel_display }}</td>
+                        <td class="px-6 py-4 text-xs">
+                            {% if p.validade %}
+                                <span class="text-orange-400">{{ p.validade|date:"d/m/Y H:i" }}</span>
+                            {% else %}
+                                <span class="text-green-400">Nunca</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex gap-2">
+                                {% if p.senha_acesso %}
+                                <span title="Protegido por Senha" class="p-1 bg-yellow-500/20 text-yellow-500 rounded"><i data-lucide="key" class="w-4 h-4"></i></span>
+                                {% endif %}
+                                {% if p.is_autodestruir %}
+                                <span title="Auto-destruição Ativa" class="p-1 bg-red-500/20 text-red-500 rounded"><i data-lucide="bomb" class="w-4 h-4"></i></span>
+                                {% endif %}
+                                {% if not p.senha_acesso and not p.is_autodestruir %}
+                                <span class="text-gray-600">-</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <form method="POST" action="{% url 'cancelar_compartilhamento' p.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Revogar Compartilhamento">
+                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            Você não compartilhou nenhum item ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
