@@ -249,8 +249,17 @@ class Command(BaseCommand):
             except Exception as e:
                 import traceback
                 tb = traceback.format_exc()
-                # Special handling for known intentional test errors
-                if "ERRO 500 PROVOCADO: Vamos testar se o Watchdog e a IA pegam isso." in str(e):
+                error_message = str(e)
+                # Special handling for expected 403 on root POST (CSRF protection)
+                if "HTTP Error 403 gerado como Response na rota: / Method: POST" in error_message:
+                    log_lines.append(f"[INFO (EXPECTED)] POST {path} -> Status 403 (CSRF Protection)")
+                    # Do NOT increment errors_found, as it's an expected security behavior
+                # Special handling for expected 400 on status update with GET method
+                elif "HTTP Error 400 gerado como Response na rota: /casais/casal/1/atualizar-status/ Method: GET" in error_message:
+                    log_lines.append(f"[INFO (EXPECTED)] GET {path} -> Status 400 (Bad Request - Expected POST)")
+                    # Do NOT increment errors_found, as it's an expected security behavior
+                # Special handling for known intentional test errors (previously existing)
+                elif "ERRO 500 PROVOCADO: Vamos testar se o Watchdog e a IA pegam isso." in error_message:
                     log_lines.append(f"[INFO (INTENTIONAL EXCEPTION)] {path} -> {e}")
                     # Expected test exception; do not count as an error in the spider's total.
                 else:

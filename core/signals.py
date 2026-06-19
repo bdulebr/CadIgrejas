@@ -131,18 +131,16 @@ def criar_pasta_membro_pv_drive(sender, instance, created, **kwargs):
         from midia_lgpd.models import PastaVirtual
         try:
             # Cria a pasta raiz do usuário
-            PastaVirtual.objects.get_or_create(
+            pasta_raiz, _ = PastaVirtual.objects.get_or_create(
                 tipo_pasta='usuario',
                 dono_membro=instance,
-                nome=f"Pasta de {instance.first_name}",
-                defaults={'is_sistema': True}
+                defaults={'nome': f"Pasta de {instance.first_name}", 'is_sistema': True}
             )
-            # Cria a pasta de compartilhados do usuário
+            # Cria a pasta de compartilhados do usuário dentro da raiz
             PastaVirtual.objects.get_or_create(
                 tipo_pasta='compartilhados',
                 dono_membro=instance,
-                nome="Compartilhados Comigo",
-                defaults={'is_sistema': True}
+                defaults={'nome': "Compartilhados Comigo", 'is_sistema': True, 'parent': pasta_raiz}
             )
         except Exception as e:
             print(f"Erro ao criar PastaVirtual para Membro {instance.id}: {e}")
@@ -153,18 +151,16 @@ def criar_pasta_depto_pv_drive(sender, instance, created, **kwargs):
         from midia_lgpd.models import PastaVirtual
         try:
             # Cria a pasta raiz do departamento
-            PastaVirtual.objects.get_or_create(
+            pasta_raiz, _ = PastaVirtual.objects.get_or_create(
                 tipo_pasta='departamento',
                 departamento=instance,
-                nome=f"Pasta do Departamento: {instance.nome}",
-                defaults={'is_sistema': True}
+                defaults={'nome': f"Pasta do Departamento: {instance.nome}", 'is_sistema': True}
             )
-            # Cria a pasta de compartilhados globais do departamento
+            # Cria a pasta de compartilhados globais do departamento dentro da raiz
             PastaVirtual.objects.get_or_create(
                 tipo_pasta='compartilhados',
                 departamento=instance,
-                nome="Arquivos Compartilhados da Equipe",
-                defaults={'is_sistema': True}
+                defaults={'nome': "Arquivos Compartilhados da Equipe", 'is_sistema': True, 'parent': pasta_raiz}
             )
         except Exception as e:
             print(f"Erro ao criar PastaVirtual para Departamento {instance.id}: {e}")
