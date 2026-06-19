@@ -21,6 +21,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--user_id', type=int, help='ID do usuário que acionou')
+        parser.add_argument('--root_dir', type=str, help='Pasta raiz alternativa para escanear limpeza')
 
     def handle(self, *args, **options):
         settings.AXES_ENABLED = False
@@ -39,7 +40,7 @@ class Command(BaseCommand):
         import shutil
         from pathlib import Path
 
-        base_dir = settings.BASE_DIR
+        base_dir = options.get('root_dir') or settings.BASE_DIR
         pycache_count = 0
         pyc_count = 0
 

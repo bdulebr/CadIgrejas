@@ -1,133 +1,95 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: ministerio_casais/templates/ministerio_casais/pdf_relatorio_individual.html
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
--->
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Dossiê Individual - {{ casal.nomes_juntos }}</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 2cm;
-            @frame footer_frame {
-                -pdf-frame-content: footer_content;
-                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
-            }
-        }
-        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1f2937; }
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; }
-        .logo { max-height: 80px; margin-bottom: 10px; }
-        h1 { color: #1e3a8a; font-size: 18pt; margin: 0 0 5px 0; }
-        h2 { color: #1e40af; font-size: 14pt; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-top: 20px; margin-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th, td { border: 1px solid #e5e7eb; padding: 6px; text-align: left; vertical-align: top; }
-        th { background-color: #eff6ff; color: #1e3a8a; font-weight: bold; width: 30%; }
-        .crise-high { background-color: #fee2e2; color: #b91c1c; font-weight: bold; }
-        .crise-low { background-color: #f0fdf4; color: #166534; }
-        .footer { font-size: 8pt; color: #6b7280; text-align: center; border-top: 1px solid #ccc; padding-top: 5px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        {% if logo_path %}
-            <img src="{{ logo_path }}" class="logo" />
-        {% endif %}
-        <h1>Dossiê Pastoral: {{ casal.nomes_juntos }}</h1>
-        <p>Documento Confidencial gerado em {{ data_geracao|date:"d/m/Y \à\s H:i" }}</p>
-    </div>
+{% extends "core/base_pdf.html" %}
 
-    <h2>1. Dados do Casal</h2>
-    <table>
-        <tr>
-            <th>Status Relacionamento:</th>
-            <td>{{ casal.status_relacionamento }}</td>
-        </tr>
-        <tr>
-            <th>Data de Cadastro:</th>
-            <td>{{ casal.data_cadastro|date:"d/m/Y" }}</td>
-        </tr>
-        <tr>
-            <th>Aniversário de Casamento:</th>
-            <td>{{ casal.data_aniversario_casamento|date:"d/m/Y"|default:"Não informado" }}</td>
-        </tr>
+{% block title %}Dossiê Individual - {{ casal.nomes_juntos }}{% endblock %}
+{% block doc_title %}DOSSIÊ PASTORAL: {{ casal.nomes_juntos|upper }}{% endblock %}
+
+{% block extra_style %}
+<style>
+    h2 { color: #1e40af; font-size: 14pt; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-top: 20px; margin-bottom: 10px; }
+    .crise-high { background-color: #fee2e2; color: #b91c1c; font-weight: bold; }
+    .crise-low { background-color: #f0fdf4; color: #166534; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>1. Dados do Casal</h2>
+<table class="table">
+    <tr>
+        <th style="width: 30%;">Status Relacionamento:</th>
+        <td>{{ casal.status_relacionamento }}</td>
+    </tr>
+    <tr>
+        <th>Data de Cadastro:</th>
+        <td>{{ casal.data_cadastro|date:"d/m/Y" }}</td>
+    </tr>
+    <tr>
+        <th>Aniversário de Casamento:</th>
+        <td>{{ casal.data_aniversario_casamento|date:"d/m/Y"|default:"Não informado" }}</td>
+    </tr>
+</table>
+
+<table class="table">
+    <tr>
+        <th style="width: 30%;">Cônjuge 1 (Principal):</th>
+        <td>{{ casal.nome_conjuge_1 }}<br/>Tel: {{ casal.telefone_1|default:"N/A" }}<br/>Email: {{ casal.email_1|default:"N/A" }}</td>
+    </tr>
+    <tr>
+        <th>Cônjuge 2:</th>
+        <td>{{ casal.nome_conjuge_2 }}<br/>Tel: {{ casal.telefone_2|default:"N/A" }}<br/>Email: {{ casal.email_2|default:"N/A" }}</td>
+    </tr>
+</table>
+
+<h2>2. Histórico de Aconselhamento</h2>
+{% if historico %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 12%;">Data</th>
+                <th style="width: 18%;">Conselheiro</th>
+                <th style="width: 15%;">Participante(s)</th>
+                <th style="width: 15%;">Nível Crise</th>
+                <th style="width: 40%;">Observações Confidenciais</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in historico %}
+            <tr>
+                <td>{{ h.data_sessao|date:"d/m/Y" }}</td>
+                <td>Pr. {{ h.pastor_conselheiro }}</td>
+                <td>{{ h.atendimento_para }}</td>
+                <td class="{% if h.nivel_crise >= 4 %}crise-high{% else %}crise-low{% endif %}">Nível {{ h.nivel_crise }}</td>
+                <td>{{ h.observacoes|linebreaksbr }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
+{% else %}
+    <p>Nenhum histórico de aconselhamento registrado.</p>
+{% endif %}
 
-    <table>
-        <tr>
-            <th>Cônjuge 1 (Principal):</th>
-            <td>{{ casal.nome_conjuge_1 }}<br/>Tel: {{ casal.telefone_1|default:"N/A" }}<br/>Email: {{ casal.email_1|default:"N/A" }}</td>
-        </tr>
-        <tr>
-            <th>Cônjuge 2:</th>
-            <td>{{ casal.nome_conjuge_2 }}<br/>Tel: {{ casal.telefone_2|default:"N/A" }}<br/>Email: {{ casal.email_2|default:"N/A" }}</td>
-        </tr>
+<h2>3. Matrículas e Cursos</h2>
+{% if matriculas %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 40%;">Curso</th>
+                <th style="width: 25%;">Status de Pagamento</th>
+                <th style="width: 15%;">Progresso (%)</th>
+                <th style="width: 20%;">Certificado Emitido</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in matriculas %}
+            <tr>
+                <td>{{ m.curso.nome }}</td>
+                <td>{{ m.status_pagamento }}</td>
+                <td>{{ m.percentual_conclusao }}%</td>
+                <td>{% if m.aprovado %}SIM{% else %}NÃO{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
-
-    <h2>2. Histórico de Aconselhamento</h2>
-    {% if historico %}
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 15%;">Data</th>
-                    <th style="width: 15%;">Conselheiro</th>
-                    <th style="width: 15%;">Participante(s)</th>
-                    <th style="width: 10%;">Nível Crise</th>
-                    <th style="width: 45%;">Observações Confidenciais</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for h in historico %}
-                <tr>
-                    <td>{{ h.data_sessao|date:"d/m/Y" }}</td>
-                    <td>Pr. {{ h.pastor_conselheiro }}</td>
-                    <td>{{ h.atendimento_para }}</td>
-                    <td class="{% if h.nivel_crise >= 4 %}crise-high{% else %}crise-low{% endif %}">Nível {{ h.nivel_crise }}</td>
-                    <td>{{ h.observacoes|linebreaksbr }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>Nenhum histórico de aconselhamento registrado.</p>
-    {% endif %}
-
-    <h2>3. Matrículas e Cursos</h2>
-    {% if matriculas %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Curso</th>
-                    <th>Status de Pagamento</th>
-                    <th>Progresso (%)</th>
-                    <th>Certificado Emitido</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in matriculas %}
-                <tr>
-                    <td>{{ m.curso.nome }}</td>
-                    <td>{{ m.status_pagamento }}</td>
-                    <td>{{ m.percentual_conclusao }}%</td>
-                    <td>{% if m.aprovado %}SIM{% else %}NÃO{% endif %}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>Nenhuma matrícula registrada.</p>
-    {% endif %}
-
-    <div id="footer_content" class="footer">
-        Gerado pelo ERP Church - Módulo de Casais. Página <pdf:pagenumber> de <pdf:pagecount>.
-        <strong>Uso Exclusivo e Confidencial.</strong>
-    </div>
-</body>
-</html>
+{% else %}
+    <p>Nenhuma matrícula registrada.</p>
+{% endif %}
+{% endblock %}

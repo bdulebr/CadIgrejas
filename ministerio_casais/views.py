@@ -217,7 +217,7 @@ def upload_certificado(request, matricula_id):
                 from django.utils.html import strip_tags
                 import os
 
-                base_url = request.build_absolute_uri('/')[:-1]
+                base_url = settings.BASE_URL
                 sys_config = ConfiguracaoSistema.objects.first()
                 logo_url = base_url + sys_config.igreja_logo.url if sys_config and sys_config.igreja_logo else base_url + '/static/img/logo.jpg'
 

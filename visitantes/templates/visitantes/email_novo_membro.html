@@ -1,146 +1,21 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: visitantes/templates/visitantes/email_novo_membro.html
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
--->
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bem-vindo à Família Palavra de Vida Sede!</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #f3f4f6;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-w-width: 600px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
-            color: #ffffff;
-            text-align: center;
-            padding: 40px 20px;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 800;
-        }
-        .content {
-            padding: 30px;
-            color: #374151;
-            line-height: 1.6;
-        }
-        .content p {
-            margin: 10px 0 20px 0;
-        }
-        .highlight-box {
-            background-color: #eff6ff;
-            border-left: 4px solid #3b82f6;
-            padding: 15px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 25px;
-        }
-        .app-links {
-            text-align: center;
-            margin: 30px 0;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #1f2937;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            margin: 10px;
-            transition: opacity 0.2s;
-        }
-        .btn-android {
-            background-color: #10b981;
-        }
-        .btn-ios {
-            background-color: #000000;
-        }
-        .instructions {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        .instructions h3 {
-            margin-top: 0;
-            color: #1e293b;
-        }
-        .instructions ul {
-            padding-left: 20px;
-            margin: 0;
-        }
-        .instructions li {
-            margin-bottom: 10px;
-        }
-        .footer {
-            background-color: #f9fafb;
-            text-align: center;
-            padding: 20px;
-            font-size: 12px;
-            color: #6b7280;
-            border-top: 1px solid #e5e7eb;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <img src="{{ logo_url }}" alt="Logo Palavra de Vida" style="max-width: 150px; margin-bottom: 15px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2);">
-            <h1>Você agora faz parte da Família! 🎉</h1>
-        </div>
-        <div class="content">
-            <p>Olá, <strong>{{ nome }}</strong>!</p>
+{% extends "emails/base_email.html" %}
 
-            <p>É com muita alegria que celebramos a sua decisão! Você completou a nossa jornada de integração e agora é oficialmente membro da <strong>Igreja Palavra de Vida Sede</strong>.</p>
+{% block titulo_head %}Bem-vindo(a) à Família Palavra de Vida Sede!{% endblock %}
 
-            <div class="highlight-box">
-                <strong>Próximo Passo Fundamental:</strong> Para que possamos cuidar melhor de você, emitir sua credencial digital e te conectar a todos os ministérios e escalas, você precisa baixar o nosso App Oficial!
-            </div>
+{% block content %}
+<h2>Olá, {{ nome }}!</h2>
+<p>Com muita alegria comunicamos que a partir de agora você faz parte oficialmente do corpo de membros da <strong>{{ IGREJA_NOME|default:'Palavra de Vida Sede' }}</strong>!</p>
+<p>Nós louvamos a Deus por sua vida e cremos que você será uma bênção nesta comunidade.</p>
 
-            <div class="instructions">
-                <h3>⚠️ Importante: Preencha seu Perfil!</h3>
-                <p>Após baixar o aplicativo e realizar o seu cadastro, pedimos encarecidamente que vá até a tela de perfil e preencha todas as suas informações, com destaque para:</p>
-                <ul>
-                    <li><strong>Sua Foto de Perfil</strong> (nos ajuda muito a te identificar!)</li>
-                    <li><strong>Data de Nascimento</strong></li>
-                    <li><strong>Número do WhatsApp</strong></li>
-                    <li><strong>Data de Casamento</strong> (caso seja casado(a))</li>
-                </ul>
-            </div>
+<div class="highlight">
+    <p>A Secretaria criará seu perfil na Intranet em breve, onde você poderá acompanhar nossos avisos, ministérios e escalas.</p>
+</div>
 
-            <div class="app-links">
-                <p>Baixe agora mesmo clicando nos botões abaixo:</p>
-                <a href="https://play.google.com/store/apps/details?id=br.com.inchurch.ministevangelicopalavravida&hl=pt_BR" class="btn btn-android" target="_blank">Baixar para Android</a>
-                <a href="https://apps.apple.com/py/app/palavra-de-vida-sede/id1615828628?l=en-GB" class="btn btn-ios" target="_blank">Baixar para iPhone</a>
-            </div>
+<p>Fique atento(a) aos nossos cultos e avisos paroquiais para retirar sua carteirinha (se aplicável) e envolver-se nas atividades.</p>
 
-            <p>Estamos muito felizes em tê-lo conosco! Caso tenha alguma dúvida ou dificuldade no cadastro, procure a equipe de recepção no próximo culto e ficaremos felizes em ajudar.</p>
-        </div>
-        <div class="footer">
-            <p>Igreja Palavra de Vida Sede - Acompanhamento e Integração de Membros</p>
-        </div>
-    </div>
-</body>
-</html>
+<div style="text-align: center;">
+    <a href="{{ base_url|default:'https://pvenseada.org' }}" class="button">Acessar Portal da Igreja</a>
+</div>
+
+<p>Deus te abençoe rica e abundantemente!<br>Liderança Pastoral</p>
+{% endblock %}

@@ -37,14 +37,13 @@ def processar_pos_carrinho_background(movimentacoes_ids):
     if itens_pendentes > 0:
         resumo_msg += f" ATENÇÃO: {itens_pendentes} item(ns) requerem sua aprovação no Painel."
 
+    from core.utils_notifications import enviar_notificacao_real_time
     for lider in lideres:
-        NotificacaoGlobal.objects.create(
+        enviar_notificacao_real_time(
             usuario=lider,
             titulo=f"Novo Lote: {acao}",
             mensagem=resumo_msg,
-            icone='shopping-cart',
-            cor='blue',
-            link='/almoxarifado/painel/aprovacoes/'
+            link_acao='/almoxarifado/painel/aprovacoes/'
         )
 
     # PDF LGPD Termo de Cautela

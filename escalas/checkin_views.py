@@ -195,8 +195,9 @@ def baixar_qrcode_checkin(request):
     if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente', 'pastor', 'lider']:
         return HttpResponse("Acesso Negado", status=403)
 
-    # URL pública do check-in
-    url_base = request.build_absolute_uri('/escalas/checkin/')
+    from django.conf import settings
+    # URL pública do check-in usando BASE_URL do .env
+    url_base = f"{settings.BASE_URL}/escalas/checkin/"
 
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=4)
     qr.add_data(url_base)

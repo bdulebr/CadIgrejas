@@ -1,0 +1,7 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Notificação do Sistema{% endblock %}
+
+{% block content %}
+{{ content|safe }}
+{% endblock %}

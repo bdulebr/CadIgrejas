@@ -1,0 +1,24 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Boas-Vindas - {{ IGREJA_NOME|default:'Palavra de Vida Enseada' }}{% endblock %}
+
+{% block content %}
+<h2>Olá, {{ nome }}!</h2>
+<p>Seja muito bem-vindo(a) à plataforma oficial da <strong>{{ IGREJA_NOME|default:'Palavra de Vida Enseada' }}</strong>.</p>
+<p>É uma alegria ter você conosco. Seu cadastro foi concluído com sucesso e agora você tem acesso aos recursos da nossa Intranet.</p>
+
+<div class="highlight">
+    <strong>Seus dados de acesso:</strong><br>
+    Login/E-mail: {{ email }}<br>
+    {% if senha %}Senha Temporária: {{ senha }}{% endif %}
+</div>
+
+<p>Recomendamos que você acesse o sistema o quanto antes e atualize seu perfil.</p>
+
+<div style="text-align: center;">
+    <a href="{{ link_acesso|default:'https://pvenseada.org/login' }}" class="button">Acessar a Intranet</a>
+</div>
+
+<p>Se tiver qualquer dúvida, procure a liderança do seu departamento.</p>
+<p>Deus abençoe!<br>Equipe {{ IGREJA_NOME|default:'PVE' }}</p>
+{% endblock %}

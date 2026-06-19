@@ -1,0 +1,21 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Nova Escala - {{ departamento }}{% endblock %}
+
+{% block content %}
+<h2>Olá, {{ membro.first_name }}!</h2>
+<p>Uma nova escala oficial foi publicada no departamento <strong>{{ departamento }}</strong> para o mês de {{ mes }}/{{ ano }}.</p>
+<p>Verifique o painel para confirmar suas datas, horários e funções designadas.</p>
+
+<div class="highlight">
+    <strong>Resumo:</strong><br>
+    Departamento: {{ departamento }}<br>
+    Período: {{ mes }}/{{ ano }}
+</div>
+
+<div style="text-align: center;">
+    <a href="{{ link_acesso|default:'https://pvenseada.org/escalas/painel' }}" class="button">Ver Minha Escala</a>
+</div>
+
+<p>Deus abençoe seu serviço!<br>Liderança de {{ departamento }}</p>
+{% endblock %}

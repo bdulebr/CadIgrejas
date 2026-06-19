@@ -48,4 +48,7 @@ urlpatterns = [
     path('painel-lider/rh/ocorrencia/nova/', views.rh_nova_ocorrencia, name='rh_nova_ocorrencia'),
     path('painel-lider/rh/disciplina/<int:membro_id>/', views.rh_aplicar_disciplina, name='rh_aplicar_disciplina'),
     path('painel-lider/rh/disciplina/pdf/<int:acao_id>/', views.rh_gerar_pdf_disciplina, name='rh_gerar_pdf_disciplina'),
+
+    # API
+    path('api/membros/ai-autofill/', views.api_autofill_membro, name='api_autofill_membro'),
 ]

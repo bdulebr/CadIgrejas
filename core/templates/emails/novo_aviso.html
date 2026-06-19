@@ -1,0 +1,21 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Novo Aviso na Intranet{% endblock %}
+
+{% block content %}
+<h2>Olá, {{ membro.first_name|default:'Membro' }}!</h2>
+<p>Um novo aviso foi publicado no mural oficial da Intranet e pode ser do seu interesse.</p>
+
+<div class="highlight">
+    <strong>Título do Aviso:</strong><br>
+    {{ titulo_aviso }}
+</div>
+
+<p>Para ler os detalhes e baixar anexos (se houver), acesse o mural da plataforma.</p>
+
+<div style="text-align: center;">
+    <a href="{{ link_acesso|default:'https://pvenseada.org/mural' }}" class="button">Ler Aviso Completo</a>
+</div>
+
+<p>Fique sempre por dentro do que acontece em nossa igreja!</p>
+{% endblock %}

@@ -26,7 +26,11 @@
 <div class="space-y-6">
 
     <!-- Header Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 visitantes-stats"
+         hx-get="{% url 'visitantes_dashboard' %}"
+         hx-trigger="every 15s"
+         hx-select=".visitantes-stats"
+         hx-swap="outerHTML">
         <div class="bg-gray-800/60 backdrop-blur-md border border-gray-700/50 rounded-2xl p-6 flex items-center justify-between shadow-xl">
             <div>
                 <p class="text-sm font-medium text-gray-400 mb-1">Acompanhamentos Ativos</p>
@@ -80,7 +84,11 @@
     </div>
 
     <!-- Lista -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 visitantes-lista"
+         hx-get="{% url 'visitantes_dashboard' %}"
+         hx-trigger="every 15s"
+         hx-select=".visitantes-lista"
+         hx-swap="outerHTML">
         {% for v in visitantes %}
         <div class="bg-gray-800/80 backdrop-blur-lg border border-gray-700/50 rounded-2xl p-5 shadow-lg hover:shadow-pink-500/10 transition-all group">
             <div class="flex justify-between items-start mb-4">

@@ -34,12 +34,12 @@ def notificar_lideres_background(item, movimentacao):
 
     mensagem = f"O item '{item.nome}' teve uma {movimentacao.get_tipo_display()} registrada por {movimentacao.nome_digitado}. Qtd: {movimentacao.quantidade}{cond_texto}{val_texto}."
 
+    from core.utils_notifications import enviar_notificacao_real_time
     for lider in lideres:
-        NotificacaoGlobal.objects.create(
-            destinatario=lider,
+        enviar_notificacao_real_time(
+            usuario=lider,
             titulo=titulo,
             mensagem=mensagem,
-            tipo='info',
             link_acao='/almoxarifado/livro/'
         )
 
@@ -219,7 +219,13 @@ def exportar_livro_pdf(request):
 
     import os
     from django.conf import settings
-    logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+    from core.models import ConfiguracaoSistema
+
+    sys_config = ConfiguracaoSistema.objects.first()
+    if sys_config and sys_config.igreja_logo:
+        logo_path = sys_config.igreja_logo.url
+    else:
+        logo_path = settings.STATIC_URL + 'img/logo.jpg'
 
     if template_db:
         from django.template import Template, Context
@@ -229,8 +235,15 @@ def exportar_livro_pdf(request):
         # Fallback local
         html_str = render_to_string('almoxarifado/pdf_livro_fallback.html', {'movimentacoes': movimentacoes, 'logo_path': logo_path})
 
+    def fetch_resources(uri, rel):
+        if uri.startswith(settings.MEDIA_URL):
+            return os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        elif uri.startswith(settings.STATIC_URL):
+            return os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        return uri
+
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result)
+    pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result, link_callback=fetch_resources)
 
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
@@ -477,8 +490,9 @@ def imprimir_etiqueta_qr(request, item_id):
 
     item = get_object_or_404(ItemAlmoxarifado, id=item_id)
 
+    from django.conf import settings
     # URL completa (Ex: https://pve.com.br/almoxarifado/qr/retirar/123/)
-    base_url = request.build_absolute_uri('/')[:-1]
+    base_url = settings.BASE_URL
 
     url_retirar = f"{base_url}/almoxarifado/qr/retirar/{item.id_unico}/"
     qr_ret = qrcode.QRCode(version=1, box_size=10, border=4)
@@ -517,7 +531,8 @@ def imprimir_todos_qrs(request):
 
     itens = ItemAlmoxarifado.objects.all()
     itens_qr = []
-    base_url = request.build_absolute_uri('/')[:-1]
+    from django.conf import settings
+    base_url = settings.BASE_URL
 
     for item in itens:
         url_retirar = f"{base_url}/almoxarifado/qr/retirar/{item.id_unico}/"
@@ -562,7 +577,8 @@ def baixar_qr_generico(request, tipo):
 
     # Gera a URL absoluta para a rota do Scanner Genérico
     url_relativa = reverse('scanner_retirada_generico' if tipo == 'retirada' else 'scanner_devolucao_generico')
-    url_absoluta = request.build_absolute_uri(url_relativa)
+    from django.conf import settings
+    url_absoluta = f"{settings.BASE_URL}{url_relativa}"
 
     qr = qrcode.QRCode(
         version=1,

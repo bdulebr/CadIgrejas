@@ -335,6 +335,7 @@ def fazer_chamada_aula(request, aula_id):
     })
 
 def _enviar_alerta_falta(request, presenca):
+    from django.conf import settings
     casal = presenca.matricula.casal
     email = casal.email
     if email:
@@ -347,7 +348,7 @@ def _enviar_alerta_falta(request, presenca):
                     'casal': casal.nomes_juntos,
                     'aula': presenca.aula.titulo,
                     'turma': presenca.aula.turma.nome_turma,
-                    'link_portal': f"{request.scheme}://{request.get_host()}/aluno/login/"
+                    'link_portal': f"{settings.BASE_URL}/casais/aluno/login/"
                 }
             )
         except Exception as e:
@@ -424,32 +425,28 @@ def enviar_email_acesso(request, matricula_id):
         messages.error(request, 'Este casal não possui nenhum e-mail cadastrado!')
         return redirect('mural_professor_turma', turma_id=turma_id)
 
-    # Enviar email
-    link_magico = request.build_absolute_uri(f"/casais/aluno/login/?token={matricula.token_acesso}")
+    from django.conf import settings
+    link_magico = f"{settings.BASE_URL}/casais/aluno/login/?token={matricula.token_acesso}"
 
-    from django.core.mail import send_mail
-    from django.template.loader import render_to_string
-    from django.utils.html import strip_tags
+    from intranet.services.gmail_service import enviar_email_html
 
-    html_message = render_to_string('emails/ministerio_casais/email_matricula_curso.html', {
-        'casal': casal,
-        'matricula': matricula,
-        'link_magico': link_magico
-    })
-    plain_message = strip_tags(html_message)
     destinatarios = []
     if casal.email_conjuge_1: destinatarios.append(casal.email_conjuge_1)
     if casal.email_conjuge_2: destinatarios.append(casal.email_conjuge_2)
 
     try:
-        send_mail(
-            f'Seu Acesso ao Curso: {matricula.turma.curso.nome}',
-            plain_message,
-            None,
-            destinatarios,
-            html_message=html_message,
-            fail_silently=False,
-        )
+        # Tenta enviar para ambos separadamente ou para o principal se quisermos.
+        for dest in destinatarios:
+            enviar_email_html(
+                destinatario=dest,
+                assunto=f'Seu Acesso ao Curso: {matricula.turma.curso.nome}',
+                template_name='ministerio_casais/email_matricula_curso.html',
+                context={
+                    'casal': casal,
+                    'matricula': matricula,
+                    'link_magico': link_magico
+                }
+            )
         messages.success(request, f'E-mail com Link Mágico enviado para {", ".join(destinatarios)}!')
     except Exception as e:
         messages.error(request, f'Erro ao enviar e-mail: {str(e)}')

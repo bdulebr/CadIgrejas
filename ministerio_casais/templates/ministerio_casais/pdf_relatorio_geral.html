@@ -1,82 +1,43 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: ministerio_casais/templates/ministerio_casais/pdf_relatorio_geral.html
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
--->
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Relatório Geral de Casais</title>
-    <style>
-        @page {
-            size: A4 landscape;
-            margin: 2cm;
-            @frame footer {
-                -pdf-frame-content: footerContent;
-                bottom: 1cm;
-                margin-left: 2cm;
-                margin-right: 2cm;
-                height: 1cm;
-            }
-        }
-        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1f2937; }
-        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; }
-        .logo { max-height: 70px; margin-bottom: 10px; }
-        .title { font-size: 18pt; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; }
-        .subtitle { font-size: 10pt; color: #666; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background-color: #eff6ff; color: #1e3a8a; text-align: left; padding: 10px; font-weight: bold; font-size: 10pt; border: 1px solid #ddd; }
-        td { padding: 10px; border: 1px solid #ddd; font-size: 10pt; vertical-align: top; }
-        .status-Namorados { color: #4338ca; font-weight: bold; }
-        .status-Noivos { color: #7e22ce; font-weight: bold; }
-        .status-Casados { color: #15803d; font-weight: bold; }
-        .status-EmCrise { color: #b91c1c; font-weight: bold; }
-        .status-Separados { color: #4b5563; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        {% if logo_path %}
-            <img src="{{ logo_path }}" class="logo" />
-        {% endif %}
-        <div class="title">Relatório Geral do Ministério de Casais</div>
-        <div class="subtitle">Documento Confidencial | Gerado em: {{ data_geracao|date:"d/m/Y \à\s H:i" }}</div>
-    </div>
+{% extends "core/base_pdf.html" %}
 
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 25%;">Cônjuges</th>
-                <th style="width: 15%;">Status</th>
-                <th style="width: 30%;">Contatos Principais</th>
-                <th style="width: 15%;">Bodas</th>
-                <th style="width: 15%;">Data de Cadastro</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for c in casais %}
-            <tr>
-                <td><strong>{{ c.nomes_juntos }}</strong></td>
-                <td class="status-{{ c.status_relacionamento|cut:' ' }}">{{ c.status_relacionamento }}</td>
-                <td>
-                    <span style="font-size: 9pt;">Tel: {{ c.telefone_1|default:"-" }} / {{ c.telefone_2|default:"-" }}</span><br>
-                    <span style="font-size: 9pt; color: #666;">E-mail: {{ c.email_1|default:"N/A" }}</span>
-                </td>
-                <td>{{ c.data_aniversario_casamento|date:"d/m/Y"|default:"Não informado" }}</td>
-                <td>{{ c.data_cadastro|date:"d/m/Y" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% block title %}Relatório Geral de Casais{% endblock %}
+{% block doc_title %}RELATÓRIO GERAL DO MINISTÉRIO DE CASAIS{% endblock %}
 
-    <div id="footerContent" style="text-align: right; font-size: 9px; color: #888;">
-        Gerado pelo ERP Church - Página <pdf:pagenumber> de <pdf:pagecount>
-    </div>
-</body>
-</html>
+{% block extra_style %}
+<style>
+    @page { size: A4 landscape; }
+    .status-Namorados { color: #4338ca; font-weight: bold; }
+    .status-Noivos { color: #7e22ce; font-weight: bold; }
+    .status-Casados { color: #15803d; font-weight: bold; }
+    .status-EmCrise { color: #b91c1c; font-weight: bold; }
+    .status-Separados { color: #4b5563; font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+<table class="table">
+    <thead>
+        <tr>
+            <th style="width: 25%;">Cônjuges</th>
+            <th style="width: 15%;">Status</th>
+            <th style="width: 30%;">Contatos Principais</th>
+            <th style="width: 15%;">Bodas</th>
+            <th style="width: 15%;">Data de Cadastro</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in casais %}
+        <tr>
+            <td><strong>{{ c.nomes_juntos }}</strong></td>
+            <td class="status-{{ c.status_relacionamento|cut:' ' }}">{{ c.status_relacionamento }}</td>
+            <td>
+                <span style="font-size: 9pt;">Tel: {{ c.telefone_1|default:"-" }} / {{ c.telefone_2|default:"-" }}</span><br>
+                <span style="font-size: 9pt; color: #666;">E-mail: {{ c.email_1|default:"N/A" }}</span>
+            </td>
+            <td>{{ c.data_aniversario_casamento|date:"d/m/Y"|default:"Não informado" }}</td>
+            <td>{{ c.data_cadastro|date:"d/m/Y" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

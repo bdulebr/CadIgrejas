@@ -38,11 +38,13 @@ def global_config(request):
 
         is_tesouraria_team = request.user.departamentos_liderados.filter(nome__icontains='Tesouraria').exists()
 
+    from django.conf import settings
     return {
         'sys_config': config,
         'links_rapidos': links_permitidos,
         'is_almoxarifado_team': is_almoxarifado_team,
-        'is_tesouraria_team': is_tesouraria_team
+        'is_tesouraria_team': is_tesouraria_team,
+        'BASE_URL': settings.BASE_URL
     }
 
 def notificacoes_globais(request):

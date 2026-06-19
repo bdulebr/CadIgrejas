@@ -1,63 +1,19 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: visitantes/templates/visitantes/email_boas_vindas.html
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
--->
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Bem-vindo(a) à Igreja</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px; color: #1f2937; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .header { background: linear-gradient(135deg, #1e3a8a, #3b82f6); padding: 30px 20px; text-align: center; color: #ffffff; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .content { padding: 30px; line-height: 1.6; }
-        .content h2 { color: #1e3a8a; font-size: 20px; margin-top: 0; }
-        .schedule { background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
-        .schedule ul { list-style: none; padding: 0; margin: 0; }
-        .schedule li { margin-bottom: 8px; font-weight: bold; color: #1e3a8a; }
-        .footer { background-color: #111827; color: #9ca3af; text-align: center; padding: 20px; font-size: 12px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <img src="{{ logo_url }}" alt="Logo Palavra de Vida" style="max-width: 150px; margin-bottom: 15px; border-radius: 8px;">
-            <h1>Alegrei-me quando me disseram: Vamos à Casa do Senhor!</h1>
-        </div>
-        <div class="content">
-            <h2>Olá, {{ nome }}!</h2>
-            <p>Ficamos extremamente felizes com a sua visita. Cremos que Deus tem um propósito especial para a sua vida e queremos que você se sinta em casa conosco!</p>
+{% extends "emails/base_email.html" %}
 
-            <p>Seja você um visitante ou alguém que tomou a melhor decisão da vida de caminhar com Jesus, saiba que estamos aqui para te apoiar em cada passo.</p>
+{% block titulo_head %}Bem-vindo(a) à Palavra de Vida!{% endblock %}
 
-            <div class="schedule">
-                <p style="margin-top:0; color:#db2777; font-weight:bold;">Nossos Horários de Culto:</p>
-                <ul>
-                    <li>Domingo da Família: 09:30 às 11:30 e 19:30 às 21:30</li>
-                    <li>2° Domingo do Mês (Santa Ceia): 09:30 às 11:30 e 19:30 às 21:30</li>
-                    <li>Segunda-feira (Culto de Oração): 20:00 às 21:00</li>
-                    <li>Terça-feira (Atendimento Pastoral): 09:30 às 18:30</li>
-                    <li>Quarta-feira (Quarta Profética): 20:00 às 22:00</li>
-                    <li>Quinta-feira (Quinta do Saber): 19:30 às 20:30</li>
-                </ul>
-            </div>
+{% block content %}
+<h2>Olá, {{ nome }}!</h2>
+<p>Nós da <strong>{{ IGREJA_NOME|default:'Palavra de Vida' }}</strong> ficamos extremamente felizes com a sua visita.</p>
+<p>Nossa oração é para que você tenha se sentido acolhido(a) e abençoado(a) através da palavra que foi ministrada.</p>
 
-            <p>Se precisar de oração, aconselhamento ou apenas de amigos para conversar, não hesite em nos procurar. A igreja é a sua segunda família!</p>
+<div class="highlight">
+    <p>Queremos conhecer você melhor! Se desejar, converse com um de nossos pastores ou líderes em sua próxima visita.</p>
+</div>
 
-            <p style="margin-top: 30px;">Com amor em Cristo,<br><strong>Equipe Pastoral e Voluntários</strong></p>
-        </div>
-        <div class="footer">
-            <p>Você recebeu este e-mail pois nos visitou recentemente.</p>
-            <p>&copy; {% now "Y" %} Igreja Local. Todos os direitos reservados.</p>
-        </div>
-    </div>
-</body>
-</html>
+<div style="text-align: center;">
+    <a href="{{ base_url|default:'https://pvenseada.org' }}" class="button">Conheça mais sobre nós</a>
+</div>
+
+<p>Deus te abençoe rica e abundantemente!<br>Equipe de Recepção e Liderança Pastoral</p>
+{% endblock %}

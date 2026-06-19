@@ -19,9 +19,9 @@ from core.models import Membro
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.template.loader import render_to_string
-from django.core.mail import send_mail
 from django.utils.html import strip_tags
 from django.conf import settings
+from intranet.services.gmail_service import enviar_email_html
 import threading
 import os
 from io import BytesIO
@@ -33,15 +33,11 @@ def enviar_email_boas_vindas_background(nome, email, base_url):
         sys_config = ConfiguracaoSistema.objects.first()
         logo_url = base_url + sys_config.igreja_logo.url if sys_config and sys_config.igreja_logo else base_url + '/static/img/logo.jpg'
 
-        html_message = render_to_string('visitantes/email_boas_vindas.html', {'nome': nome, 'base_url': base_url, 'logo_url': logo_url})
-        plain_message = strip_tags(html_message)
-        send_mail(
-            subject='Bem-vindo(a) à Palavra de Vida!',
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            html_message=html_message,
-            fail_silently=True,
+        enviar_email_html(
+            destinatario=email,
+            assunto='Bem-vindo(a) à Palavra de Vida!',
+            template_name='visitantes/email_boas_vindas.html',
+            context={'nome': nome, 'base_url': base_url}
         )
     except Exception as e:
         print(f"Erro ao enviar email para {email}: {e}")
@@ -52,15 +48,11 @@ def enviar_email_novo_membro_background(nome, email, base_url):
         sys_config = ConfiguracaoSistema.objects.first()
         logo_url = base_url + sys_config.igreja_logo.url if sys_config and sys_config.igreja_logo else base_url + '/static/img/logo.jpg'
 
-        html_message = render_to_string('visitantes/email_novo_membro.html', {'nome': nome, 'base_url': base_url, 'logo_url': logo_url})
-        plain_message = strip_tags(html_message)
-        send_mail(
-            subject='Bem-vindo à Família Palavra de Vida Sede!',
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            html_message=html_message,
-            fail_silently=True,
+        enviar_email_html(
+            destinatario=email,
+            assunto='Bem-vindo à Família Palavra de Vida Sede!',
+            template_name='visitantes/email_novo_membro.html',
+            context={'nome': nome, 'base_url': base_url}
         )
     except Exception as e:
         print(f"Erro ao enviar email de novo membro para {email}: {e}")
@@ -187,7 +179,8 @@ def cadastrar_visitante(request):
 
         # Enviar e-mail de boas-vindas assíncrono se possuir e-mail
         if email:
-            base_url = request.build_absolute_uri('/')[:-1]
+            from django.conf import settings
+            base_url = settings.BASE_URL
             threading.Thread(target=enviar_email_boas_vindas_background, args=(nome_completo, email, base_url)).start()
 
         messages.success(request, f"{tipo} {nome_completo} cadastrado com sucesso!")
@@ -240,10 +233,11 @@ def tornar_membro(request, visitante_id):
 
         # Enviar e-mail de Novo Membro / Baixar App assincronamente se houver email
         if visitante.email:
-            base_url = request.build_absolute_uri('/')[:-1]
+            from django.conf import settings
+            base_url = settings.BASE_URL
             threading.Thread(target=enviar_email_novo_membro_background, args=(visitante.nome_completo, visitante.email, base_url)).start()
 
-        messages.success(request, f"{visitante.nome_completo} agora é membro e foi movido para o Arquivo de Novos Membros!")
+        messages.success(request, f"{visitante.nome_completo} agora é membro da igreja e foi movido para o Arquivo de Novos Membros!")
         return redirect('visitantes_dashboard')
 
     return redirect('visitante_perfil', visitante_id=visitante.id)
@@ -375,14 +369,21 @@ def exportar_relatorio_geral_pdf(request):
     from core.models import ConfiguracaoSistema
     sys_config = ConfiguracaoSistema.objects.first()
     if sys_config and sys_config.igreja_logo:
-        logo_path = sys_config.igreja_logo.path
+        logo_path = sys_config.igreja_logo.url
     else:
-        logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+        logo_path = settings.STATIC_URL + 'img/logo.jpg'
 
     html_str = render_to_string('visitantes/pdf_relatorio_geral.html', {'visitantes': visitantes, 'data_geracao': timezone.now(), 'logo_path': logo_path})
 
+    def fetch_resources(uri, rel):
+        if uri.startswith(settings.MEDIA_URL):
+            return os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        elif uri.startswith(settings.STATIC_URL):
+            return os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        return uri
+
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result)
+    pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result, link_callback=fetch_resources)
 
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
@@ -404,9 +405,9 @@ def exportar_relatorio_individual_pdf(request, visitante_id):
     from core.models import ConfiguracaoSistema
     sys_config = ConfiguracaoSistema.objects.first()
     if sys_config and sys_config.igreja_logo:
-        logo_path = sys_config.igreja_logo.path
+        logo_path = sys_config.igreja_logo.url
     else:
-        logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'logo.jpg')
+        logo_path = settings.STATIC_URL + 'img/logo.jpg'
 
     html_str = render_to_string('visitantes/pdf_relatorio_individual.html', {
         'visitante': visitante,
@@ -416,8 +417,15 @@ def exportar_relatorio_individual_pdf(request, visitante_id):
         'logo_path': logo_path
     })
 
+    def fetch_resources(uri, rel):
+        if uri.startswith(settings.MEDIA_URL):
+            return os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        elif uri.startswith(settings.STATIC_URL):
+            return os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        return uri
+
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result)
+    pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result, link_callback=fetch_resources)
 
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')

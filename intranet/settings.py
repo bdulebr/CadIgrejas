@@ -64,6 +64,7 @@ X_FRAME_OPTIONS = 'DENY'
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -71,7 +72,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-        'django_htmx',
+    'channels',
+    'django_htmx',
     'axes',
 
     # API & Mobile App Ready
@@ -143,6 +145,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'intranet.wsgi.application'
+ASGI_APPLICATION = 'intranet.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 209715200 # 200MB

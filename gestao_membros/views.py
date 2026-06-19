@@ -143,11 +143,12 @@ def aprovar_membro(request, membro_id):
 
     try:
         from intranet.services.gmail_service import enviar_email_html
+        from django.conf import settings
         context = {
             'nome': membro.first_name,
             'email': membro.email,
             'senha': senha_gerada,
-            'link_acesso': request.build_absolute_uri('/')
+            'link_acesso': settings.BASE_URL + '/'
         }
         enviar_email_html(
             destinatario=membro.email,
@@ -851,5 +852,25 @@ def rh_gerar_pdf_disciplina(request, acao_id):
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="Disciplina_{acao.membro.first_name}_{acao.tipo}.pdf"'
         return response
-    else:
         return HttpResponse("Erro ao gerar PDF", status=500)
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from intranet.services.gemini_ai import extrair_dados_membro_texto
+
+@login_required
+@csrf_exempt
+def api_autofill_membro(request):
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+            texto = body.get('texto', '')
+            if not texto:
+                return JsonResponse({'error': 'Texto vazio'}, status=400)
+
+            dados = extrair_dados_membro_texto(texto)
+            return JsonResponse(dados)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Apenas POST'}, status=405)

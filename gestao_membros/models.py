@@ -69,12 +69,12 @@ class ConfiguracaoSlotEscala(models.Model):
     def get_tipo_evento_display(self):
         from escalas.models import CultoEvento
         if not self.tipo_evento:
-            return ""
+            return "Sem Evento"
         if self.tipo_evento.isdigit():
             evento = CultoEvento.objects.filter(id=int(self.tipo_evento)).first()
         else:
             evento = CultoEvento.objects.filter(chave_slug=self.tipo_evento).first()
-        return evento.nome if evento else self.tipo_evento
+        return evento.nome if evento else f"Culto Removido (ID: {self.tipo_evento})"
 
     def __str__(self):
         return f"{self.quantidade}x {self.funcao.nome} em {self.get_tipo_evento_display()}"

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo_head %}Palavra de Vida Enseada{% endblock %}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            color: #333333;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .header {
+            background-color: #06b6d4; /* cyan-500 */
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header img {
+            max-height: 60px;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 15px 0 0 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #1f2937;
+            margin-top: 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #0ea5e9; /* sky-500 */
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .alert {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            color: #991b1b;
+        }
+        .highlight {
+            background-color: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 15px;
+            margin: 20px 0;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- HEADER -->
+        <div class="header">
+            {% if IGREJA_LOGO %}
+                <img src="{{ IGREJA_LOGO }}" alt="{{ IGREJA_NOME|default:'Palavra de Vida Enseada' }}">
+            {% else %}
+                <h1>{{ IGREJA_NOME|default:'Palavra de Vida Enseada' }}</h1>
+            {% endif %}
+            {% block header_extra %}{% endblock %}
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            {% block content %}
+            <!-- O conteúdo do e-mail vai aqui -->
+            {% endblock %}
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <p>Este é um e-mail automático gerado pelo sistema da {{ IGREJA_NOME|default:'Palavra de Vida Enseada' }}.</p>
+            <p>Por favor, não responda a este e-mail.</p>
+            {% if IGREJA_CNPJ %}
+                <p>CNPJ: {{ IGREJA_CNPJ }}</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

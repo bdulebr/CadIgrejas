@@ -934,13 +934,12 @@ def upload_inteligente_ocr(request):
         # 5. Notificar Líderes do Departamento
         if departamento:
             lideres = Membro.objects.filter(departamentos_liderados=departamento, is_active=True)
+            from core.utils_notifications import enviar_notificacao_real_time
             for lider in lideres:
-                NotificacaoGlobal.objects.create(
-                    destinatario=lider,
-                    remetente=request.user,
+                enviar_notificacao_real_time(
+                    usuario=lider,
                     titulo=f"Novo Upload Inteligente: {departamento.nome}",
                     mensagem=f"A IA roteou o arquivo '{titulo}' para seu departamento. Resumo: {resumo}",
-                    tipo='upload_ia',
                     link_acao=f"/drive/dep/{departamento.id}/"
                 )
 

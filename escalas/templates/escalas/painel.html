@@ -50,8 +50,8 @@
                 <form method="POST" action="{% url 'nova_competencia' %}" class="space-y-4">
                     {% csrf_token %}
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mês/Ano (Ex: 06/2026)</label>
-                        <input type="text" name="mes_ano" placeholder="06/2026" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-950/60 text-white font-mono">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mês de Referência da Escala</label>
+                        <input type="month" name="mes_ano_input" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-950/60 text-white font-mono">
                     </div>
 
                     <div>
@@ -82,11 +82,25 @@
                 <form method="POST" action="{% url 'importar_escala_ocr' %}" enctype="multipart/form-data" class="space-y-4">
                     {% csrf_token %}
                     <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mês de Referência da Escala</label>
+                        <input type="month" name="mes_ano_input" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-white font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Departamento</label>
+                        <select name="departamento_id" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-white">
+                            {% for dept in departamentos %}
+                            <option value="{{ dept.id }}">{{ dept.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Arquivo PDF, CSV ou Excel</label>
                         <input type="file" name="arquivo_escala" accept=".pdf,.xlsx,.xls,.csv" required class="w-full px-4 py-2 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-gray-300">
                     </div>
                     <button type="submit" class="w-full py-3 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center justify-center gap-2">
-                        ✨ PROCESSAR COM GROQ
+                        ✨ GERAR ESCALA
                     </button>
                 </form>
             </div>

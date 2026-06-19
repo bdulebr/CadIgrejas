@@ -1,79 +1,35 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: visitantes/templates/visitantes/pdf_relatorio_geral.html
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
--->
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Relatório Geral de Visitantes</title>
-    <style>
-        @page {
-            size: A4 portrait;
-            margin: 2cm;
-            @frame footer_frame {
-                -pdf-frame-content: footer_content;
-                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
-            }
-        }
-        body { font-family: Helvetica, sans-serif; font-size: 12px; color: #1f2937; }
-        h1 { font-size: 20px; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 5px; margin-top: 0; }
-        h2 { font-size: 16px; color: #4b5563; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
-        th { background-color: #eff6ff; color: #1e3a8a; font-weight: bold; }
-        .text-center { text-align: center; }
-        .footer { font-size: 10px; color: #9ca3af; text-align: center; border-top: 1px solid #f3f4f6; padding-top: 10px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .logo { max-height: 70px; margin-bottom: 10px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        {% if logo_path %}
-        <img src="{{ logo_path }}" alt="Logo PV" class="logo">
-        {% endif %}
-        <h1>Relatório Geral de Visitantes e Novos Convertidos</h1>
-        <p style="color: #6b7280; font-size: 11px;">Gerado em {{ data_geracao|date:"d/m/Y H:i" }}</p>
-    </div>
+{% extends "core/base_pdf.html" %}
 
-    <div id="footer_content" class="footer">
-        Gerado pelo ERP Igreja - Módulo CRM | Data de emissão: {{ data_geracao|date:"d/m/Y H:i" }} | Página <pdf:pagenumber> de <pdf:pagecount>
-    </div>
+{% block title %}Relatório Geral de Visitantes{% endblock %}
+{% block doc_title %}RELATÓRIO GERAL - VISITANTES{% endblock %}
 
-    <p style="margin-top: 15px;">Total de pessoas registradas neste relatório: <strong>{{ visitantes.count }}</strong></p>
+{% block content %}
+<p style="margin-top: 15px;">Total de pessoas registradas neste relatório: <strong>{{ visitantes.count }}</strong></p>
 
-    <table>
-        <thead>
-            <tr>
-                <th width="30%">Nome Completo</th>
-                <th width="15%">Tipo</th>
-                <th width="20%">Telefone</th>
-                <th width="20%">Familiar Vinculado</th>
-                <th width="15%" class="text-center">Data Cadastro</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for v in visitantes %}
-            <tr>
-                <td>{{ v.nome_completo }}</td>
-                <td>{{ v.tipo }}</td>
-                <td>{{ v.telefone|default:"-" }}</td>
-                <td>{{ v.familiar_vinculado.nome_completo|default:"-" }}</td>
-                <td class="text-center">{{ v.data_cadastro|date:"d/m/Y" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center">Nenhum visitante cadastrado no momento.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</body>
-</html>
+<table class="table">
+    <thead>
+        <tr>
+            <th width="30%">Nome Completo</th>
+            <th width="15%">Tipo</th>
+            <th width="20%">Telefone</th>
+            <th width="20%">Familiar Vinculado</th>
+            <th width="15%" class="text-center">Data Cadastro</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v in visitantes %}
+        <tr>
+            <td>{{ v.nome_completo }}</td>
+            <td>{{ v.tipo }}</td>
+            <td>{{ v.telefone|default:"-" }}</td>
+            <td>{{ v.familiar_vinculado.nome_completo|default:"-" }}</td>
+            <td class="text-center">{{ v.data_cadastro|date:"d/m/Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center">Nenhum visitante cadastrado no momento.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -11,6 +11,7 @@
 import os
 import json
 import tempfile
+import datetime
 from google import genai
 from django.conf import settings
 
@@ -198,20 +199,31 @@ def analisar_escala_gemini(file_obj, departamentos_list, membros_list):
 
         REGRAS VITAIS:
         1. SEPARE FUNÇÕES! Se no dia 03/06 tiver "CÂMERA: ARTHUR / GERAL: PEDRO", você deve gerar dois blocos na lista 'escalas': um para Câmera (membros_ids do Arthur) e um para Geral (membros_ids do Pedro).
-        2. NÃO CRIE IDs. Use somente os listados na BASE DE DADOS. Se não achar ninguém parecido, omita a pessoa ou ponha uma lista vazia, mas não chute um ID.
+        2. NÃO CRIE IDs INVENTADOS. Use somente os listados na BASE DE DADOS.
+        3. BUSCA APROXIMADA (FUZZY MATCHING): O PDF pode conter apenas primeiros nomes, apelidos ou nomes com erros de digitação (ex: "Kauezinho", "Fernandinha"). Você DEVE usar inteligência e dedução aproximada para encontrar quem é a pessoa na lista de Membros fornecida, checando o primeiro nome, sobrenome e o (apelido). Mapeie para o ID correto.
         """
 
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=[uploaded_file, prompt]
-        )
+        import time
+        retries = 3
+        for attempt in range(retries):
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=[uploaded_file, prompt]
+                )
+                break
+            except Exception as e:
+                if '503' in str(e) or '429' in str(e) or 'UNAVAILABLE' in str(e):
+                    if attempt < retries - 1:
+                        time.sleep(3 * (attempt + 1))
+                        continue
+                raise e
 
         text = response.text.strip()
         if text.startswith("```json"):
             text = text[7:]
         if text.endswith("```"):
             text = text[:-3]
-
         return json.loads(text.strip())
 
     except Exception as e:
@@ -473,3 +485,43 @@ def gerar_escala_inteligente_gemini(departamento_nome, mes, ano, membros, evento
         texto = texto[:-3]
     dados = json.loads(texto.strip())
     return dados
+
+def extrair_dados_membro_texto(texto_livre):
+    """
+    Usa o Gemini 2.5 Flash para extrair dados estruturados de um membro a partir de um texto livre.
+    Retorna JSON com as chaves compatíveis com o form_perfil_mestre.html.
+    """
+    client = get_gemini_client()
+    prompt = f"""
+    Você é um assistente de Inteligência Artificial para Gestão de RH Eclesiástico.
+    Sua missão é extrair as informações de um membro a partir do texto abaixo e preencher o JSON.
+
+    Regras:
+    1. Se não encontrar a informação, deixe como "".
+    2. O 'sexo' deve ser "Masculino", "Feminino" ou "Outro". Tente deduzir pelo nome ou adjetivos (ex: "casado" -> Masculino).
+    3. O 'estado_civil' deve ser "Solteiro(a)", "Casado(a)", "Divorciado(a)" ou "Viúvo(a)".
+    4. Data de nascimento ('data_nascimento') no formato "YYYY-MM-DD". Se disser apenas a idade, estime o ano baseado no ano atual ({datetime.datetime.now().year}), deixando MM-DD como "01-01".
+    5. 'first_name' é apenas o primeiro nome. 'last_name' é o restante.
+
+    TEXTO:
+    "{texto_livre}"
+
+    Retorne APENAS o JSON no formato:
+    {{
+        "first_name": "", "last_name": "", "apelido": "", "email": "", "telefone": "",
+        "data_nascimento": "", "cpf": "", "rg": "", "sexo": "", "estado_civil": "",
+        "profissao": "", "escolaridade": ""
+    }}
+    """
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        text = response.text.strip()
+        if text.startswith("```json"): text = text[7:]
+        if text.endswith("```"): text = text[:-3]
+        return json.loads(text.strip())
+    except Exception as e:
+        print(f"Erro no AI Autofill de Membros: {{e}}")
+        return {{}}

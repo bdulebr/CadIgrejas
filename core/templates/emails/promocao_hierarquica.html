@@ -1,0 +1,21 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Você foi Promovido!{% endblock %}
+
+{% block content %}
+<h2>Parabéns, {{ membro.first_name }}!</h2>
+<p>Sua liderança e dedicação à obra do Senhor foram reconhecidas. Informamos com alegria que o seu nível hierárquico na plataforma da <strong>{{ IGREJA_NOME|default:'Palavra de Vida Enseada' }}</strong> foi atualizado para:</p>
+
+<div class="highlight" style="text-align: center; font-size: 20px;">
+    <strong>{{ novo_nivel }}</strong>
+</div>
+
+<p>Com esse novo nível, novas ferramentas e acessos gerenciais foram liberados na sua conta.</p>
+
+<div style="text-align: center;">
+    <a href="{{ link_acesso|default:'https://pvenseada.org/' }}" class="button">Acessar Meu Painel</a>
+</div>
+
+<p>Agradecemos imensamente o seu empenho e amor ao serviço cristão.</p>
+<p>Deus abençoe ricamente a sua vida!</p>
+{% endblock %}

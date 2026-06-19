@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Documento{% endblock %}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin-top: 4cm;
+            margin-bottom: 2.5cm;
+            margin-left: 2cm;
+            margin-right: 2cm;
+            @frame header {
+                -pdf-frame-content: header_content;
+                top: 1cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 3cm;
+            }
+            @frame footer {
+                -pdf-frame-content: footer_content;
+                bottom: 1cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 1cm;
+            }
+            @frame content_frame {
+                left: 2cm;
+                right: 2cm;
+                top: 4cm;
+                bottom: 2.5cm;
+            }
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            color: #333333;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .font-bold { font-weight: bold; }
+        .text-uppercase { text-transform: uppercase; }
+        .text-sm { font-size: 9pt; }
+        .text-lg { font-size: 14pt; }
+        .mb-2 { margin-bottom: 0.5cm; }
+        .mb-4 { margin-bottom: 1cm; }
+        .mt-4 { margin-top: 1cm; }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1cm;
+        }
+        .table th, .table td {
+            border: 1px solid #cccccc;
+            padding: 8px;
+            word-wrap: break-word;
+        }
+        .table tr {
+            page-break-inside: avoid;
+        }
+        .table th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        .header-box {
+            border-bottom: 2px solid #06b6d4;
+            padding-bottom: 10px;
+        }
+    </style>
+    {% block extra_style %}{% endblock %}
+</head>
+<body>
+
+    <!-- CABEÇALHO -->
+    <div id="header_content">
+        <table style="width: 100%;" class="header-box">
+            <tr>
+                <td width="30%" style="text-align: left;">
+                    {% if logo_path %}
+                        <img src="{{ logo_path }}" height="60">
+                    {% else %}
+                        <h2 style="color: #06b6d4;">{{ IGREJA_NOME|default:'Palavra de Vida' }}</h2>
+                    {% endif %}
+                </td>
+                <td width="70%" style="text-align: right; vertical-align: bottom;">
+                    <span class="text-lg font-bold">{% block doc_title %}DOCUMENTO OFICIAL{% endblock %}</span><br>
+                    <span class="text-sm">Emitido em: {% now "d/m/Y H:i" %}</span>
+                    <div style="margin-top: 5px;">
+                        {% block header_extra %}{% endblock %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- RODAPÉ -->
+    <div id="footer_content">
+        <hr style="border-top: 1px solid #ccc; margin-bottom: 5px;">
+        <table style="width: 100%;">
+            <tr>
+                <td width="50%" style="text-align: left;" class="text-sm">
+                    {{ IGREJA_NOME|default:'Palavra de Vida Enseada' }} {% if IGREJA_CNPJ %} - CNPJ: {{ IGREJA_CNPJ }}{% endif %}
+                </td>
+                <td width="50%" style="text-align: right;" class="text-sm">
+                    Página <pdf:pagenumber> de <pdf:pagecount>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div>
+        {% block content %}
+        {% endblock %}
+    </div>
+
+</body>
+</html>

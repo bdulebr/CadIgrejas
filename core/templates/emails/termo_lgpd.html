@@ -1,0 +1,23 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Assinatura Pendente - LGPD{% endblock %}
+
+{% block content %}
+<h2>Olá, {{ membro.first_name }}!</h2>
+<p>Nossa igreja, a <strong>{{ IGREJA_NOME|default:'Palavra de Vida Enseada' }}</strong>, atualizou suas políticas de privacidade de acordo com a Lei Geral de Proteção de Dados (LGPD).</p>
+
+<p>Para continuarmos a tratar seus dados pessoais com total transparência e segurança em nossos sistemas internos, precisamos do seu consentimento eletrônico (Assinatura do Termo de Ciência e Aceite).</p>
+
+<div class="alert">
+    <strong>Ação Necessária:</strong> A leitura e o aceite eletrônico do documento são essenciais para você continuar exercendo suas atividades no departamento de Mídia ou qualquer outra área que manuseie dados.
+</div>
+
+<div style="text-align: center;">
+    <a href="{{ link_assinatura|default:'https://pvenseada.org/midia_lgpd/assinar' }}" class="button">Ler e Assinar o Termo</a>
+</div>
+
+<p>O processo é simples e 100% digital pelo sistema da Intranet.</p>
+<p>Agradecemos a sua colaboração em nos ajudar a manter a igreja de acordo com a legislação!</p>
+
+<p>Deus abençoe!<br>Departamento de Mídia & LGPD</p>
+{% endblock %}

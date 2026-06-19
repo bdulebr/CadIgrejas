@@ -1,0 +1,19 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Escala Atualizada - {{ departamento }}{% endblock %}
+
+{% block content %}
+<h2>Olá, {{ membro.first_name }}!</h2>
+<p>A escala do departamento <strong>{{ departamento }}</strong> para o mês de {{ mes }}/{{ ano }} sofreu alterações.</p>
+<p>Por favor, verifique o sistema para confirmar se suas funções ou horários foram modificados.</p>
+
+<div class="alert">
+    <strong>Atenção:</strong> Alterações podem afetar seus dias de serviço!
+</div>
+
+<div style="text-align: center;">
+    <a href="{{ link_acesso|default:'https://pvenseada.org/escalas/painel' }}" class="button">Ver Escala Atualizada</a>
+</div>
+
+<p>Obrigado pela compreensão!<br>Liderança de {{ departamento }}</p>
+{% endblock %}

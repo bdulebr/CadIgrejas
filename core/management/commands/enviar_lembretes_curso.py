@@ -11,10 +11,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from ministerio_casais.models import TurmaCurso, MatriculaCursoCasal
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.conf import settings
+from intranet.services.gmail_service import enviar_email_html
 from core.models import ConfiguracaoSistema
 
 class Command(BaseCommand):
@@ -53,24 +50,19 @@ class Command(BaseCommand):
                 if not destinatarios:
                     continue
 
-                html_message = render_to_string('ministerio_casais/email_lembrete_curso.html', {
-                    'casal': casal,
-                    'curso': turma.curso,
-                    'turma': turma,
-                    'logo_url': logo_url,
-                    'base_url': base_url
-                })
-                plain_message = strip_tags(html_message)
-
                 try:
-                    send_mail(
-                        subject=f'Lembrete: O curso "{turma.curso.nome}" começa amanhã!',
-                        message=plain_message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=destinatarios,
-                        html_message=html_message,
-                        fail_silently=True,
-                    )
+                    for dest in destinatarios:
+                        enviar_email_html(
+                            destinatario=dest,
+                            assunto=f'Lembrete: O curso "{turma.curso.nome}" começa amanhã!',
+                            template_name='ministerio_casais/email_lembrete_curso.html',
+                            context={
+                                'casal': casal,
+                                'curso': turma.curso,
+                                'turma': turma,
+                                'base_url': base_url
+                            }
+                        )
                     emails_enviados += len(destinatarios)
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f'Erro ao enviar para {casal}: {e}'))

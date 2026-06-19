@@ -29,7 +29,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div id="checkins-wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-8" hx-get="{% url 'checkins_hoje_desktop' %}" hx-trigger="every 5s" hx-select="#checkins-wrapper" hx-swap="outerHTML">
 
             <!-- Lista de Presentes -->
             <div class="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">

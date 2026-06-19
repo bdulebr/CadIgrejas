@@ -24,26 +24,14 @@ def gerar_pdf_competencia(competencia_id):
 
     config_sys = ConfiguracaoSistema.objects.first()
 
-    # 1. Obter o template do banco
-    template_doc = None
-    if not template_doc:
-        print("Template de PDF da Escala não encontrado no banco de dados!")
-        return False
+    from django.template.loader import render_to_string
+    import datetime
 
-    html = template_doc.html_canva
-    css = template_doc.css_canva
+    # 1. Preparar dados para o contexto
+    from collections import defaultdict
+    agrupamento = defaultdict(list)
 
-    # 2. Gerar a tabela de escalas em HTML
-    tabela_html = '''
-    <table class="tabela-escala">
-        <thead>
-            <tr>
-                <th style="width: 35%; text-align: center;">DATA / EVENTO</th>
-                <th style="width: 65%; text-align: left;">COLABORADORES</th>
-            </tr>
-        </thead>
-        <tbody>
-    '''
+    dias_semana = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo']
 
     from collections import defaultdict
     agrupamento = defaultdict(list)
@@ -68,61 +56,55 @@ def gerar_pdf_competencia(competencia_id):
 
         agrupamento[chave].append(f"{funcao_nome}: {voluntario_nome}")
 
+    linhas_escala = []
     for (data_str, evento_str), lista_colab in agrupamento.items():
         colabs_str = "<br>".join(lista_colab)
-        tabela_html += f'''
-            <tr>
-                <td style="text-align: center; vertical-align: middle;">
-                    <strong>{data_str}</strong><br>
-                    <span style="font-size: 10px; color: #444;">{evento_str}</span>
-                </td>
-                <td style="vertical-align: middle;">{colabs_str}</td>
-            </tr>
-        '''
+        linhas_escala.append({
+            'data_str': data_str,
+            'evento_str': evento_str,
+            'colabs_str': colabs_str
+        })
 
-    tabela_html += '</tbody></table>'
-
-    # 3. Preparar as variáveis e os logos
-    igreja_logo = ''
+    # 2. Preparar as variáveis e os logos
+    logo_path = ''
     if config_sys and config_sys.igreja_logo:
-        igreja_logo = settings.BASE_URL + config_sys.igreja_logo.url
+        logo_path = config_sys.igreja_logo.url
+    else:
+        logo_path = settings.STATIC_URL + 'img/logo.jpg'
 
     departamento_logo = ''
     if competencia.departamento.logo:
-        departamento_logo = settings.BASE_URL + competencia.departamento.logo.url
+        departamento_logo = competencia.departamento.logo.url
 
     igreja_nome = config_sys.igreja_nome if config_sys else "Igreja Local"
     igreja_cnpj = config_sys.cnpj if config_sys else "00.000.000/0000-00"
 
-    # 4. Substituir as tags
-    html = html.replace('{{IGREJA_LOGO}}', igreja_logo)
-    html = html.replace('{{DEPARTAMENTO_LOGO}}', departamento_logo)
-    html = html.replace('{{NOME_DEPARTAMENTO}}', competencia.departamento.nome)
-    html = html.replace('{{COMPETENCIA}}', competencia.mes_ano)
-    html = html.replace('{{IGREJA_NOME}}', igreja_nome)
-    html = html.replace('{{IGREJA_CNPJ}}', igreja_cnpj)
-    html = html.replace('{{ESCALA_TABELA_HTML}}', tabela_html)
+    # 3. Renderizar o template
+    context = {
+        'logo_path': logo_path,
+        'departamento_logo': departamento_logo,
+        'IGREJA_NOME': igreja_nome,
+        'IGREJA_CNPJ': igreja_cnpj,
+        'competencia': competencia,
+        'linhas_escala': linhas_escala,
+        'mes_ano': competencia.mes_ano,
+        'data_geracao': datetime.datetime.now()
+    }
 
-    full_html = f'''
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            body {{ font-family: Helvetica, Arial, sans-serif; }}
-            {css}
-        </style>
-    </head>
-    <body>
-        {html}
-    </body>
-    </html>
-    '''
+    full_html = render_to_string('escalas/pdf_escala.html', context)
 
     # 5. Gerar PDF via xhtml2pdf
     from xhtml2pdf import pisa
 
+    def fetch_resources(uri, rel):
+        if uri.startswith(settings.MEDIA_URL):
+            return os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        elif uri.startswith(settings.STATIC_URL):
+            return os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        return uri
+
     buffer = BytesIO()
-    pisa_status = pisa.CreatePDF(full_html, dest=buffer)
+    pisa_status = pisa.CreatePDF(full_html, dest=buffer, link_callback=fetch_resources)
 
     if pisa_status.err:
         return False

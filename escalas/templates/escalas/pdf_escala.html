@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Escala - {{ mes_ano }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin-top: 4.5cm;
+            margin-bottom: 2cm;
+            margin-left: 1.5cm;
+            margin-right: 1.5cm;
+            @frame header {
+                -pdf-frame-content: header_content;
+                top: 1cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 3.5cm;
+            }
+            @frame footer {
+                -pdf-frame-content: footer_content;
+                bottom: 1cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 1cm;
+            }
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            color: #333333;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .header-table td {
+            vertical-align: middle;
+        }
+        .title-text {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #000;
+            margin: 0 0 5px 0;
+        }
+        .subtitle-text {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #000;
+            margin: 0 0 5px 0;
+        }
+        .cnpj-text {
+            font-size: 8pt;
+            color: #555;
+            margin: 0;
+        }
+        .line-separator {
+            border-bottom: 1px solid #000;
+            margin-bottom: 15px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            border: 1px solid #cccccc;
+            padding: 6px 8px; /* Reduzido padding vertical para caber mais itens */
+        }
+        .table th {
+            background-color: #3b82f6; /* Blue 500 */
+            color: #ffffff;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9pt; /* Reduzido levemente */
+            text-align: center;
+        }
+        .table td {
+            font-size: 9pt; /* Reduzido levemente */
+        }
+        .table tr {
+            page-break-inside: avoid;
+        }
+        .date-col {
+            width: 30%;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .colab-col {
+            width: 70%;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .date-text {
+            font-weight: bold;
+            font-size: 10pt;
+            margin-bottom: 2px;
+        }
+        .event-text {
+            font-size: 8pt;
+            color: #666;
+        }
+        .colab-text {
+            font-size: 9pt;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CABEÇALHO (Repete em todas as páginas) -->
+    <div id="header_content">
+        <table class="header-table">
+            <tr>
+                <td style="width: 25%; text-align: left;">
+                    {% if logo_path %}
+                        <img src="{{ logo_path }}" width="120">
+                    {% endif %}
+                </td>
+                <td style="width: 50%; text-align: center;">
+                    <p class="title-text">Escala Oficial</p>
+                    <p class="subtitle-text">{{ competencia.departamento.nome }} - Competência: {{ mes_ano }}</p>
+                    <p class="cnpj-text">{{ IGREJA_NOME }} {% if IGREJA_CNPJ %}- CNPJ: {{ IGREJA_CNPJ }}{% endif %}</p>
+                </td>
+                <td style="width: 25%; text-align: right;">
+                    {% if departamento_logo %}
+                        <img src="{{ departamento_logo }}" width="100">
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        <div class="line-separator"></div>
+    </div>
+
+    <!-- RODAPÉ (Repete em todas as páginas) -->
+    <div id="footer_content">
+        <table style="width: 100%;">
+            <tr>
+                <td style="text-align: right; font-size: 8pt; color: #777;">
+                    Página <pdf:pagenumber> de <pdf:pagecount>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- CONTEÚDO DA ESCALA -->
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 35%;">DATA / EVENTO</th>
+                <th style="width: 65%;">COLABORADORES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for linha in linhas_escala %}
+                <tr>
+                    <td class="date-col">
+                        <div class="date-text">{{ linha.data_str }}</div>
+                        <div class="event-text">{{ linha.evento_str }}</div>
+                    </td>
+                    <td class="colab-col">
+                        <div class="colab-text">{{ linha.colabs_str|safe }}</div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2" style="text-align: center; padding: 20px;">Nenhuma escala registrada para esta competência.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

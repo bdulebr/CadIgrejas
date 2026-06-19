@@ -20,6 +20,7 @@ from .models import Escala, CompetenciaEscala, CultoEvento
 from gestao_membros.models import Departamento, Indisponibilidade, Funcao
 from core.models import Membro, ConfiguracaoSistema
 from datetime import datetime, date, timedelta
+from django.utils import timezone
 import calendar
 from django.db.models import Q
 
@@ -113,9 +114,12 @@ def painel_escalas(request):
     departamentos = get_departamentos_permitidos(request.user)
     competencias = CompetenciaEscala.objects.filter(departamento__in=departamentos).order_by('-data_criacao')
 
+    mes_atual_str = timezone.now().strftime('%Y-%m')
+
     return render(request, 'escalas/painel.html', {
         'competencias': competencias,
-        'departamentos': departamentos
+        'departamentos': departamentos,
+        'mes_atual': mes_atual_str
     })
 
 @login_required
@@ -123,7 +127,13 @@ def painel_escalas(request):
 def nova_competencia(request):
     if request.method == 'POST':
         departamento_id = request.POST.get('departamento_id')
-        mes_ano = request.POST.get('mes_ano')
+        mes_ano_raw = request.POST.get('mes_ano_input')
+
+        if mes_ano_raw and '-' in mes_ano_raw:
+            ano, mes = mes_ano_raw.split('-')
+            mes_ano = f"{mes}/{ano}"
+        else:
+            mes_ano = request.POST.get('mes_ano', '')
 
         dept = get_object_or_404(Departamento, id=departamento_id)
 
@@ -1035,33 +1045,37 @@ def importar_escala_ocr(request):
                 messages.warning(request, 'O Gemini não conseguiu extrair os dados no formato esperado.')
                 return redirect('painel_escalas')
 
-            dept_id = dados.get('departamento_id')
-            if not dept_id:
-                messages.error(request, 'O Gemini não conseguiu identificar a qual departamento esta escala pertence.')
+            mes_ano_raw = request.POST.get('mes_ano_input')
+            departamento_id_input = request.POST.get('departamento_id')
+
+            if mes_ano_raw and '-' in mes_ano_raw:
+                ano, mes = mes_ano_raw.split('-')
+                mes_ano_input = f"{mes}/{ano}"
+            else:
+                mes_ano_input = request.POST.get('mes_ano', '')
+
+            if not mes_ano_input or not departamento_id_input:
+                messages.error(request, 'Mês/Ano e Departamento são obrigatórios.')
                 return redirect('painel_escalas')
 
-            departamento = Departamento.objects.get(id=dept_id)
+            departamento = get_object_or_404(Departamento, id=departamento_id_input)
 
-            mes = str(dados.get('mes', '')).strip().lower()
-            ano = str(dados.get('ano', '')).strip()
-
-            mes_map = {'janeiro': '01', 'fevereiro': '02', 'março': '03', 'marco': '03',
-                       'abril': '04', 'maio': '05', 'junho': '06', 'julho': '07',
-                       'agosto': '08', 'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'}
-
-            mes_num = mes_map.get(mes, mes.zfill(2))
-            if not ano:
-                from django.utils import timezone
-                ano = str(timezone.now().year)
-
-            mes_ano_str = f"{mes_num}/{ano}"
+            # Validar permissão
+            deps_permitidos = get_departamentos_permitidos(request.user)
+            if departamento not in deps_permitidos:
+                messages.error(request, 'Sem permissão para este departamento.')
+                return redirect('painel_escalas')
 
             from .models import CompetenciaEscala, Escala
-            competencia, created = CompetenciaEscala.objects.get_or_create(
-                departamento=departamento,
-                mes_ano=mes_ano_str,
-                defaults={'status': 'rascunho'}
-            )
+            try:
+                competencia, created = CompetenciaEscala.objects.get_or_create(
+                    departamento=departamento,
+                    mes_ano=mes_ano_input,
+                    defaults={'status': 'rascunho'}
+                )
+            except Exception as e:
+                messages.error(request, f'Erro ao criar competência: {str(e)}')
+                return redirect('painel_escalas')
 
             escalas_lidas = dados.get('escalas', [])
             count_sucesso = 0
@@ -1071,10 +1085,21 @@ def importar_escala_ocr(request):
             from thefuzz import process
             from django.db import IntegrityError
 
+            import re
             for esc in escalas_lidas:
-                data_str = esc.get('dia', '')
+                data_str_raw = esc.get('dia', '')
+
+                # Extrair apenas dd/mm, ignorando qualquer ano que o Gemini tenha inventado
+                match = re.search(r'(\d{2}/\d{2})', data_str_raw)
+                if not match:
+                    continue
+
+                dia_mes = match.group(1)
+                ano_escala = mes_ano_input.split('/')[1]
+                data_str_forced = f"{dia_mes}/{ano_escala}"
+
                 try:
-                    data_obj = datetime.strptime(data_str, '%d/%m/%Y').date()
+                    data_obj = datetime.strptime(data_str_forced, '%d/%m/%Y').date()
                 except ValueError:
                     continue
 
@@ -1119,7 +1144,7 @@ def importar_escala_ocr(request):
                     except IntegrityError:
                         pass
 
-            msg = f"Escalas extraídas para {departamento.nome} ({mes_ano_str}). Inseridas: {count_sucesso}."
+            msg = f"Escalas extraídas para {departamento.nome} ({mes_ano_input}). Inseridas: {count_sucesso}."
             if count_fallback > 0:
                 msg += f" {count_fallback} nomes não foram reconhecidos com precisão (Fuzzy Matching)."
                 messages.warning(request, msg)
@@ -1127,7 +1152,7 @@ def importar_escala_ocr(request):
                 messages.success(request, msg)
 
         except Exception as e:
-            messages.error(request, f'Erro no processamento OCR (Groq): {str(e)}')
+            messages.error(request, f'Erro no processamento OCR: {str(e)}')
 
     return redirect('painel_escalas')
 

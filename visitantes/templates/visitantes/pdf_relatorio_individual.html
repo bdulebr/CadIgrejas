@@ -1,120 +1,81 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: visitantes/templates/visitantes/pdf_relatorio_individual.html
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
--->
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Dossiê - {{ visitante.nome_completo }}</title>
-    <style>
-        @page {
-            size: A4 portrait;
-            margin: 2cm;
-            @frame footer_frame {
-                -pdf-frame-content: footer_content;
-                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
-            }
-        }
-        body { font-family: Helvetica, sans-serif; font-size: 12px; color: #1f2937; }
-        h1 { font-size: 22px; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 5px; margin-bottom: 20px;}
-        h2 { font-size: 16px; color: #4b5563; border-bottom: 1px solid #d1d5db; padding-bottom: 3px; margin-top: 20px;}
-        .info-box { background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .info-box p { margin: 5px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
-        th { background-color: #eff6ff; color: #1e3a8a; font-weight: bold; }
-        .text-center { text-align: center; }
-        .footer { font-size: 10px; color: #9ca3af; text-align: center; border-top: 1px solid #f3f4f6; padding-top: 10px; }
-        .badge { background-color: #dbeafe; color: #1e3a8a; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;}
-        .header { text-align: center; margin-bottom: 20px; }
-        .logo { max-height: 70px; margin-bottom: 10px; }
-    </style>
-</head>
-<body>
-    <div id="footer_content" class="footer">
-        Gerado pelo ERP Igreja - Dossiê CRM | Emissão: {{ data_geracao|date:"d/m/Y H:i" }} | Pág <pdf:pagenumber> de <pdf:pagecount>
-    </div>
+{% extends "core/base_pdf.html" %}
 
-    <div class="header">
-        {% if logo_path %}
-        <img src="{{ logo_path }}" alt="Logo PV" class="logo">
-        {% endif %}
-        <h1 class="text-center" style="margin-bottom: 0;">Dossiê de Acompanhamento</h1>
-    </div>
+{% block title %}Dossiê - {{ visitante.nome_completo }}{% endblock %}
+{% block doc_title %}DOSSIÊ DE ACOMPANHAMENTO{% endblock %}
 
-    <div class="info-box">
-        <p><strong>Nome Completo:</strong> {{ visitante.nome_completo }} <span class="badge">{{ visitante.tipo }}</span></p>
-        <p><strong>Telefone:</strong> {{ visitante.telefone|default:"Não informado" }}</p>
-        <p><strong>E-mail:</strong> {{ visitante.email|default:"Não informado" }}</p>
-        <p><strong>Endereço:</strong> {{ visitante.endereco|default:"Não informado" }}</p>
-        <p><strong>Familiar Vinculado:</strong> {{ visitante.familiar_vinculado.nome_completo|default:"Nenhum" }}</p>
-        <p><strong>Data do Primeiro Cadastro:</strong> {{ visitante.data_cadastro|date:"d/m/Y H:i" }}</p>
-        <p><strong>Cadastrado Por:</strong> {{ visitante.cadastrado_por.get_full_name|default:visitante.cadastrado_por.username }}</p>
-        <p><strong>Status de Acompanhamento:</strong> {% if visitante.em_acompanhamento %}Ativo{% else %}Inativo{% endif %}</p>
-    </div>
+{% block extra_style %}
+<style>
+    .info-box { background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .info-box p { margin: 5px 0; }
+    .badge { background-color: #dbeafe; color: #1e3a8a; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;}
+</style>
+{% endblock %}
 
-    <h2>Histórico de Presença em Cultos/Eventos</h2>
-    <table>
-        <thead>
-            <tr>
-                <th width="20%">Data</th>
-                <th width="35%">Culto/Evento</th>
-                <th width="15%" class="text-center">Modalidade</th>
-                <th width="30%">Observações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for v in visitas %}
-            <tr>
-                <td>{{ v.data_culto|date:"d/m/Y" }}</td>
-                <td>{{ v.nome_culto }}</td>
-                <td class="text-center">{{ v.modalidade }}</td>
-                <td>{{ v.observacoes|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" class="text-center">Nenhuma visita registrada.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% block content %}
+<div class="info-box">
+    <p><strong>Nome Completo:</strong> {{ visitante.nome_completo }} <span class="badge">{{ visitante.tipo }}</span></p>
+    <p><strong>Telefone:</strong> {{ visitante.telefone|default:"Não informado" }}</p>
+    <p><strong>E-mail:</strong> {{ visitante.email|default:"Não informado" }}</p>
+    <p><strong>Endereço:</strong> {{ visitante.endereco|default:"Não informado" }}</p>
+    <p><strong>Familiar Vinculado:</strong> {{ visitante.familiar_vinculado.nome_completo|default:"Nenhum" }}</p>
+    <p><strong>Data do Primeiro Cadastro:</strong> {{ visitante.data_cadastro|date:"d/m/Y H:i" }}</p>
+    <p><strong>Cadastrado Por:</strong> {{ visitante.cadastrado_por.get_full_name|default:visitante.cadastrado_por.username }}</p>
+    <p><strong>Status de Acompanhamento:</strong> {% if visitante.em_acompanhamento %}Ativo{% else %}Inativo{% endif %}</p>
+</div>
 
-    <br>
+<h2>Histórico de Presença em Cultos/Eventos</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th width="20%">Data</th>
+            <th width="35%">Culto/Evento</th>
+            <th width="15%" class="text-center">Modalidade</th>
+            <th width="30%">Observações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v in visitas %}
+        <tr>
+            <td>{{ v.data_culto|date:"d/m/Y" }}</td>
+            <td>{{ v.nome_culto }}</td>
+            <td class="text-center">{{ v.modalidade }}</td>
+            <td>{{ v.observacoes|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">Nenhuma visita registrada.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-    <h2>Diário de Contatos (CRM)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th width="20%">Data / Hora</th>
-                <th width="15%">Meio</th>
-                <th width="30%">Resumo da Conversa</th>
-                <th width="20%">Próximo Passo</th>
-                <th width="15%">Responsável</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in acompanhamentos %}
-            <tr>
-                <td>{{ a.data_contato|date:"d/m/Y H:i" }}</td>
-                <td>{{ a.meio_contato }}</td>
-                <td>{{ a.resumo_conversa }}</td>
-                <td>{{ a.proximo_passo|default:"-" }}</td>
-                <td>{{ a.responsavel.get_full_name|default:a.responsavel.username }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center">Nenhum contato registrado.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<br>
 
-</body>
-</html>
+<h2>Diário de Contatos (CRM)</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th width="20%">Data / Hora</th>
+            <th width="15%">Meio</th>
+            <th width="30%">Resumo da Conversa</th>
+            <th width="20%">Próximo Passo</th>
+            <th width="15%">Responsável</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in acompanhamentos %}
+        <tr>
+            <td>{{ a.data_contato|date:"d/m/Y H:i" }}</td>
+            <td>{{ a.meio_contato }}</td>
+            <td>{{ a.resumo_conversa }}</td>
+            <td>{{ a.proximo_passo|default:"-" }}</td>
+            <td>{{ a.responsavel.get_full_name|default:a.responsavel.username }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center">Nenhum contato registrado.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Escala Cancelada - {{ departamento }}{% endblock %}
+
+{% block content %}
+<h2>Olá, {{ membro.first_name }}!</h2>
+<p>Informamos que a escala oficial do departamento <strong>{{ departamento }}</strong> para o mês de {{ mes }}/{{ ano }} foi <strong>CANCELADA</strong> pela liderança.</p>
+
+<div class="alert">
+    <strong>Aviso Importante:</strong> Todos os turnos previstos nesta escala estão suspensos.
+</div>
+
+<p>Aguarde novas orientações ou a publicação de uma nova escala pelo seu líder de departamento.</p>
+
+<div style="text-align: center;">
+    <a href="{{ link_acesso|default:'https://pvenseada.org/escalas/painel' }}" class="button">Acessar Sistema</a>
+</div>
+
+<p>Obrigado pela compreensão!<br>Liderança de {{ departamento }}</p>
+{% endblock %}

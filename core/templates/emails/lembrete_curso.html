@@ -1,0 +1,20 @@
+{% extends "emails/base_email.html" %}
+
+{% block titulo_head %}Lembrete de Curso{% endblock %}
+
+{% block content %}
+<h2>Olá, {{ membro.first_name|default:'Membro' }}!</h2>
+<p>Este é um lembrete automático sobre a próxima aula do curso <strong>{{ titulo_curso }}</strong>.</p>
+
+<div class="highlight">
+    <strong>Detalhes da Aula:</strong><br>
+    Data: {{ data_aula }}<br>
+    Local/Link: {{ local_aula }}
+</div>
+
+<div style="text-align: center;">
+    <a href="{{ link_acesso|default:'https://pvenseada.org/cursos' }}" class="button">Acessar Área do Aluno</a>
+</div>
+
+<p>Contamos com a sua presença!</p>
+{% endblock %}
