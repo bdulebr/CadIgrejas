@@ -200,6 +200,11 @@
                 <span x-show="sidebarOpen" class="whitespace-nowrap">Minhas Escalas</span>
             </a>
 
+            <a href="{% url 'pv_drive_home' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Meus Arquivos e Pastas">
+                <i data-lucide="cloud" class="w-5 h-5 min-w-[20px] text-blue-400 group-hover:text-blue-300"></i>
+                <span x-show="sidebarOpen" class="whitespace-nowrap">PV Drive</span>
+            </a>
+
             {% if user.nivel_hierarquico != 'membro_voluntario' %}
             <!-- Agrupamento: Liderança -->
             <div x-show="sidebarOpen" class="text-[10px] uppercase font-bold text-gray-500 tracking-widest pl-3 mt-4 mb-1">Liderança</div>
@@ -278,10 +283,6 @@
             {% if user.nivel_hierarquico == 'super_admin' or user.is_superuser %}
             <div x-show="sidebarOpen" class="text-[10px] uppercase font-bold text-red-500 tracking-widest pl-3 mt-4 mb-1">Administração</div>
             <nav class="flex flex-col gap-1 px-2">
-                <a href="{% url 'pv_drive_home' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
-                    <i data-lucide="cloud" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-blue-400"></i>
-                    <span x-show="sidebarOpen" class="whitespace-nowrap truncate">Arquivos</span>
-                </a>
 
                 <a href="{% url 'departamentos' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group">
                     <i data-lucide="network" class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-purple-400"></i>
