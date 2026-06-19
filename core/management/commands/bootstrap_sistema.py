@@ -19,29 +19,81 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write(self.style.WARNING("INICIANDO MOTOR DE BOOTSTRAP E SELF-HEALING..."))
 
-        # 1. Self-Healing de Pastas
-        pastas_vitais = [
-            'media',
-            'media/perfil',
-            'media/departamentos/logos',
-            'media/ocorrencias',
-            'media/avisos_anexos',
-            'media/logos',
-            'staticfiles',
-            'logs',
-            'backups'
-        ]
+        # 1. Self-Healing de Pastas e Mídias (Mapeamento Dinâmico)
+        self.stdout.write(self.style.MIGRATE_HEADING("1. VERIFICANDO INTEGRIDADE DE PASTAS E MÍDIAS (SELF-HEALING):"))
+
+        media_root = settings.MEDIA_ROOT
+        if not os.path.exists(media_root):
+            os.makedirs(media_root)
+
+        from django.apps import apps
+        from django.db.models import Q
+        import shutil
+
+        file_fields = []
+        pastas_vitais = set(['lost_and_found', 'perfil', 'departamentos/logos', 'ocorrencias', 'avisos_anexos', 'logos', 'staticfiles', 'logs', 'backups'])
+
+        # Mapear dinamicamente todos os FileFields
+        for model in apps.get_models():
+            for field in model._meta.get_fields():
+                if hasattr(field, 'upload_to') and getattr(field, 'upload_to'):
+                    if isinstance(field.upload_to, str):
+                        path = field.upload_to.split('%')[0].strip('/')
+                        if path:
+                            pastas_vitais.add(path)
+                            file_fields.append((model, field.name, field.upload_to))
 
         base_dir = settings.BASE_DIR
 
-        self.stdout.write(self.style.MIGRATE_HEADING("1. VERIFICANDO INTEGRIDADE DE PASTAS:"))
+        # Criar as pastas vitais
         for pasta in pastas_vitais:
-            caminho = os.path.join(base_dir, pasta)
+            if pasta in ['staticfiles', 'logs', 'backups']:
+                caminho = os.path.join(base_dir, pasta)
+            else:
+                caminho = os.path.join(media_root, pasta)
+
             if not os.path.exists(caminho):
                 os.makedirs(caminho, exist_ok=True)
-                self.stdout.write(self.style.SUCCESS(f"[CRIADO] Pasta ausente restaurada: {pasta}"))
+                self.stdout.write(self.style.SUCCESS(f"[CRIADO] Pasta restaurada: {pasta}"))
             else:
                 self.stdout.write(self.style.SUCCESS(f"[OK] Pasta íntegra: {pasta}"))
+
+        # Scanner de Arquivos Órfãos na Raiz do Media
+        arquivos_raiz = [f for f in os.listdir(media_root) if os.path.isfile(os.path.join(media_root, f))]
+        lost_and_found_dir = os.path.join(media_root, 'lost_and_found')
+
+        for arquivo in arquivos_raiz:
+            if arquivo in ['.gitignore', 'README.md']: continue
+
+            achou_dono = False
+            for model, field_name, upload_to in file_fields:
+                filtros = Q(**{f"{field_name}": arquivo}) | Q(**{f"{field_name}__endswith": f"/{arquivo}"})
+                try:
+                    registros = model.objects.filter(filtros)
+                    if registros.exists():
+                        registro = registros.first()
+                        clean_upload = upload_to.split('%')[0].strip('/')
+                        novo_path_relativo = f"{clean_upload}/{arquivo}"
+                        destino_file = os.path.join(media_root, novo_path_relativo)
+                        src_file = os.path.join(media_root, arquivo)
+
+                        os.makedirs(os.path.dirname(destino_file), exist_ok=True)
+                        shutil.move(src_file, destino_file)
+
+                        setattr(registro, field_name, novo_path_relativo)
+                        registro.save()
+
+                        self.stdout.write(self.style.SUCCESS(f"[SELF-HEALING] Arquivo realocado com sucesso: {arquivo} -> {novo_path_relativo}"))
+                        achou_dono = True
+                        break
+                except Exception as e:
+                    pass
+
+            if not achou_dono:
+                src_file = os.path.join(media_root, arquivo)
+                destino_file = os.path.join(lost_and_found_dir, arquivo)
+                shutil.move(src_file, destino_file)
+                self.stdout.write(self.style.WARNING(f"[LOST & FOUND] Arquivo órfão movido: {arquivo}"))
 
         # 2. Self-Healing de Arquivos via GIT (Se for um repositório clonado)
         self.stdout.write(self.style.MIGRATE_HEADING("\n2. VERIFICANDO SINCRONIA COM O GITHUB:"))
