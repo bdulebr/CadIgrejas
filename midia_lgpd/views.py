@@ -466,10 +466,10 @@ def check_arquivo_acesso(request, arquivo):
         if p.alvo_membro == user or p.alvo_departamento in deptos_usuario:
             if p.senha_acesso:
                 if request.session.get(f'acesso_liberado_{p.id}'):
-                    return True
+                    return p
                 else:
                     return p.id # Precisa de senha
-            return True
+            return p
 
     p_pasta = arquivo.pasta
     while p_pasta:
@@ -480,7 +480,7 @@ def check_arquivo_acesso(request, arquivo):
         )
         for p in permissoes_pasta:
             if p.alvo_membro == user or p.alvo_departamento in deptos_usuario:
-                return True
+                return p
         p_pasta = p_pasta.parent
 
     return False
@@ -508,6 +508,12 @@ def visualizar_arquivo(request, arquivo_id):
         req = service.files().get_media(fileId=arquivo.gdrive_file_id, supportsAllDrives=True)
         file_content = req.execute()
 
+        # Secesso garantido. Autodestruir se aplicável
+        if type(acesso) != bool and acesso.is_autodestruir:
+            acesso.foi_acessado = True
+            acesso.is_ativo = False
+            acesso.save()
+
         mime_type, _ = mimetypes.guess_type(arquivo.titulo)
         response = HttpResponse(file_content, content_type=mime_type or 'application/octet-stream')
         response['Content-Disposition'] = f'inline; filename="{arquivo.titulo}"'
@@ -532,6 +538,13 @@ def baixar_arquivo(request, arquivo_id):
         if arquivo.arquivo:
             response = HttpResponse(arquivo.arquivo.read(), content_type='application/octet-stream')
             response['Content-Disposition'] = f'attachment; filename="{arquivo.titulo}"'
+
+            # Secesso garantido. Autodestruir se aplicável
+            if type(acesso) != bool and acesso.is_autodestruir:
+                acesso.foi_acessado = True
+                acesso.is_ativo = False
+                acesso.save()
+
             return response
         messages.error(request, "Arquivo não encontrado.")
         return redirect('pv_drive_home')
@@ -540,6 +553,12 @@ def baixar_arquivo(request, arquivo_id):
     try:
         req = service.files().get_media(fileId=arquivo.gdrive_file_id, supportsAllDrives=True)
         file_content = req.execute()
+
+        # Secesso garantido. Autodestruir se aplicável
+        if type(acesso) != bool and acesso.is_autodestruir:
+            acesso.foi_acessado = True
+            acesso.is_ativo = False
+            acesso.save()
 
         mime_type, _ = mimetypes.guess_type(arquivo.titulo)
         response = HttpResponse(file_content, content_type=mime_type or 'application/octet-stream')
@@ -654,6 +673,7 @@ def processar_compartilhamento(request):
                 senha_acesso=senha, is_autodestruir=is_autodestruir
             )
             msg = f"Item compartilhado com o departamento {alvo.nome}."
+            pasta_compartilhados = PastaVirtual.objects.filter(tipo_pasta='compartilhados', departamento=alvo).first()
         elif tipo_alvo == 'membro':
             from core.models import Membro
             alvo = get_object_or_404(Membro, id=alvo_id)
@@ -663,6 +683,7 @@ def processar_compartilhamento(request):
                 senha_acesso=senha, is_autodestruir=is_autodestruir
             )
             msg = f"Item compartilhado com {alvo.get_full_name()}."
+            pasta_compartilhados = PastaVirtual.objects.filter(tipo_pasta='compartilhados', dono_membro=alvo).first()
 
             if senha:
                 # Enviar senha por e-mail para o membro
@@ -674,6 +695,30 @@ def processar_compartilhamento(request):
                         'content': f"<h2 style='color:#1d4ed8;'>Arquivo Protegido no PV Drive</h2><p>O usuário <b>{request.user.first_name}</b> compartilhou o item <b>{nome_item}</b> com você.</p><p>A senha para acessá-lo é: <strong style='font-size:20px; color:#b91c1c;'>{senha}</strong></p><p>Acesse a aba 'Compartilhados Comigo' no PV Drive para desbloquear.</p>"
                     }
                 )
+
+        # Restaurando: Cria atalho no GDrive dentro de Compartilhados Comigo
+        if pasta_compartilhados and pasta_compartilhados.gdrive_folder_id:
+            service = get_drive_service()
+            if service:
+                gdrive_target = None
+                if pasta and pasta.gdrive_folder_id:
+                    gdrive_target = pasta.gdrive_folder_id
+                elif arquivo and arquivo.gdrive_file_id:
+                    gdrive_target = arquivo.gdrive_file_id
+
+                if gdrive_target:
+                    try:
+                        shortcut_metadata = {
+                            'name': nome_item,
+                            'mimeType': 'application/vnd.google-apps.shortcut',
+                            'shortcutDetails': {
+                                'targetId': gdrive_target
+                            },
+                            'parents': [pasta_compartilhados.gdrive_folder_id]
+                        }
+                        service.files().create(body=shortcut_metadata, fields='id', supportsAllDrives=True).execute()
+                    except Exception as e:
+                        print(f"Erro ao criar atalho no gdrive: {e}")
 
         messages.success(request, msg)
         return redirect('pv_drive_home')
@@ -720,20 +765,12 @@ def acesso_protegido_senha(request, permissao_id):
     if request.method == 'POST':
         senha_digitada = request.POST.get('senha')
         if senha_digitada == permissao.senha_acesso:
-            # Senha Correta!
+            # Senha Correta! Libera a sessão para as próximas views baixarem o arquivo de fato
+            request.session[f'acesso_liberado_{permissao.id}'] = True
 
-            # Autodestruição (Missão Impossível)
-            if permissao.is_autodestruir:
-                permissao.foi_acessado = True
-                permissao.is_ativo = False
-                permissao.save()
-                messages.warning(request, 'AVISO: Este arquivo se auto-destruiu e não estará mais na sua pasta de compartilhados.')
-
-            # Pode ser pasta ou arquivo, mas geralmente auto-destruição é para arquivo
             if permissao.arquivo:
                 return redirect('baixar_arquivo', arquivo_id=permissao.arquivo.id)
             elif permissao.pasta:
-                # Opcional: Se for pasta, redireciona pro PV drive dentro dela (se quisermos suportar pasta com senha)
                 return redirect('pv_drive_home')
         else:
             messages.error(request, 'Senha incorreta!')
