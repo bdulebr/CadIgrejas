@@ -32,6 +32,37 @@ class Command(BaseCommand):
         log_lines.append("=== INICIANDO AUDITORIA GLOBAL ===")
 
         # ==========================================
+        # FASE 0: LIMPEZA DE LIXO (PYCACHE E MOCKS)
+        # ==========================================
+        log_lines.append("\n--- [FASE 0: SYSTEM CLEANUP] ---")
+        import os
+        import shutil
+        from pathlib import Path
+
+        base_dir = settings.BASE_DIR
+        pycache_count = 0
+        pyc_count = 0
+
+        for p in Path(base_dir).rglob('__pycache__'):
+            if p.is_dir():
+                try:
+                    shutil.rmtree(p)
+                    pycache_count += 1
+                except Exception:
+                    pass
+
+        for p in Path(base_dir).rglob('*.pyc'):
+            if p.is_file():
+                try:
+                    p.unlink()
+                    pyc_count += 1
+                except Exception:
+                    pass
+
+        log_lines.append(f"[CLEANUP OK] Removidos {pycache_count} diretórios __pycache__ e {pyc_count} arquivos .pyc.")
+        self.stdout.write(f"Limpeza de sistema concluída: {pycache_count} pycache e {pyc_count} .pyc deletados.")
+
+        # ==========================================
         # FASE 1: VARREDURA DE INTEGRIDADE DO BANCO
         # ==========================================
         log_lines.append("\n--- [FASE 1: DATABASE SCAN] ---")
