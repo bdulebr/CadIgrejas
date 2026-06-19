@@ -15,30 +15,69 @@ from gestao_membros.models import Departamento
 import uuid
 
 class TermoLGPD(models.Model):
+    TIPO_CHOICES = [
+        ('membro', 'Membro / Voluntário'),
+        ('visitante', 'Visitante Geral'),
+        ('crianca', 'Criança / Menor de Idade'),
+    ]
     titulo = models.CharField(max_length=200, help_text="Ex: Termo de Uso de Imagem v1")
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='membro')
     conteudo_juridico = models.TextField(help_text="Texto completo do termo para o membro ler")
     data_publicacao = models.DateTimeField(auto_now_add=True)
-    is_ativo = models.BooleanField(default=True, help_text="Apenas um termo deve estar ativo por vez")
+    is_ativo = models.BooleanField(default=True, help_text="Apenas um termo ativo por tipo")
 
     def __str__(self):
-        return f"{self.titulo} - {'(Ativo)' if self.is_ativo else '(Obsoleto)'}"
+        return f"{self.titulo} - {self.get_tipo_display()} {'(Ativo)' if self.is_ativo else '(Obsoleto)'}"
 
     def save(self, *args, **kwargs):
         if self.is_ativo:
-            TermoLGPD.objects.filter(is_ativo=True).update(is_ativo=False)
+            TermoLGPD.objects.filter(tipo=self.tipo, is_ativo=True).update(is_ativo=False)
         super().save(*args, **kwargs)
 
 class AssinaturaLGPD(models.Model):
+    # LEGADO: Mantido apenas por histórico antigo
     membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='assinaturas_lgpd')
     termo = models.ForeignKey(TermoLGPD, on_delete=models.RESTRICT)
     data_aceite = models.DateTimeField(auto_now_add=True)
     ip_registro = models.GenericIPAddressField(null=True, blank=True)
 
-    class Meta:
-        unique_together = ('membro', 'termo')
-
     def __str__(self):
         return f"{self.membro.first_name} aceitou {self.termo.titulo}"
+
+class RegistroAceiteLGPD(models.Model):
+    STATUS_CHOICES = [
+        ('pendente', 'Pendente'),
+        ('aceito', 'Aceito'),
+        ('recusado', 'Recusado')
+    ]
+
+    # Vínculo com a intranet (se houver)
+    membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='aceites_lgpd_v2', null=True, blank=True)
+
+    # Dados da pessoa (Preenchidos pela mídia ou pelo sistema)
+    nome_completo = models.CharField('Nome Completo', max_length=255)
+    cpf = models.CharField('CPF', max_length=20, blank=True, null=True)
+    email = models.EmailField('E-mail', blank=True, null=True)
+
+    # Caso seja criança
+    nome_crianca = models.CharField('Nome da Criança (Opcional)', max_length=255, blank=True, null=True)
+
+    termo = models.ForeignKey(TermoLGPD, on_delete=models.RESTRICT)
+    token_acesso = models.UUIDField(default=uuid.uuid4, unique=True)
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='pendente')
+
+    data_solicitacao = models.DateTimeField(auto_now_add=True)
+    data_resposta = models.DateTimeField(null=True, blank=True)
+    ip_registro = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, null=True)
+
+    arquivo_pdf = models.FileField('PDF Gerado', upload_to='lgpd/documentos_assinados/', null=True, blank=True)
+
+    class Meta:
+        ordering = ['-data_solicitacao']
+
+    def __str__(self):
+        return f"{self.nome_completo} - {self.get_status_display()}"
 
 class PastaVirtual(models.Model):
     TIPO_CHOICES = [

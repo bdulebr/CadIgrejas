@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Termo LGPD Assinado</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+            }
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #333333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 10px;
+        }
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 10pt;
+            color: #666666;
+        }
+        .content {
+            margin-bottom: 40px;
+            text-align: justify;
+        }
+        .signature-box {
+            border: 1px solid #cccccc;
+            background-color: #f9fafb;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 5px;
+        }
+        .signature-title {
+            font-weight: bold;
+            font-size: 14pt;
+            color: #16a34a;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .meta-data {
+            font-size: 10pt;
+            color: #4b5563;
+        }
+        .meta-row {
+            margin-bottom: 5px;
+        }
+        .meta-label {
+            font-weight: bold;
+        }
+        .hash {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 9pt;
+            word-wrap: break-word;
+            background-color: #e5e7eb;
+            padding: 2px 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">IGREJA PALAVRA DE VIDA ENSEADA</div>
+        <div class="subtitle">DEPARTAMENTO DE MÍDIA E COMPLIANCE JURÍDICO</div>
+        <div class="subtitle">Documento Oficial Eletrônico - LGPD (Lei nº 13.709/2018)</div>
+    </div>
+
+    <div class="content">
+        {{ texto_termo|linebreaks }}
+    </div>
+
+    <div class="signature-box">
+        <div class="signature-title">ACEITE DIGITAL CONFIRMADO</div>
+
+        <div class="meta-row">
+            <span class="meta-label">Titular / Assinante:</span> {{ registro.nome_completo }}
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">CPF:</span> {{ registro.cpf|default:"NÃO INFORMADO" }}
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">Tipo de Termo:</span> {{ registro.termo.get_tipo_display }}
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">Data e Hora do Aceite:</span> {{ registro.data_resposta|date:"d/m/Y H:i:s" }}
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">IP de Origem:</span> {{ registro.ip_registro|default:"Indisponível" }}
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">Dispositivo (User-Agent):</span> {{ registro.user_agent|truncatechars:80|default:"Indisponível" }}
+        </div>
+        <div class="meta-row" style="margin-top: 15px;">
+            <span class="meta-label">Chave de Autenticidade (Token):</span>
+            <span class="hash">{{ registro.token_acesso }}</span>
+        </div>
+    </div>
+
+    <div id="footer_content" style="text-align: center; font-size: 8pt; color: #999;">
+        Documento gerado automaticamente pelo Sistema IPVE Intranet. Autenticidade garantida via log de sistema. Página <pdf:pagenumber> de <pdf:pagecount>.
+    </div>
+
+</body>
+</html>

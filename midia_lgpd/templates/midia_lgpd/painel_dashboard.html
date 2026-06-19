@@ -1,0 +1,218 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Painel LGPD e Mídia | PV Enseada{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Centro de Compliance LGPD</h1>
+            <p class="text-sm text-gray-500">Gestão de Direitos de Imagem e Autorizações Legais</p>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Total Aceites</p>
+                    <h3 class="text-2xl font-bold text-green-600">{{ total_aceites }}</h3>
+                </div>
+                <div class="p-3 bg-green-100 dark:bg-green-900/20 text-green-600 rounded-lg">
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Pendentes/Recusados</p>
+                    <h3 class="text-2xl font-bold text-yellow-600">{{ total_pendentes }}</h3>
+                </div>
+                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 rounded-lg">
+                    <i data-lucide="clock" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abas -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="lgpd-tab" data-tabs-toggle="#lgpd-tab-content" role="tablist">
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg aria-selected:text-blue-600 aria-selected:border-blue-600" id="enviar-tab" data-tabs-target="#enviar" type="button" role="tab" aria-controls="enviar" aria-selected="true">
+                        <div class="flex items-center gap-2"><i data-lucide="send" class="w-4 h-4"></i> Enviar Solicitação</div>
+                    </button>
+                </li>
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" id="historico-tab" data-tabs-target="#historico" type="button" role="tab" aria-controls="historico" aria-selected="false">
+                        <div class="flex items-center gap-2"><i data-lucide="history" class="w-4 h-4"></i> Histórico de Aceites</div>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div id="lgpd-tab-content" class="p-6">
+            <!-- ABA ENVIAR -->
+            <div class="hidden" id="enviar" role="tabpanel" aria-labelledby="enviar-tab">
+                <div class="max-w-2xl mx-auto">
+                    <form id="form-solicitacao" class="space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Termo *</label>
+                            <select name="tipo_termo" id="tipo_termo" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" onchange="toggleCrianca()">
+                                <option value="membro">Membro / Voluntário</option>
+                                <option value="visitante" selected>Visitante Geral</option>
+                                <option value="crianca">Criança / Menor de Idade</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome Completo *</label>
+                            <input type="text" name="nome_completo" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CPF (Opcional, mas recomendado)</label>
+                                <input type="text" name="cpf" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">E-mail (Se preenchido, envia automático)</label>
+                                <input type="email" name="email" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div id="div-crianca" class="hidden p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                            <label class="block text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">Nome Completo da Criança *</label>
+                            <input type="text" name="nome_crianca" id="nome_crianca" class="bg-white border border-blue-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-800 dark:text-white">
+                        </div>
+
+                        <button type="submit" class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center flex justify-center items-center gap-2">
+                            <i data-lucide="link" class="w-4 h-4"></i> Gerar Link de Aceite
+                        </button>
+                    </form>
+
+                    <div id="resultado-link" class="hidden mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <p class="text-sm font-bold text-green-800 dark:text-green-400 mb-2">Solicitação Criada! Envie o link abaixo:</p>
+                        <div class="flex items-center gap-2 mb-4">
+                            <input type="text" id="link_gerado" readonly class="bg-white border border-green-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-800 dark:text-white">
+                            <button onclick="copiarLink()" class="p-2.5 bg-gray-200 hover:bg-gray-300 rounded-lg dark:bg-gray-700"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                        </div>
+                        <a id="btn-whatsapp" href="#" target="_blank" class="w-full inline-flex justify-center items-center gap-2 text-white bg-green-500 hover:bg-green-600 font-medium rounded-lg text-sm px-5 py-2.5">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i> Enviar pelo WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA HISTORICO -->
+            <div class="hidden" id="historico" role="tabpanel" aria-labelledby="historico-tab">
+                <form method="get" class="mb-4 flex gap-2 max-w-md">
+                    <input type="text" name="q" value="{{ pesquisa }}" placeholder="Buscar por nome ou CPF..." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <button type="submit" class="text-white bg-gray-800 hover:bg-gray-900 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-600"><i data-lucide="search" class="w-4 h-4"></i></button>
+                </form>
+
+                <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Nome do Titular</th>
+                                <th scope="col" class="px-6 py-3">Tipo do Termo</th>
+                                <th scope="col" class="px-6 py-3">Data Envio</th>
+                                <th scope="col" class="px-6 py-3">Status</th>
+                                <th scope="col" class="px-6 py-3">PDF Legal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reg in historico %}
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                    {{ reg.nome_completo }}
+                                    {% if reg.cpf %}<br><span class="text-xs text-gray-400">CPF: {{ reg.cpf }}</span>{% endif %}
+                                    {% if reg.nome_crianca %}<br><span class="text-xs text-blue-500">Resp. por: {{ reg.nome_crianca }}</span>{% endif %}
+                                </th>
+                                <td class="px-6 py-4">{{ reg.termo.get_tipo_display }}</td>
+                                <td class="px-6 py-4">{{ reg.data_solicitacao|date:"d/m/Y H:i" }}</td>
+                                <td class="px-6 py-4">
+                                    {% if reg.status == 'aceito' %}
+                                        <span class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">ACEITO</span>
+                                    {% elif reg.status == 'recusado' %}
+                                        <span class="bg-red-100 text-red-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">RECUSADO</span>
+                                    {% else %}
+                                        <span class="bg-yellow-100 text-yellow-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">PENDENTE</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if reg.arquivo_pdf %}
+                                        <a href="{% url 'baixar_pdf_termo' reg.token_acesso %}" target="_blank" class="font-medium text-blue-600 dark:text-blue-500 hover:underline flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar</a>
+                                    {% else %}
+                                        <span class="text-gray-400">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center">Nenhum registro encontrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCrianca() {
+        const tipo = document.getElementById('tipo_termo').value;
+        const divCrianca = document.getElementById('div-crianca');
+        const inputCrianca = document.getElementById('nome_crianca');
+        if(tipo === 'crianca') {
+            divCrianca.classList.remove('hidden');
+            inputCrianca.required = true;
+        } else {
+            divCrianca.classList.add('hidden');
+            inputCrianca.required = false;
+            inputCrianca.value = '';
+        }
+    }
+
+    document.getElementById('form-solicitacao').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        fetch("{% url 'enviar_solicitacao_lgpd' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.sucesso) {
+                document.getElementById('resultado-link').classList.remove('hidden');
+                document.getElementById('link_gerado').value = data.link_publico;
+                document.getElementById('btn-whatsapp').href = data.zap_url;
+                this.reset();
+                toggleCrianca();
+            } else {
+                alert(data.msg);
+            }
+        });
+    });
+
+    function copiarLink() {
+        const copyText = document.getElementById("link_gerado");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        alert("Link copiado para a área de transferência!");
+    }
+</script>
+{% endblock %}

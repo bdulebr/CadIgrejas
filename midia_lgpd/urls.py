@@ -12,6 +12,11 @@ urlpatterns = [
     path('lgpd/portal/', views.portal_lgpd, name='portal_lgpd'),
     path('lgpd/portal/exportar/', views.exportar_dados_pessoais, name='exportar_dados_pessoais'),
     path('lgpd/portal/esquecimento/', views.solicitar_esquecimento, name='solicitar_esquecimento'),
+    path('lgpd/painel/', views.painel_lgpd_dashboard, name='painel_lgpd_dashboard'),
+    path('lgpd/enviar-solicitacao/', views.enviar_solicitacao_lgpd, name='enviar_solicitacao_lgpd'),
+    path('lgpd/termo/publico/<uuid:token>/', views.termo_publico_view, name='termo_publico_view'),
+    path('lgpd/termo/processar/<uuid:token>/', views.processar_aceite_lgpd, name='processar_aceite_lgpd'),
+    path('lgpd/termo/pdf/<uuid:token>/', views.baixar_pdf_termo, name='baixar_pdf_termo'),
     path('midia/painel/', views.painel_midia, name='painel_midia'),
     path('midia/upload/', views.upload_arquivo, name='upload_arquivo'),
 

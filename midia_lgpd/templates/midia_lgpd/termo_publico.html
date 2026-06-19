@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termo de Consentimento LGPD - PV Enseada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .markdown-body p { margin-bottom: 1rem; color: #4b5563; line-height: 1.6; }
+        .markdown-body strong { color: #111827; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- HEADER -->
+        <div class="bg-blue-900 p-8 text-center">
+            <h1 class="text-2xl font-bold text-white mb-2">Consentimento Digital</h1>
+            <p class="text-blue-200 text-sm">Lei Geral de Proteção de Dados (13.709/2018)</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 m-6" role="alert">
+                    <span class="font-medium">Obrigado!</span> {{ message }}
+                </div>
+            {% endfor %}
+            <div class="p-8 text-center">
+                <a href="https://pvenseada.org" class="text-blue-600 hover:underline">Voltar para o site da Igreja</a>
+            </div>
+        {% else %}
+            {% if registro.status != 'pendente' %}
+                <div class="p-8 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full {% if registro.status == 'aceito' %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-600{% endif %} mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Status da Solicitação: {{ registro.get_status_display }}</h2>
+                    <p class="text-gray-500">Esta solicitação já foi respondida em {{ registro.data_resposta|date:"d/m/Y H:i" }}.</p>
+                    {% if registro.arquivo_pdf %}
+                    <a href="{% url 'baixar_pdf_termo' registro.token_acesso %}" class="mt-4 inline-block text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5">
+                        Baixar Cópia em PDF
+                    </a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="p-8">
+                    <div class="mb-6 pb-6 border-b border-gray-100">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">{{ registro.termo.titulo }}</h2>
+                        <div class="markdown-body bg-gray-50 p-6 rounded-lg text-sm">
+                            {{ texto_termo|linebreaks }}
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8">
+                        <h3 class="text-sm font-bold text-blue-900 mb-1">Registro de Autenticidade</h3>
+                        <p class="text-xs text-blue-700">Ao aceitar, seu consentimento será gravado com carimbo de tempo, IP e identificador digital criptografado gerando um documento PDF probatório assinado digitalmente pelo sistema da Igreja PV Enseada.</p>
+                    </div>
+
+                    <form method="post" action="{% url 'processar_aceite_lgpd' registro.token_acesso %}" class="flex flex-col sm:flex-row gap-4">
+                        {% csrf_token %}
+                        <button type="submit" name="acao" value="aceito" class="flex-1 text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-bold rounded-xl text-lg px-5 py-4 text-center transition-colors">
+                            SIM, EU ACEITO
+                        </button>
+                        <button type="submit" name="acao" value="recusado" class="sm:w-auto text-red-600 bg-red-50 hover:bg-red-100 focus:ring-4 focus:ring-red-300 font-medium rounded-xl text-sm px-5 py-4 text-center transition-colors">
+                            NÃO ACEITO
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <div class="bg-gray-50 p-4 text-center text-xs text-gray-400">
+            Intranet Institucional • Mídia e LGPD • Palavra de Vida Enseada
+        </div>
+    </div>
+
+</body>
+</html>

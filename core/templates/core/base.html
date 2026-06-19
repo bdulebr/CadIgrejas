@@ -233,6 +233,14 @@
                 <span x-show="sidebarOpen" class="whitespace-nowrap">Visitantes</span>
             </a>
 
+            <!-- Mídia e LGPD (Zero-Trust) -->
+            {% if user.nivel_hierarquico == 'super_admin' or 'mídia' in user.departamento_responsavel.nome|lower or user.is_superuser %}
+            <a href="{% url 'painel_lgpd_dashboard' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Mídia e LGPD">
+                <i data-lucide="shield-check" class="w-5 h-5 min-w-[20px] text-emerald-400 group-hover:text-emerald-300"></i>
+                <span x-show="sidebarOpen" class="whitespace-nowrap">Mídia & LGPD</span>
+            </a>
+            {% endif %}
+
             <!-- Ministério de Casais (Zero-Trust) -->
             {% if user.nivel_hierarquico == 'super_admin' or 'casal' in user.departamento_responsavel.nome|lower %}
             <a href="{% url 'dashboard_casais' %}" class="flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors group" title="Ministério de Casais">
