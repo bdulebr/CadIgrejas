@@ -242,9 +242,11 @@ STORAGES = {
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "OPTIONS": {
+            "manifest_strict": False,
+        },
     },
 }
-WHITENOISE_MANIFEST_STRICT = False
 
 AUTH_USER_MODEL = 'core.Membro'
 
