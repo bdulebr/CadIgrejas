@@ -39,25 +39,25 @@
     </div>
 
     <!-- Abas -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+    <div x-data="{ tab: 'enviar' }" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div class="border-b border-gray-200 dark:border-gray-700">
-            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="lgpd-tab" data-tabs-toggle="#lgpd-tab-content" role="tablist">
-                <li class="mr-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg aria-selected:text-blue-600 aria-selected:border-blue-600" id="enviar-tab" data-tabs-target="#enviar" type="button" role="tab" aria-controls="enviar" aria-selected="true">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+                <li class="mr-2">
+                    <button @click="tab = 'enviar'" :class="tab === 'enviar' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'" class="inline-block p-4 border-b-2 rounded-t-lg transition-colors font-bold">
                         <div class="flex items-center gap-2"><i data-lucide="send" class="w-4 h-4"></i> Enviar Solicitação</div>
                     </button>
                 </li>
-                <li class="mr-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" id="historico-tab" data-tabs-target="#historico" type="button" role="tab" aria-controls="historico" aria-selected="false">
+                <li class="mr-2">
+                    <button @click="tab = 'historico'" :class="tab === 'historico' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'" class="inline-block p-4 border-b-2 rounded-t-lg transition-colors font-bold">
                         <div class="flex items-center gap-2"><i data-lucide="history" class="w-4 h-4"></i> Histórico de Aceites</div>
                     </button>
                 </li>
             </ul>
         </div>
 
-        <div id="lgpd-tab-content" class="p-6">
+        <div class="p-6">
             <!-- ABA ENVIAR -->
-            <div class="hidden" id="enviar" role="tabpanel" aria-labelledby="enviar-tab">
+            <div x-show="tab === 'enviar'" x-transition>
                 <div class="max-w-2xl mx-auto">
                     <form id="form-solicitacao" class="space-y-4">
                         {% csrf_token %}
@@ -110,7 +110,7 @@
             </div>
 
             <!-- ABA HISTORICO -->
-            <div class="hidden" id="historico" role="tabpanel" aria-labelledby="historico-tab">
+            <div x-show="tab === 'historico'" x-transition style="display: none;">
                 <form method="get" class="mb-4 flex gap-2 max-w-md">
                     <input type="text" name="q" value="{{ pesquisa }}" placeholder="Buscar por nome ou CPF..." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <button type="submit" class="text-white bg-gray-800 hover:bg-gray-900 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-600"><i data-lucide="search" class="w-4 h-4"></i></button>

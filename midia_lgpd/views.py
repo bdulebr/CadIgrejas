@@ -1140,8 +1140,6 @@ def processar_aceite_lgpd(request, token):
         return redirect('termo_publico_view', token=registro.token_acesso)
     return HttpResponse(status=405)
 
-@login_required
-@requer_permissao('midia', 'ver')
 def baixar_pdf_termo(request, token):
     registro = get_object_or_404(RegistroAceiteLGPD, token_acesso=token)
     if registro.arquivo_pdf:
