@@ -123,8 +123,14 @@ def painel_inventario(request):
     import winsound
     from django.utils import timezone
     from datetime import timedelta
+    from django.db.models import Sum
 
     itens = ItemAlmoxarifado.objects.all().order_by('-id')
+
+    # Métricas Gerais Reais
+    total_emprestados = ItemAlmoxarifado.objects.filter(status_item='emprestado').count()
+    itens_em_manutencao = ItemAlmoxarifado.objects.filter(status_item='manutencao').count()
+    valor_total_estoque = ItemAlmoxarifado.objects.filter(valor_monetario__isnull=False).aggregate(total=Sum('valor_monetario'))['total'] or 0.00
 
     # Motor de Vencimentos (Alerta Zero-Trust)
     hoje = timezone.now().date()
@@ -151,6 +157,9 @@ def painel_inventario(request):
     if tipo_filter:
         itens = itens.filter(tipo_item=tipo_filter)
 
+    if request.headers.get('HX-Request'):
+        return render(request, 'almoxarifado/partials/tabela_inventario.html', {'itens': itens})
+
     # Dash info
     ultimas_retiradas = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').order_by('-data_hora')[:5]
     ultimas_devolucoes = MovimentacaoAlmoxarifado.objects.filter(tipo='devolucao').order_by('-data_hora')[:5]
@@ -176,7 +185,10 @@ def painel_inventario(request):
         'ultimas_retiradas': ultimas_retiradas,
         'ultimas_devolucoes': ultimas_devolucoes,
         'alerta_vencimento': alerta_vencimento,
-        'itens_vencendo': itens_vencendo
+        'itens_vencendo': itens_vencendo,
+        'total_emprestados': total_emprestados,
+        'itens_em_manutencao': itens_em_manutencao,
+        'valor_total_estoque': valor_total_estoque
     })
 
 @login_required
@@ -238,6 +250,7 @@ def cadastrar_item_almoxarifado(request):
     if request.method == 'POST':
         nome = request.POST.get('nome', '').strip()
         categoria_id = request.POST.get('categoria')
+        categoria = CategoriaItem.objects.filter(id=categoria_id).first() if categoria_id else None
         subcategoria_id = request.POST.get('subcategoria')
         subcategoria = SubcategoriaItem.objects.filter(id=subcategoria_id).first() if subcategoria_id else None
         tipo_item = request.POST.get('tipo_item', 'permanente')
@@ -258,15 +271,7 @@ def cadastrar_item_almoxarifado(request):
         anexos = request.FILES.getlist('anexos_multiplos')
 
         id_unico_manual = request.POST.get('id_unico', '').strip()
-
-        categoria = CategoriaItem.objects.filter(id=categoria_id).first() if categoria_id else None
-        valor_monetario = request.POST.get('valor_monetario')
-        status_pagamento = request.POST.get('status_pagamento', 'nao_se_aplica')
-        condicao_fisica = request.POST.get('condicao_fisica', 'nova')
         exige_aprovacao = request.POST.get('exige_aprovacao') == 'True'
-
-        data_vencimento = request.POST.get('data_vencimento') or None
-        valor_monetario = valor_monetario if valor_monetario else None
 
         item = ItemAlmoxarifado(
             nome=nome,
@@ -409,9 +414,10 @@ def editar_item_almoxarifado(request, item_id):
     if request.method == 'POST':
         item.nome = request.POST.get('nome', '').strip()
         categoria_id = request.POST.get('categoria')
+        item.categoria_id = categoria_id if categoria_id else None
+
         subcategoria_id = request.POST.get('subcategoria')
-        item.subcategoria_id = subcategoria_id
-        subcategoria = SubcategoriaItem.objects.filter(id=subcategoria_id).first() if subcategoria_id else None
+        item.subcategoria_id = subcategoria_id if subcategoria_id else None
         item.tipo_item = request.POST.get('tipo_item', 'permanente')
         item.quantidade_estoque = int(request.POST.get('quantidade', item.quantidade_estoque))
 
