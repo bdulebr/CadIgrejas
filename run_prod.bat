@@ -21,16 +21,20 @@ echo - Servidor Web: WAITRESS (Pronto para alta carga no Windows)
 echo - Arquivos Estaticos: WHITENOISE (Compactados e Cacheados)
 echo ==============================================================
 echo.
-echo [1/3] Verificando integridade e seguranca de producao...
+echo [1/4] Verificando integridade e seguranca de producao...
 call venv\Scripts\activate
 python manage.py check --deploy
 
 echo.
-echo [2/3] Aplicando atualizacoes no Banco de Dados (Migrate)...
+echo [2/4] Aplicando atualizacoes no Banco de Dados (Migrate)...
 python manage.py migrate
 
 echo.
-echo [3/3] Coletando arquivos estaticos (WhiteNoise)...
+echo [3/4] Sincronizando Permissoes e Pastas (Bootstrap)...
+python manage.py bootstrap_sistema
+
+echo.
+echo [4/4] Coletando arquivos estaticos (WhiteNoise)...
 python manage.py collectstatic --noinput
 
 echo.
