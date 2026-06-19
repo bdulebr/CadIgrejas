@@ -70,6 +70,7 @@ class RegistroAceiteLGPD(models.Model):
     data_resposta = models.DateTimeField(null=True, blank=True)
     ip_registro = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True, null=True)
+    historico_alteracoes = models.JSONField(default=list, blank=True, help_text="Log JSON das ações de aceite/recusa")
 
     arquivo_pdf = models.FileField('PDF Gerado', upload_to='lgpd/documentos_assinados/', null=True, blank=True)
 

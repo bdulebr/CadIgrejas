@@ -1116,26 +1116,95 @@ def processar_aceite_lgpd(request, token):
         registro.ip_registro = ip
         registro.user_agent = request.META.get('HTTP_USER_AGENT', '')
 
-        if acao == 'aceito':
-            # Gerar PDF
-            template_path = 'midia_lgpd/pdfs/termo_assinado.html'
+        # Histórico de Auditoria
+        if not isinstance(registro.historico_alteracoes, list):
+            registro.historico_alteracoes = []
+        registro.historico_alteracoes.append({
+            'data': registro.data_resposta.isoformat(),
+            'acao': acao,
+            'ip': ip,
+            'user_agent': registro.user_agent
+        })
 
-            texto_termo = registro.termo.conteudo_juridico
-            texto_termo = texto_termo.replace('{{ NOME }}', registro.nome_completo)
-            texto_termo = texto_termo.replace('{{ CPF }}', registro.cpf or 'NÃO INFORMADO')
-            texto_termo = texto_termo.replace('{{ NOME_CRIANCA }}', registro.nome_crianca or '')
-            texto_termo = texto_termo.replace('{{ DATA }}', registro.data_resposta.strftime('%d/%m/%Y às %H:%M'))
+        # Gerar PDF (Sempre gera, mesmo se recusado para termos o comprovante da recusa)
+        from django.template.loader import render_to_string
+        from xhtml2pdf import pisa
+        import io
+        template_path = 'midia_lgpd/pdfs/termo_assinado.html'
 
-            context = {'registro': registro, 'texto_termo': texto_termo}
-            html = render_to_string(template_path, context)
+        texto_termo = registro.termo.conteudo_juridico
+        texto_termo = texto_termo.replace('{{ NOME }}', registro.nome_completo)
+        texto_termo = texto_termo.replace('{{ CPF }}', registro.cpf or 'NÃO INFORMADO')
+        texto_termo = texto_termo.replace('{{ NOME_CRIANCA }}', registro.nome_crianca or '')
+        texto_termo = texto_termo.replace('{{ DATA }}', registro.data_resposta.strftime('%d/%m/%Y às %H:%M'))
 
-            result = io.BytesIO()
-            pdf = pisa.pisaDocument(io.BytesIO(html.encode("utf-8")), result)
-            if not pdf.err:
-                from django.core.files.base import ContentFile
-                registro.arquivo_pdf.save(f'aceite_lgpd_{registro.id}.pdf', ContentFile(result.getvalue()))
+        if acao == 'recusado':
+            texto_termo = "<h1 style='color:red; text-align:center;'>TERMO RECUSADO PELO TITULAR</h1><hr>" + texto_termo
+
+        context = {'registro': registro, 'texto_termo': texto_termo}
+        html = render_to_string(template_path, context)
+
+        result = io.BytesIO()
+        pdf = pisa.pisaDocument(io.BytesIO(html.encode("utf-8")), result)
+        pdf_bytes = None
+        if not pdf.err:
+            from django.core.files.base import ContentFile
+            pdf_bytes = result.getvalue()
+            registro.arquivo_pdf.save(f'LGPD_{acao}_{registro.id}.pdf', ContentFile(pdf_bytes))
 
         registro.save()
+
+        # Integração PV Drive
+        from gestao_membros.models import Departamento
+        from midia_lgpd.models import PastaVirtual, ArquivoMidia
+
+        if registro.arquivo_pdf:
+            if registro.membro:
+                # É membro, salvar na raiz do usuário
+                pasta_destino, _ = PastaVirtual.objects.get_or_create(
+                    dono_membro=registro.membro,
+                    tipo_pasta='usuario',
+                    defaults={'nome': f'Pasta de {registro.membro.get_full_name()}', 'is_sistema': True}
+                )
+            else:
+                # É visitante, salvar na pasta do Departamento Mídia & LGPD
+                depto_midia = Departamento.objects.filter(nome='Mídia & LGPD').first()
+                if not depto_midia:
+                    depto_midia = Departamento.objects.create(nome='Mídia & LGPD', categoria='departamento')
+                pasta_midia_raiz, _ = PastaVirtual.objects.get_or_create(
+                    departamento=depto_midia,
+                    tipo_pasta='departamento',
+                    defaults={'nome': 'Raiz Mídia & LGPD', 'is_sistema': True}
+                )
+                pasta_destino, _ = PastaVirtual.objects.get_or_create(
+                    parent=pasta_midia_raiz,
+                    departamento=depto_midia,
+                    nome=f'Visitante: {registro.nome_completo}',
+                    defaults={'tipo_pasta': 'normal'}
+                )
+
+            # Criar ArquivoMidia associado
+            ArquivoMidia.objects.create(
+                titulo=f'Comprovante LGPD - {acao.capitalize()} - {registro.nome_completo}',
+                arquivo=registro.arquivo_pdf,
+                pasta=pasta_destino,
+                dono_membro=registro.membro,
+                tamanho_bytes=registro.arquivo_pdf.size if registro.arquivo_pdf else 0,
+                extensao='pdf'
+            )
+
+        # Envio de E-mail de Segunda Via
+        if registro.email and pdf_bytes:
+            from intranet.services.gmail_service import enviar_email_html
+            mensagem = f"Confirmamos a recepção da sua resposta: <strong>{acao.upper()}</strong> para o termo de consentimento.<br>Segue anexo seu comprovante com rastreabilidade digital para seus registros."
+            enviar_email_html(
+                destinatario=registro.email,
+                assunto=f"Comprovante de Termo LGPD - {acao.capitalize()}",
+                template_name="generico.html",
+                context={'content': f"<h2 style='color:#14532d;'>Olá, {registro.nome_completo}!</h2><p>{mensagem}</p>"},
+                anexos=[(f"Termo_LGPD_{registro.nome_completo}_{acao}.pdf", pdf_bytes, 'application/pdf')]
+            )
+
         messages.success(request, f"Sua resposta ({acao}) foi registrada com sucesso!")
         return redirect('termo_publico_view', token=registro.token_acesso)
     return HttpResponse(status=405)
