@@ -16,7 +16,7 @@
 {% block title %}PV Drive - Gestão de Arquivos{% endblock title %}
 
 {% block content %}
-<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ openUpload: false, openNewFolder: false, openPreview: false, openShare: false, sharePastaId: '', shareItemTipo: 'pasta', sharePastaNome: '', previewUrl: '', previewType: '', previewName: '' }">
+<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ openUpload: false, openNewFolder: false, openPreview: false, openShare: false, sharePastaId: '', shareItemTipo: 'pasta', sharePastaNome: '', previewUrl: '', previewType: '', previewName: '', openRename: false, renamePastaId: '', renamePastaNome: '', openDelete: false, deletePastaId: '', deletePastaNome: '' }">
     <div class="max-w-7xl mx-auto">
 
         <!-- Header -->
@@ -132,7 +132,7 @@
                 <!-- Folders Grid -->
                 {% if pastas %}
                 <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Pastas</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-10">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-8">
                     {% for p in pastas %}
                     <a href="{% if modo_atual == 'departamento' %}{% url 'pv_drive_pasta' dep_atual.id p.id %}{% else %}{% url 'pv_drive_pessoal_pasta' p.id %}{% endif %}" class="group bg-gray-800/40 hover:bg-gray-700/60 border border-white/5 hover:border-brand-500/50 rounded-xl p-4 flex items-center gap-3 transition-all cursor-pointer">
                         <svg class="w-10 h-10 text-brand-500 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
@@ -140,9 +140,17 @@
                             <h4 class="text-white font-medium truncate text-sm">{{ p.nome }}</h4>
                             <p class="text-xs text-gray-500">{{ p.arquivos.count|add:p.subpastas.count }} itens</p>
                         </div>
-                        {% if not p.is_sistema %}<button type="button" @click.stop.prevent="openShare = true; sharePastaId = '{{ p.id }}'; shareItemTipo = 'pasta'; sharePastaNome = '{{ p.nome }}'" class="p-1.5 mr-1 bg-gray-900/60 hover:bg-blue-500 rounded-lg text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100" title="Compartilhar Pasta">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-</button>{% endif %}
+                        {% if not p.is_sistema %}
+                        <button type="button" @click.stop.prevent="openShare = true; sharePastaId = '{{ p.id }}'; shareItemTipo = 'pasta'; sharePastaNome = '{{ p.nome }}'" class="p-1.5 mr-1 bg-gray-900/60 hover:bg-blue-500 rounded-lg text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100" title="Compartilhar Pasta">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                        </button>
+                        <button type="button" @click.stop.prevent="openRename = true; renamePastaId = '{{ p.id }}'; renamePastaNome = '{{ p.nome }}'" class="p-1.5 mr-1 bg-gray-900/60 hover:bg-yellow-500 rounded-lg text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100" title="Renomear Pasta">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        <button type="button" @click.stop.prevent="openDelete = true; deletePastaId = '{{ p.id }}'; deletePastaNome = '{{ p.nome }}'" class="p-1.5 mr-1 bg-gray-900/60 hover:bg-red-500 rounded-lg text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100" title="Excluir Pasta">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                        {% endif %}
 <a href="{% url 'download_pasta_zip' p.id %}" @click.stop class="p-1.5 bg-gray-900/60 hover:bg-brand-500 rounded-lg text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100" title="Baixar Pasta (ZIP)">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         </a>
@@ -359,6 +367,53 @@
                     <div class="mt-6 flex justify-end gap-3">
                         <button type="button" @click="openShare = false" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg">Cancelar</button>
                         <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-500 rounded-lg">Confirmar Compartilhamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Renomear -->
+    <div x-show="openRename" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-black/80 backdrop-blur-sm" @click="openRename = false"></div>
+            <div class="relative inline-block w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-gray-900 border shadow-2xl border-white/10 rounded-2xl">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xl font-bold text-white">Renomear Pasta</h3>
+                    <button @click="openRename = false" class="text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                </div>
+                <form method="POST" :action="`/drive/pasta/renomear/${renamePastaId}/`">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-300">Novo Nome</label>
+                        <input type="text" name="nome" :value="renamePastaNome" required class="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="button" @click="openRename = false" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-500 rounded-lg">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Excluir -->
+    <div x-show="openDelete" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-black/80 backdrop-blur-sm" @click="openDelete = false"></div>
+            <div class="relative inline-block w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-gray-900 border shadow-2xl border-red-500/50 rounded-2xl">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 flex items-center justify-center bg-red-500/20 rounded-full text-red-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Excluir Pasta?</h3>
+                </div>
+                <p class="text-gray-400 text-sm mb-6">Tem certeza que deseja excluir a pasta <strong class="text-white" x-text="deletePastaNome"></strong>? Todos os arquivos dentro dela irão para a lixeira.</p>
+                <form method="POST" :action="`/drive/pasta/excluir/${deletePastaId}/`">
+                    {% csrf_token %}
+                    <div class="flex justify-end gap-3">
+                        <button type="button" @click="openDelete = false" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg">Sim, Excluir</button>
                     </div>
                 </form>
             </div>

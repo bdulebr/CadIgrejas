@@ -382,6 +382,64 @@ def criar_pasta(request):
 
 @login_required
 @requer_permissao('midia_lgpd', 'ver')
+def renomear_pasta(request, pasta_id):
+    pasta = get_object_or_404(PastaVirtual, id=pasta_id)
+
+    if pasta.is_sistema:
+        messages.error(request, 'Pastas de sistema não podem ser renomeadas.')
+        return redirect('pv_drive_home')
+
+    if request.method == 'POST':
+        novo_nome = request.POST.get('nome')
+        if novo_nome:
+            pasta.nome = novo_nome
+            pasta.save()
+
+            # GDrive rename (opcional)
+            service = get_drive_service()
+            if service and pasta.gdrive_folder_id:
+                try:
+                    service.files().update(fileId=pasta.gdrive_folder_id, body={'name': novo_nome}, supportsAllDrives=True).execute()
+                except Exception as e:
+                    print(f"GDrive rename erro: {e}")
+
+            messages.success(request, 'Pasta renomeada com sucesso.')
+
+    if pasta.departamento:
+        return redirect('pv_drive_pasta', alvo_id=pasta.departamento.id, pasta_id=pasta.parent.id if pasta.parent else pasta.id)
+    else:
+        return redirect('pv_drive_pessoal_pasta', pasta_id=pasta.parent.id if pasta.parent else pasta.id)
+
+@login_required
+@requer_permissao('midia_lgpd', 'ver')
+def excluir_pasta(request, pasta_id):
+    pasta = get_object_or_404(PastaVirtual, id=pasta_id)
+
+    if pasta.is_sistema:
+        messages.error(request, 'Pastas de sistema não podem ser excluídas.')
+        return redirect('pv_drive_home')
+
+    if request.method == 'POST':
+        # GDrive delete (opcional)
+        service = get_drive_service()
+        if service and pasta.gdrive_folder_id:
+            try:
+                service.files().update(fileId=pasta.gdrive_folder_id, body={'trashed': True}, supportsAllDrives=True).execute()
+            except Exception as e:
+                print(f"GDrive delete erro: {e}")
+
+        pasta.is_excluida = True
+        pasta.data_exclusao = timezone.now()
+        pasta.save()
+        messages.success(request, 'Pasta movida para a lixeira.')
+
+    if pasta.departamento:
+        return redirect('pv_drive_pasta', alvo_id=pasta.departamento.id, pasta_id=pasta.parent.id if pasta.parent else pasta.id)
+    else:
+        return redirect('pv_drive_pessoal_pasta', pasta_id=pasta.parent.id if pasta.parent else pasta.id)
+
+@login_required
+@requer_permissao('midia_lgpd', 'ver')
 def upload_drive(request):
     if request.method == 'POST':
         modo_atual = request.POST.get('modo_atual')
