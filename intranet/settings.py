@@ -64,6 +64,7 @@ X_FRAME_OPTIONS = 'DENY'
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -272,3 +273,19 @@ GDRIVE_FOLDER_ID = env('GDRIVE_FOLDER_ID', default='')
 GDRIVE_USUARIOS_FOLDER_ID = env('GDRIVE_USUARIOS_FOLDER_ID', default='')
 GDRIVE_DEPARTAMENTOS_FOLDER_ID = env('GDRIVE_DEPARTAMENTOS_FOLDER_ID', default='')
 GCALENDAR_ID = env('GCALENDAR_ID', default='primary')
+
+# JAZZMIN ADMIN
+JAZZMIN_SETTINGS = {
+    "site_title": "Intranet Admin",
+    "site_header": "Palavra de Vida Enseada",
+    "site_brand": "PV Enseada",
+    "welcome_sign": "Bem-vindo ao Sysadmin da Igreja",
+    "search_model": ["auth.User"],
+    "show_ui_builder": False,
+}
+JAZZMIN_UI_TWEAKS = {
+    "navbar": "navbar-dark",
+    "theme": "darkly",
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_child_indent": True,
+}

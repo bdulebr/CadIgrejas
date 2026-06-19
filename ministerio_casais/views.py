@@ -280,7 +280,8 @@ def atualizar_status_casal(request, casal_id):
             casal.status_relacionamento = novo_status
             casal.save()
             return HttpResponse(status=200)
-    return HttpResponse(status=400)
+    from django.http import HttpResponseNotAllowed
+    return HttpResponseNotAllowed(['POST'])
 
 @login_required
 @requer_permissao('casais', 'ver')

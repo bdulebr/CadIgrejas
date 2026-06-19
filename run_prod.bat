@@ -17,7 +17,7 @@ if "%DEBUG_MODE%"=="True" (
     echo - Debug Mode: DESATIVADO [Extrema Seguranca]
 )
 
-echo - Servidor Web: WAITRESS (Pronto para alta carga no Windows)
+echo - Servidor Web: DAPHNE (Pronto para ASGI/WebSockets)
 echo - Arquivos Estaticos: WHITENOISE (Compactados e Cacheados)
 echo ==============================================================
 echo.
@@ -45,8 +45,8 @@ set USE_HTTPS=False
 echo [HOT-RELOAD] Iniciando Cão de Guarda (Daemon da IA) em background...
 start /B venv\Scripts\python manage.py ai_daemon
 
-echo [HOT-RELOAD] Iniciando Servidor Web com monitoramento (Hupper)...
-hupper -m waitress --port=8005 intranet.wsgi:application
+echo [HOT-RELOAD] Iniciando Servidor Web com monitoramento (Hupper/Daphne ASGI)...
+hupper -m daphne -b 0.0.0.0 -p 8005 intranet.asgi:application
 echo.
 echo Servidor reiniciando (loop ativo)...
 timeout /t 2 > NUL

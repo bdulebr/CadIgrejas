@@ -12,7 +12,7 @@ else
     echo "- Debug Mode: DESATIVADO [Extrema Seguranca]"
 fi
 
-echo "- Servidor Web: WAITRESS / HUPPER"
+echo "- Servidor Web: DAPHNE / HUPPER (ASGI)"
 echo "- Arquivos Estaticos: WHITENOISE (Compactados e Cacheados)"
 echo "=============================================================="
 echo ""
@@ -57,5 +57,5 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM
 
-# Inicia Hupper em foreground
-hupper -m waitress --port=8005 intranet.wsgi:application
+# Inicia Hupper em foreground com Daphne (ASGI)
+hupper -m daphne -b 0.0.0.0 -p 8005 intranet.asgi:application
