@@ -125,23 +125,50 @@ def injetar_templates_padrao(sender, **kwargs):
 # CRIAÇÃO AUTOMÁTICA DE PASTAS NO PV DRIVE PARA NOVOS MEMBROS/DEPTOS
 # =========================================================
 
+from django.conf import settings
+from intranet.services.google_drive import get_drive_service
+
+def create_gdrive_folder_sync(service, name, parent_id):
+    if not service or not parent_id: return None
+    try:
+        folder = service.files().create(
+            body={'name': name, 'mimeType': 'application/vnd.google-apps.folder', 'parents': [parent_id]},
+            fields='id', supportsAllDrives=True
+        ).execute()
+        return folder.get('id')
+    except Exception as e:
+        print(f"Erro GDrive API: {e}")
+        return None
+
 @receiver(post_save, sender='core.Membro')
 def criar_pasta_membro_pv_drive(sender, instance, created, **kwargs):
     if created:
         from midia_lgpd.models import PastaVirtual
         try:
+            service = get_drive_service()
             # Cria a pasta raiz do usuário
-            pasta_raiz, _ = PastaVirtual.objects.get_or_create(
+            pasta_raiz, created_raiz = PastaVirtual.objects.get_or_create(
                 tipo_pasta='usuario',
                 dono_membro=instance,
                 defaults={'nome': f"Pasta de {instance.first_name}", 'is_sistema': True}
             )
+            if created_raiz and service and getattr(settings, 'GDRIVE_USUARIOS_FOLDER_ID', None):
+                gid = create_gdrive_folder_sync(service, pasta_raiz.nome, settings.GDRIVE_USUARIOS_FOLDER_ID)
+                if gid:
+                    pasta_raiz.gdrive_folder_id = gid
+                    pasta_raiz.save(update_fields=['gdrive_folder_id'])
+
             # Cria a pasta de compartilhados do usuário dentro da raiz
-            PastaVirtual.objects.get_or_create(
+            pasta_comp, created_comp = PastaVirtual.objects.get_or_create(
                 tipo_pasta='compartilhados',
                 dono_membro=instance,
                 defaults={'nome': "Compartilhados Comigo", 'is_sistema': True, 'parent': pasta_raiz}
             )
+            if created_comp and service and pasta_raiz.gdrive_folder_id:
+                gid = create_gdrive_folder_sync(service, pasta_comp.nome, pasta_raiz.gdrive_folder_id)
+                if gid:
+                    pasta_comp.gdrive_folder_id = gid
+                    pasta_comp.save(update_fields=['gdrive_folder_id'])
         except Exception as e:
             print(f"Erro ao criar PastaVirtual para Membro {instance.id}: {e}")
 
@@ -150,17 +177,29 @@ def criar_pasta_depto_pv_drive(sender, instance, created, **kwargs):
     if created:
         from midia_lgpd.models import PastaVirtual
         try:
+            service = get_drive_service()
             # Cria a pasta raiz do departamento
-            pasta_raiz, _ = PastaVirtual.objects.get_or_create(
+            pasta_raiz, created_raiz = PastaVirtual.objects.get_or_create(
                 tipo_pasta='departamento',
                 departamento=instance,
                 defaults={'nome': f"Pasta do Departamento: {instance.nome}", 'is_sistema': True}
             )
+            if created_raiz and service and getattr(settings, 'GDRIVE_DEPARTAMENTOS_FOLDER_ID', None):
+                gid = create_gdrive_folder_sync(service, pasta_raiz.nome, settings.GDRIVE_DEPARTAMENTOS_FOLDER_ID)
+                if gid:
+                    pasta_raiz.gdrive_folder_id = gid
+                    pasta_raiz.save(update_fields=['gdrive_folder_id'])
+
             # Cria a pasta de compartilhados globais do departamento dentro da raiz
-            PastaVirtual.objects.get_or_create(
+            pasta_comp, created_comp = PastaVirtual.objects.get_or_create(
                 tipo_pasta='compartilhados',
                 departamento=instance,
                 defaults={'nome': "Arquivos Compartilhados da Equipe", 'is_sistema': True, 'parent': pasta_raiz}
             )
+            if created_comp and service and pasta_raiz.gdrive_folder_id:
+                gid = create_gdrive_folder_sync(service, pasta_comp.nome, pasta_raiz.gdrive_folder_id)
+                if gid:
+                    pasta_comp.gdrive_folder_id = gid
+                    pasta_comp.save(update_fields=['gdrive_folder_id'])
         except Exception as e:
             print(f"Erro ao criar PastaVirtual para Departamento {instance.id}: {e}")
