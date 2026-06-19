@@ -66,6 +66,15 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.SUCCESS("[OK] Banco de Dados encontrado."))
 
+        # 4. Configuração de Permissões (RBAC)
+        self.stdout.write(self.style.MIGRATE_HEADING("\n4. VERIFICANDO MÓDULOS DE PERMISSÃO (RBAC):"))
+        try:
+            from django.core.management import call_command
+            call_command('setup_modulos')
+            self.stdout.write(self.style.SUCCESS("[OK] Módulos de permissão sincronizados com sucesso."))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"[FALHA RBAC] Não foi possível sincronizar módulos: {str(e)}"))
+
         self.stdout.write(self.style.SUCCESS("\n========================================================"))
         self.stdout.write(self.style.SUCCESS("BOOTSTRAP FINALIZADO. SISTEMA ÍNTEGRO E PRONTO PARA RODAR!"))
         self.stdout.write(self.style.SUCCESS("========================================================"))
