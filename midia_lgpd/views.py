@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.utils import timezone
-from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, PastaVirtual, CompartilhamentoPasta
+from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, PastaVirtual, CompartilhamentoPasta, PermissaoPVDrive
 from gestao_membros.models import Departamento
 import json
 

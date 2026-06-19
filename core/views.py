@@ -1042,11 +1042,11 @@ def bi_data_async(request, modulo):
         from almoxarifado.models import ItemAlmoxarifado, MovimentacaoAlmoxarifado
 
         # 1. Custo Presumido do Estoque Total
-        estoque_total = ItemAlmoxarifado.objects.aggregate(total=Sum('valor_estimado'))['total'] or 0
+        estoque_total = ItemAlmoxarifado.objects.aggregate(total=Sum('valor_monetario'))['total'] or 0
 
         # 2. Painel de Depreciação (Itens danificados nos últimos 30 dias)
         trinta_dias_atras = hoje - datetime.timedelta(days=30)
-        depreciados = ItemAlmoxarifado.objects.filter(status_item='danificado', data_aquisicao__gte=trinta_dias_atras).count()
+        depreciados = ItemAlmoxarifado.objects.filter(status_item='danificado', data_entrada__gte=trinta_dias_atras).count()
         total_itens = ItemAlmoxarifado.objects.count()
         taxa_depreciacao = round((depreciados / total_itens * 100) if total_itens > 0 else 0, 2)
 
@@ -1055,10 +1055,10 @@ def bi_data_async(request, modulo):
         abc_almox_labels = [item['item__nome'] for item in abc_almox_raw if item['item__nome']]
         abc_almox_data = [item['total'] for item in abc_almox_raw if item['total']]
 
-        # 4. Índice de Retenção (Departamentos que mais demoram a devolver)
-        # Aproximação: Itens atualmente emprestados por departamento
-        retidos_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada', devolvido=False).values('membro_solicitante__departamentos_ativos__nome').annotate(total=Count('id')).order_by('-total')[:5]
-        retidos_data = [{'depto': r['membro_solicitante__departamentos_ativos__nome'] or 'Indefinido', 'qtd': r['total']} for r in retidos_raw]
+        # 4. Voluntários com Mais Retiradas
+        # Aproximação: Itens movimentados
+        retidos_raw = MovimentacaoAlmoxarifado.objects.filter(tipo='retirada').values('membro_vinculado__first_name').annotate(total=Count('id')).order_by('-total')[:5]
+        retidos_data = [{'depto': r['membro_vinculado__first_name'] or 'Indefinido', 'qtd': r['total']} for r in retidos_raw]
 
         context = {
             'estoque_total': float(estoque_total),
@@ -1112,7 +1112,7 @@ def bi_data_async(request, modulo):
         if not (is_global or 'casais' in depts_str or 'família' in depts_str):
             return HttpResponseForbidden()
 
-        from ministerio_casais.models import Casal, MatriculaCurso
+        from ministerio_casais.models import Casal, MatriculaCursoCasal
 
         # 1. Pirâmide Etária do Casamento (Anos de Casado)
         casais = Casal.objects.all()
@@ -1136,8 +1136,8 @@ def bi_data_async(request, modulo):
         taxa_crise_casais = round((casais_crise / casais_total * 100) if casais_total > 0 else 0, 1)
 
         # 4. Trilha de Casais (Matrículas Concluídas vs Abandonadas)
-        concluidas = MatriculaCurso.objects.filter(status='concluido').count()
-        abandonos = MatriculaCurso.objects.filter(status='desistente').count()
+        concluidas = MatriculaCursoCasal.objects.filter(status_matricula='Aprovado').count()
+        abandonos = MatriculaCursoCasal.objects.filter(status_matricula='Desistente').count()
 
         context = {
             'piramide_labels': json.dumps(list(anos_casados.keys())),
@@ -1167,8 +1167,8 @@ def bi_data_async(request, modulo):
         origem_data = [o['total'] for o in origem_raw]
 
         # 3. Mapa de Bairros (Demografia)
-        bairros_raw = Visitante.objects.values('bairro').annotate(total=Count('id')).order_by('-total')[:10]
-        bairro_labels = [b['bairro'] or 'N/I' for b in bairros_raw]
+        bairros_raw = Visitante.objects.exclude(endereco__isnull=True).exclude(endereco="").values('endereco').annotate(total=Count('id')).order_by('-total')[:10]
+        bairro_labels = [b['endereco'][:30] + "..." if len(b['endereco']) > 30 else b['endereco'] for b in bairros_raw]
         bairro_data = [b['total'] for b in bairros_raw]
 
         context = {
