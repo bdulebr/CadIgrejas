@@ -1,0 +1,2 @@
+Olá {{ nome }}. Segue o comprovante de assinatura do termo LGPD.
+Acesse a plataforma para baixar o PDF.

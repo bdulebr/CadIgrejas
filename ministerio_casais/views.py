@@ -69,6 +69,7 @@ def matricular_casal(request, casal_id):
         # Disparar Email de Matrícula em Background
         import threading
         from intranet.services.gmail_service import enviar_email_html
+        from intranet.services.whatsapp_service import enviar_whatsapp_template
         emails_destino = []
         if casal.email_1: emails_destino.append(casal.email_1)
         if casal.email_2: emails_destino.append(casal.email_2)
@@ -81,6 +82,11 @@ def matricular_casal(request, casal_id):
                 for e in emails:
                     try:
                         enviar_email_html(e, ass, 'ministerio_casais/email_matricula_curso.html', ctx)
+                        # WhatsApp para casal (ambos telefones se disponíveis)
+                        t1 = ctx.get('casal').telefone_1
+                        t2 = ctx.get('casal').telefone_2
+                        if t1: enviar_whatsapp_template(t1, 'casais_matricula_curso.txt', ctx)
+                        if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_matricula_curso.txt', ctx)
                     except Exception as err:
                         print(f"Erro ao enviar email matricula: {err}")
 
@@ -218,6 +224,7 @@ def upload_certificado(request, matricula_id):
                 import os
 
                 from intranet.services.gmail_service import enviar_email_html
+                from intranet.services.whatsapp_service import enviar_whatsapp_template
 
                 anexos = []
                 if matricula.certificado_arquivo:
@@ -356,6 +363,7 @@ def aprovar_matricula(request, matricula_id):
     # Disparar Email de Conclusão e Certificado em Background
     import threading
     from intranet.services.gmail_service import enviar_email_html
+    from intranet.services.whatsapp_service import enviar_whatsapp_template
     casal = matricula.casal
     emails_destino = []
     if casal.email_1: emails_destino.append(casal.email_1)
@@ -369,6 +377,10 @@ def aprovar_matricula(request, matricula_id):
             for e in emails:
                 try:
                     enviar_email_html(e, ass, 'ministerio_casais/email_curso_concluido.html', ctx)
+                    t1 = ctx.get('casal').telefone_1
+                    t2 = ctx.get('casal').telefone_2
+                    if t1: enviar_whatsapp_template(t1, 'casais_curso_concluido.txt', ctx)
+                    if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_curso_concluido.txt', ctx)
                 except Exception as err:
                     print(f"Erro ao enviar email de conclusão: {err}")
 
@@ -617,6 +629,7 @@ def disparar_cobranca_curso(request, matricula_id):
         if saldo_devedor > 0:
             import threading
             from intranet.services.gmail_service import enviar_email_html
+            from intranet.services.whatsapp_service import enviar_whatsapp_template
 
             casal = matricula.casal
             emails_destino = []

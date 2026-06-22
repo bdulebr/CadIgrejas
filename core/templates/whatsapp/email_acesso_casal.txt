@@ -1,0 +1,2 @@
+Olá {{ casal.nome_formatado }}! Aqui estão os detalhes de acesso ao seu curso.
+Por favor, verifique sua conta na plataforma.

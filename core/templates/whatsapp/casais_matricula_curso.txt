@@ -1,0 +1,2 @@
+Olá! O casal foi matriculado no curso: {{ curso.nome }}.
+Acesse o painel para mais informações.

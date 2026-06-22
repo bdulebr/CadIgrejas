@@ -1,0 +1,2 @@
+Olá {{ nome }}. O seu termo LGPD está aguardando assinatura.
+Acesse o link para assinar: {{ link_assinatura }}

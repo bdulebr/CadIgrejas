@@ -31,6 +31,7 @@ def is_sysadmin_ou_lider_global(user):
     return user.nivel_hierarquico in ['super_admin', 'lider_global']
 
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 
 @login_required
 @requer_permissao('membros', 'editar')
@@ -143,6 +144,7 @@ def aprovar_membro(request, membro_id):
 
     try:
         from intranet.services.gmail_service import enviar_email_html
+        from intranet.services.whatsapp_service import enviar_whatsapp_template
         from django.conf import settings
         context = {
             'nome': membro.first_name,
@@ -156,6 +158,8 @@ def aprovar_membro(request, membro_id):
             template_name='gestao_membros/email_boas_vindas.html',
             context=context
         )
+        if getattr(membro, 'telefone', None):
+            enviar_whatsapp_template(membro.telefone, 'membro_boas_vindas.txt', context)
         messages.success(request, f'Membro aprovado. E-mail com a senha foi enviado para {membro.email}.')
     except Exception as e:
         messages.warning(request, f'Membro aprovado, mas houve um erro ao enviar o e-mail: {e}')

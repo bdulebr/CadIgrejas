@@ -14,6 +14,7 @@ from django.utils import timezone
 from datetime import timedelta
 from ministerio_casais.models import CursoCasal, MatriculaCursoCasal
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 import time
 
 class Command(BaseCommand):
@@ -52,6 +53,10 @@ class Command(BaseCommand):
                 for email in emails_destino:
                     try:
                         enviar_email_html(email, assunto, 'ministerio_casais/email_lembrete_curso.html', contexto)
+                        t1 = matricula.casal.telefone_1
+                        t2 = matricula.casal.telefone_2
+                        if t1: enviar_whatsapp_template(t1, 'casais_lembrete_curso.txt', contexto)
+                        if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_lembrete_curso.txt', contexto)
                         self.stdout.write(f"  - E-mail enviado para {email}")
                         total_emails += 1
                         time.sleep(1) # Rate limit suave

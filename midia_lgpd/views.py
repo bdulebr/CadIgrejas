@@ -22,6 +22,7 @@ import json
 # Serviço de Nuvem e E-mail
 from intranet.services.google_drive import upload_arquivo_drive
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 
 def is_super_admin(user):
     return user.nivel_hierarquico == 'super_admin' or user.is_superuser
@@ -767,6 +768,9 @@ def processar_compartilhamento(request):
                         'content': f"<h2 style='color:#1d4ed8;'>Arquivo Protegido no PV Drive</h2><p>O usuário <b>{request.user.first_name}</b> compartilhou o item <b>{nome_item}</b> com você.</p><p>A senha para acessá-lo é: <strong style='font-size:20px; color:#b91c1c;'>{senha}</strong></p><p>Acesse a aba 'Compartilhados Comigo' no PV Drive para desbloquear.</p>"
                     }
                 )
+                from intranet.services.whatsapp_service import enviar_whatsapp_template
+                if getattr(alvo, 'telefone', None):
+                    enviar_whatsapp_template(alvo.telefone, 'pvdrive_senha_compartilhamento.txt', {'nome_item': nome_item, 'senha': senha, 'remetente': request.user.first_name})
 
         # Restaurando: Cria atalho no GDrive dentro de Compartilhados Comigo
         if pasta_compartilhados and pasta_compartilhados.gdrive_folder_id:
@@ -1197,6 +1201,7 @@ def processar_aceite_lgpd(request, token):
         # Envio de E-mail de Segunda Via
         if registro.email and pdf_bytes:
             from intranet.services.gmail_service import enviar_email_html
+            from intranet.services.whatsapp_service import enviar_whatsapp_template
             mensagem = f"Confirmamos a recepção da sua resposta: <strong>{acao.upper()}</strong> para o termo de consentimento.<br>Segue anexo seu comprovante com rastreabilidade digital para seus registros."
             enviar_email_html(
                 destinatario=registro.email,
@@ -1205,6 +1210,9 @@ def processar_aceite_lgpd(request, token):
                 context={'content': f"<h2 style='color:#14532d;'>Olá, {registro.nome_completo}!</h2><p>{mensagem}</p>"},
                 anexos=[(f"Termo_LGPD_{registro.nome_completo}_{acao}.pdf", pdf_bytes, 'application/pdf')]
             )
+            from intranet.services.whatsapp_service import enviar_whatsapp_template
+            if registro.membro and getattr(registro.membro, 'telefone', None):
+                enviar_whatsapp_template(registro.membro.telefone, 'lgpd_segunda_via.txt', {'nome': registro.nome_completo})
 
         messages.success(request, f"Sua resposta ({acao}) foi registrada com sucesso!")
         return redirect('termo_publico_view', token=registro.token_acesso)

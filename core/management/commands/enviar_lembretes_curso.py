@@ -12,6 +12,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from ministerio_casais.models import TurmaCurso, MatriculaCursoCasal
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 from core.models import ConfiguracaoSistema
 
 class Command(BaseCommand):
@@ -63,6 +64,11 @@ class Command(BaseCommand):
                                 'base_url': base_url
                             }
                         )
+                    from intranet.services.whatsapp_service import enviar_whatsapp_template
+                    t1 = casal.telefone_1
+                    t2 = casal.telefone_2
+                    if t1: enviar_whatsapp_template(t1, 'casais_lembrete_curso.txt', {'casal': casal, 'curso': turma.curso})
+                    if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_lembrete_curso.txt', {'casal': casal, 'curso': turma.curso})
                     emails_enviados += len(destinatarios)
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f'Erro ao enviar para {casal}: {e}'))

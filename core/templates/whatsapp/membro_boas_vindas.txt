@@ -1,0 +1,4 @@
+Olá {{ nome }}! Seu acesso à Intranet foi liberado.
+Login: {{ email }}
+Senha provisória: {{ senha }}
+Acesse: {{ link_acesso }}

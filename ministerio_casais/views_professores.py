@@ -266,6 +266,7 @@ from django.utils import timezone
 from .models import AulaTurma, PresencaAula
 from core.models import EmailLog
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 
 @login_required
 def diario_classe_turma(request, turma_id):
@@ -429,6 +430,7 @@ def enviar_email_acesso(request, matricula_id):
     link_magico = f"{settings.BASE_URL}/casais/aluno/login/?token={matricula.token_acesso}"
 
     from intranet.services.gmail_service import enviar_email_html
+    from intranet.services.whatsapp_service import enviar_whatsapp_template
 
     destinatarios = []
     if casal.email_conjuge_1: destinatarios.append(casal.email_conjuge_1)
@@ -447,6 +449,10 @@ def enviar_email_acesso(request, matricula_id):
                     'link_magico': link_magico
                 }
             )
+        t1 = casal.telefone_1
+        t2 = casal.telefone_2
+        if t1: enviar_whatsapp_template(t1, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
+        if t2 and t2 != t1: enviar_whatsapp_template(t2, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
         messages.success(request, f'E-mail com Link Mágico enviado para {", ".join(destinatarios)}!')
     except Exception as e:
         messages.error(request, f'Erro ao enviar e-mail: {str(e)}')

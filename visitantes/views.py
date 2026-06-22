@@ -22,12 +22,13 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 import threading
 import os
 from io import BytesIO
 from xhtml2pdf import pisa
 
-def enviar_email_boas_vindas_background(nome, email, base_url):
+def enviar_email_boas_vindas_background(nome, email, base_url, telefone=None):
     try:
         from core.models import ConfiguracaoSistema
         sys_config = ConfiguracaoSistema.objects.first()
@@ -39,10 +40,15 @@ def enviar_email_boas_vindas_background(nome, email, base_url):
             template_name='visitantes/email_boas_vindas.html',
             context={'nome': nome, 'base_url': base_url}
         )
+        if telefone:
+            enviar_whatsapp_template(telefone, 'visitante_boas_vindas.txt', {'nome': nome, 'base_url': base_url})
+        # Tenta pegar telefone do kwargs ou de uma global de visitante. Se nao, n envia. Aqui recebemos só email e nome. Mas lá na call (line 184) temos o visitante.
+        # Nao temos o model visitante aqui, pois passa `nome` e `email`.
+        pass
     except Exception as e:
         print(f"Erro ao enviar email para {email}: {e}")
 
-def enviar_email_novo_membro_background(nome, email, base_url):
+def enviar_email_novo_membro_background(nome, email, base_url, telefone=None):
     try:
         from core.models import ConfiguracaoSistema
         sys_config = ConfiguracaoSistema.objects.first()
@@ -54,6 +60,8 @@ def enviar_email_novo_membro_background(nome, email, base_url):
             template_name='visitantes/email_novo_membro.html',
             context={'nome': nome, 'base_url': base_url}
         )
+        if telefone:
+            enviar_whatsapp_template(telefone, 'visitante_novo_membro.txt', {'nome': nome, 'base_url': base_url})
     except Exception as e:
         print(f"Erro ao enviar email de novo membro para {email}: {e}")
 
@@ -181,7 +189,7 @@ def cadastrar_visitante(request):
         if email:
             from django.conf import settings
             base_url = settings.BASE_URL
-            threading.Thread(target=enviar_email_boas_vindas_background, args=(nome_completo, email, base_url)).start()
+            threading.Thread(target=enviar_email_boas_vindas_background, args=(nome_completo, email, base_url, visitante.telefone)).start()
 
         messages.success(request, f"{tipo} {nome_completo} cadastrado com sucesso!")
         return redirect('visitante_perfil', visitante_id=visitante.id)
@@ -235,7 +243,7 @@ def tornar_membro(request, visitante_id):
         if visitante.email:
             from django.conf import settings
             base_url = settings.BASE_URL
-            threading.Thread(target=enviar_email_novo_membro_background, args=(visitante.nome_completo, visitante.email, base_url)).start()
+            threading.Thread(target=enviar_email_novo_membro_background, args=(visitante.nome_completo, visitante.email, base_url, visitante.telefone)).start()
 
         messages.success(request, f"{visitante.nome_completo} agora é membro da igreja e foi movido para o Arquivo de Novos Membros!")
         return redirect('visitantes_dashboard')

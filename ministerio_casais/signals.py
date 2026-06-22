@@ -14,6 +14,7 @@ from .models import Casal
 import threading
 from django.conf import settings
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 
 def enviar_email_casal_background(casal_id, base_url):
     try:
@@ -40,6 +41,11 @@ def enviar_email_casal_background(casal_id, base_url):
                         'base_url': base_url
                     }
                 )
+            from intranet.services.whatsapp_service import enviar_whatsapp_template
+            t1 = casal.telefone_1
+            t2 = casal.telefone_2
+            if t1: enviar_whatsapp_template(t1, 'casais_nova_mensagem.txt', {'casal': casal, 'base_url': base_url})
+            if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_nova_mensagem.txt', {'casal': casal, 'base_url': base_url})
     except Exception as e:
         print(f"Erro ao enviar email para o casal {casal_id}: {e}")
 

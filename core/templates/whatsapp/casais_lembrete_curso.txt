@@ -1,0 +1,2 @@
+Lembrete: O curso {{ curso.nome }} terá aula em breve!
+Acesse a plataforma para detalhes.

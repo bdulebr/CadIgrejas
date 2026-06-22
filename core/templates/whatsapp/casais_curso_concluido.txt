@@ -1,0 +1,2 @@
+Parabéns! O casal concluiu o curso: {{ curso.nome }}.
+Acesse o painel para baixar o certificado.

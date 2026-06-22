@@ -1,0 +1,2 @@
+Olá {{ nome }}, seja muito bem-vindo(a) à Palavra de Vida!
+Acesse nossa plataforma: {{ base_url }}

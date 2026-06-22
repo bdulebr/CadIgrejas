@@ -1,0 +1,2 @@
+Olá {{ nome }}, bem-vindo(a) à Família Palavra de Vida Sede como novo membro!
+{{ base_url }}
