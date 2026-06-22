@@ -43,14 +43,11 @@ class Command(BaseCommand):
             self.stderr.write("==================================================")
 
             try:
-                from django.core.mail import send_mail
-                from django.conf import settings
-                send_mail(
-                    subject=subject,
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=['marcos@pvenseada.org'],
-                    fail_silently=False,
+                from intranet.services.gmail_service import enviar_email_simples
+                enviar_email_simples(
+                    destinatario='marcos@pvenseada.org',
+                    assunto=subject,
+                    corpo=message
                 )
             except Exception as e:
                 self.stderr.write(f"Falha ao enviar email real via SMTP: {str(e)}")

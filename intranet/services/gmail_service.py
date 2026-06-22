@@ -29,9 +29,10 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
         return False
 
     if not _is_email_active():
-        print(f"[E-mail HTML PAUSADO - MASTER SWITCH OFF] Para: {destinatario} | Assunto: {assunto}")
+        str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
+        print(f"[E-mail HTML PAUSADO - MASTER SWITCH OFF] Para: {str_destinatario} | Assunto: {assunto}")
         EmailLog.objects.create(
-            destinatario=destinatario,
+            destinatario=str_destinatario,
             assunto=assunto,
             status='falha',
             erro_mensagem="Envios globais pausados pelo Sysadmin."
@@ -81,11 +82,12 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
         # Versão segura de texto puro
         text_content = strip_tags(html_content)
 
+        lista_destinatarios = destinatario if isinstance(destinatario, list) else [destinatario]
         msg = EmailMultiAlternatives(
             subject=assunto_real,
             body=text_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[destinatario]
+            to=lista_destinatarios
         )
         msg.attach_alternative(html_content, "text/html")
 
@@ -97,38 +99,41 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
         # DISPARO REAL
         msg.send()
 
+        str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
         EmailLog.objects.create(
-            destinatario=destinatario,
+            destinatario=str_destinatario,
             assunto=assunto_real,
             status='enviado'
         )
 
-        print(f"[E-mail HTML Real Enviado] Para: {destinatario} | Assunto: {assunto_real}")
+        print(f"[E-mail HTML Real Enviado] Para: {str_destinatario} | Assunto: {assunto_real}")
         return True
     except Exception as e:
         print(f"[FALHA E-MAIL REAL] Você configurou a Senha de Aplicativo no settings.py? Erro: {str(e)}")
+        str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
         EmailLog.objects.create(
-            destinatario=destinatario,
+            destinatario=str_destinatario,
             assunto=assunto,
             status='falha',
             erro_mensagem=str(e)
         )
         return False
 
-def enviar_email_simples(destinatario, assunto, corpo):
+def enviar_email_simples(destinatario, assunto, corpo, anexos=None):
     """
     Fallback para e-mails legados/simples sem template.
-    Agora envia o e-mail DE VERDADE em vez de só printar.
+    Agora envia o e-mail DE VERDADE em vez de só printar e suporta anexos.
     """
     from core.models import EmailLog
 
     if not destinatario:
         return False
 
+    str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
     if not _is_email_active():
-        print(f"[E-mail Simples PAUSADO - MASTER SWITCH OFF] Para: {destinatario}")
+        print(f"[E-mail Simples PAUSADO - MASTER SWITCH OFF] Para: {str_destinatario}")
         EmailLog.objects.create(
-            destinatario=destinatario,
+            destinatario=str_destinatario,
             assunto=assunto,
             status='falha',
             erro_mensagem="Envios globais pausados pelo Sysadmin."
@@ -136,15 +141,25 @@ def enviar_email_simples(destinatario, assunto, corpo):
         return True
 
     try:
+        from django.conf import settings
+        from django.core.mail import EmailMultiAlternatives
+
+        lista_destinatarios = destinatario if isinstance(destinatario, list) else [destinatario]
         msg = EmailMultiAlternatives(
             subject=assunto,
             body=corpo,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[destinatario]
+            to=lista_destinatarios
         )
+
+        if anexos:
+            for nome_arquivo, conteudo, mimetype in anexos:
+                msg.attach(nome_arquivo, conteudo, mimetype)
+
         msg.send()
+        str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
         EmailLog.objects.create(
-            destinatario=destinatario,
+            destinatario=str_destinatario,
             assunto=assunto,
             status='enviado'
         )
@@ -152,8 +167,9 @@ def enviar_email_simples(destinatario, assunto, corpo):
         return True
     except Exception as e:
         print(f"[FALHA] Sem SMTP: {str(e)}")
+        str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
         EmailLog.objects.create(
-            destinatario=destinatario,
+            destinatario=str_destinatario,
             assunto=assunto,
             status='falha',
             erro_mensagem=str(e)

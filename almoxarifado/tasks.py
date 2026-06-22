@@ -75,14 +75,9 @@ def gerar_e_enviar_pdf_termo(movimentacoes, email_destino, nome_usuario):
     pdf = pisa.pisaDocument(BytesIO(html_str.encode("UTF-8")), result)
 
     if not pdf.err:
-        email = EmailMessage(
-            subject='Termo de Responsabilidade - Almoxarifado PVE',
-            body=f'Olá {nome_usuario},\n\nSegue em anexo o seu Termo de Responsabilidade (LGPD) referente aos itens retirados/devolvidos no Almoxarifado.\n\nPor favor, guarde este documento.',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[email_destino],
-        )
-        email.attach('Termo_de_Responsabilidade_PVE.pdf', result.getvalue(), 'application/pdf')
-        try:
-            email.send(fail_silently=True)
-        except Exception as e:
-            print(f"Erro ao enviar email PDF: {e}")
+        from intranet.services.gmail_service import enviar_email_simples
+        assunto = 'Termo de Responsabilidade - Almoxarifado PVE'
+        corpo = f'Olá {nome_usuario},\n\nSegue em anexo o seu Termo de Responsabilidade (LGPD) referente aos itens retirados/devolvidos no Almoxarifado.\n\nPor favor, guarde este documento.'
+        anexos = [('Termo_de_Responsabilidade_PVE.pdf', result.getvalue(), 'application/pdf')]
+
+        enviar_email_simples(email_destino, assunto, corpo, anexos=anexos)

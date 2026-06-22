@@ -217,30 +217,23 @@ def upload_certificado(request, matricula_id):
                 from django.utils.html import strip_tags
                 import os
 
-                base_url = settings.BASE_URL
-                sys_config = ConfiguracaoSistema.objects.first()
-                logo_url = base_url + sys_config.igreja_logo.url if sys_config and sys_config.igreja_logo else base_url + '/static/img/logo.jpg'
+                from intranet.services.gmail_service import enviar_email_html
 
-                html_content = render_to_string('ministerio_casais/email_curso_concluido.html', {
-                    'casal': casal, 'curso': matricula.turma.curso, 'logo_url': logo_url, 'base_url': base_url
-                })
-                text_content = strip_tags(html_content)
-
-                email = EmailMultiAlternatives(
-                    f"Certificado Disponível: {matricula.turma.curso.nome}",
-                    text_content,
-                    settings.DEFAULT_FROM_EMAIL,
-                    destinatarios
-                )
-                email.attach_alternative(html_content, "text/html")
-
+                anexos = []
                 if matricula.certificado_arquivo:
                     file_path = matricula.certificado_arquivo.path
                     if os.path.exists(file_path):
                         with open(file_path, 'rb') as f:
-                            email.attach(os.path.basename(file_path), f.read())
+                            anexos.append((os.path.basename(file_path), f.read(), 'application/pdf'))
 
-                email.send(fail_silently=True)
+                enviar_email_html(
+                    destinatario=destinatarios,
+                    assunto=f"Certificado Disponível: {matricula.turma.curso.nome}",
+                    template_name='ministerio_casais/email_curso_concluido.html',
+                    context={'casal': casal, 'curso': matricula.turma.curso},
+                    anexos=anexos if anexos else None
+                )
+
                 messages.success(request, 'Certificado anexado e enviado por e-mail com sucesso!')
             except Exception as e:
                 messages.warning(request, f'Certificado salvo, mas houve erro ao enviar e-mail: {e}')

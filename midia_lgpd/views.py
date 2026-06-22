@@ -1067,9 +1067,10 @@ def enviar_solicitacao_lgpd(request):
 
         if email:
             try:
+                from intranet.services.gmail_service import enviar_email_simples
                 assunto = 'Igreja PV Enseada - Solicitação de Consentimento (LGPD)'
                 msg = f"Olá {nome},\n\nPor favor, leia e aceite o termo de consentimento de imagem acessando o link:\n{link_publico}"
-                send_mail(assunto, msg, None, [email], fail_silently=True)
+                enviar_email_simples(email, assunto, msg)
             except:
                 pass
 

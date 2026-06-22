@@ -431,24 +431,24 @@ def enviar_relatorio_sede_email(request):
         return redirect('tesouraria:lista_lancamentos')
 
     try:
+        from intranet.services.gmail_service import enviar_email_html
+        import os
+
         caminho_planilha = gerar_planilha_sede_mensal(mes, ano)
-
         assunto = f"Relatório Financeiro {mes:02d}/{ano} - Congregação Local"
-        corpo_email = render_to_string('tesouraria/emails/relatorio_mensal_sede.html', {
-            'mes': mes,
-            'ano': ano,
-            'nome_recebedor': config.nome_recebedor_sede
-        })
 
-        email = EmailMessage(
-            assunto,
-            corpo_email,
-            getattr(settings, 'DEFAULT_FROM_EMAIL', 'nao-responda@igreja.com'),
-            [config.email_sede]
+        anexos = []
+        if os.path.exists(caminho_planilha):
+            with open(caminho_planilha, 'rb') as f:
+                anexos.append((os.path.basename(caminho_planilha), f.read(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))
+
+        enviar_email_html(
+            destinatario=config.email_sede,
+            assunto=assunto,
+            template_name='tesouraria/emails/relatorio_mensal_sede.html',
+            context={'mes': mes, 'ano': ano, 'nome_recebedor': config.nome_recebedor_sede},
+            anexos=anexos if anexos else None
         )
-        email.content_subtype = "html"
-        email.attach_file(caminho_planilha)
-        email.send()
 
         LogImutavel.objects.create(
             membro=request.user,
