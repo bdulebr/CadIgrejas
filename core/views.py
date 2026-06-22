@@ -524,9 +524,9 @@ def sysadmin_reenviar_falhas(request):
     if request.method == 'POST':
         from intranet.services.gmail_service import reenviar_email_falho
         from core.models import EmailLog
-        falhas = EmailLog.objects.filter(status='falha')
+        falhas = EmailLog.objects.filter(status='falha').exclude(corpo_html__isnull=True).exclude(corpo_html__exact='')
         if not falhas.exists():
-            messages.info(request, "Não há e-mails com falha pendentes para reenvio.")
+            messages.info(request, "Não há e-mails com falha elegíveis para reenvio (falhas antigas sem HTML são ignoradas).")
             return redirect('sysadmin_dashboard')
 
         sucessos = 0

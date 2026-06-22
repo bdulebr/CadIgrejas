@@ -296,7 +296,7 @@
                                             {% endif %}
                                         </div>
                                         <div class="flex-shrink-0">
-                                            {% if log.status == 'falha' %}
+                                            {% if log.status == 'falha' and log.corpo_html %}
                                                 <form method="POST" action="{% url 'sysadmin_reenviar_email_id' log.id %}">
                                                     {% csrf_token %}
                                                     <button type="submit" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded text-xs transition-colors shadow-sm" title="Tentar reenviar agora">
