@@ -201,6 +201,11 @@ class ConfiguracaoSistema(models.Model):
     # Motor Global de Emails
     envios_email_ativos = models.BooleanField(default=True, help_text="Master switch. Se falso, nenhum email será disparado (modo silencioso/manutenção).")
 
+    # API WhatsApp (Meta Cloud)
+    whatsapp_ativo = models.BooleanField(default=False, help_text="Master switch. Se falso, nenhum WhatsApp será disparado.")
+    whatsapp_phone_number_id = models.CharField(max_length=100, null=True, blank=True, help_text="ID do Número de Telefone (Meta Cloud API)")
+    whatsapp_access_token = models.CharField(max_length=500, null=True, blank=True, help_text="Token de Acesso Permanente (Meta Cloud API)")
+
     class Meta:
         verbose_name = 'Configuração do Sistema'
         verbose_name_plural = 'Configurações do Sistema'

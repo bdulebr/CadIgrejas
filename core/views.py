@@ -495,6 +495,33 @@ def sysadmin_toggle_email(request):
 @login_required
 @csrf_exempt
 @requer_permissao('sysadmin', 'editar')
+def sysadmin_toggle_whatsapp(request):
+    if request.method == 'POST':
+        config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
+        config.whatsapp_ativo = not config.whatsapp_ativo
+        config.save()
+        status = "ATIVADO" if config.whatsapp_ativo else "DESATIVADO"
+        messages.warning(request, f"Envios via WhatsApp {status}.")
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
+def sysadmin_salvar_whatsapp(request):
+    if request.method == 'POST':
+        config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
+        config.whatsapp_phone_number_id = request.POST.get('whatsapp_phone_number_id', '')
+        # Only update token if it's not empty, allowing partial updates without overriding token
+        token = request.POST.get('whatsapp_access_token', '').strip()
+        if token:
+            config.whatsapp_access_token = token
+        config.save()
+        messages.success(request, "Credenciais do WhatsApp Cloud API salvas com sucesso.")
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_desbloquear_ip(request):
 
     if request.method == 'POST':
