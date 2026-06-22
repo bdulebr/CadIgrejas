@@ -1519,6 +1519,10 @@ def eversinho_chat_api(request):
         # Call RAG logic
         resposta_ia = ask_eversinho(user_msg)
 
+        # Process Markdown to HTML so links are clickable
+        import markdown
+        resposta_html = markdown.markdown(resposta_ia)
+
         # Return an HTML fragment with two bubbles: User bubble + AI bubble
         # HTMX will append this to the chat window
         html = f'''
@@ -1530,11 +1534,11 @@ def eversinho_chat_api(request):
         <div class="flex justify-start mb-4 animate-fade-in-up stagger-1">
             <div class="flex-shrink-0 mr-3">
                 <div class="w-8 h-8 rounded-full bg-blue-900 border border-blue-400 flex items-center justify-center overflow-hidden">
-                    <img src="/static/img/eversinho/ever_joinha.png" alt="Eversinho" class="w-full h-full object-cover">
+                    <img src="/static/core/img/eversinho/normal.png" alt="Eversinho" class="w-full h-full object-cover">
                 </div>
             </div>
             <div class="bg-gray-800 text-gray-200 p-3 rounded-xl rounded-tl-none max-w-[80%] shadow-md border border-gray-700">
-                <div class="text-sm prose prose-invert prose-sm max-w-none">{resposta_ia}</div>
+                <div class="text-sm prose prose-invert prose-sm max-w-none">{resposta_html}</div>
             </div>
         </div>
         '''

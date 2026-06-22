@@ -490,7 +490,7 @@
         <!-- Botão Principal -->
         <button @click="chatOpen = !chatOpen"
                 class="w-16 h-16 rounded-full bg-blue-600 border-4 border-white shadow-[0_0_20px_rgba(37,99,235,0.6)] hover:scale-110 transition-transform overflow-hidden animate-bounce" title="Precisa de ajuda? Fale comigo!">
-            <img src="/static/img/eversinho/ever_joinha.png" alt="Eversinho IA" class="w-full h-full object-cover">
+            <img src="{% static 'core/img/eversinho/normal.png' %}" alt="Eversinho IA" class="w-full h-full object-cover">
         </button>
 
         <!-- Janela do Chat -->
@@ -508,7 +508,7 @@
             <div class="bg-blue-700 p-4 flex items-center justify-between border-b border-blue-500 shadow-md">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white bg-blue-900">
-                        <img src="/static/img/eversinho/ever_joinha.png" alt="Eversinho" class="w-full h-full object-cover">
+                        <img src="{% static 'core/img/eversinho/normal.png' %}" alt="Eversinho" class="w-full h-full object-cover">
                     </div>
                     <div>
                         <h3 class="font-bold text-white text-md">Eversinho IA</h3>
@@ -525,19 +525,41 @@
                 <!-- Bolha de boas vindas -->
                 <div class="flex justify-start animate-fade-in-up">
                     <div class="bg-gray-800 text-gray-200 p-3 rounded-xl rounded-tl-none max-w-[85%] shadow-md border border-gray-700">
-                        <p class="text-sm">Olá! 👋 Eu sou o Eversinho! Eu li <b>todos os manuais e regras da Igreja</b> e estou pronto para te ajudar. Pode perguntar qualquer coisa sobre os módulos!</p>
+                        <p class="text-sm">Olá, <b>{{ user.first_name|default:user.username|title }}</b>! 👋 Eu sou o Eversinho! Digite sua dúvida abaixo e eu farei o possível para lhe ajudar!</p>
                     </div>
                 </div>
             </div>
 
             <!-- Input do Chat -->
             <div class="p-3 border-t border-gray-800 bg-gray-900">
-                <form hx-post="/api/eversinho/chat/"
-                      hx-target="#eversinho-chat-body"
-                      hx-swap="beforeend"
-                      hx-on::before-request="this.querySelector('button').disabled = true; this.querySelector('input').disabled = true; this.querySelector('button').innerHTML = '<i data-lucide=\'loader-2\' class=\'w-4 h-4 animate-spin\'></i>';"
-                      hx-on::after-request="this.reset(); this.querySelector('button').disabled = false; this.querySelector('input').disabled = false; this.querySelector('button').innerHTML = '<i data-lucide=\'send\' class=\'w-4 h-4\'></i>'; let b = document.getElementById('eversinho-chat-body'); setTimeout(()=> b.scrollTop = b.scrollHeight, 100); lucide.createIcons();"
-                      class="flex gap-2">
+                <form @submit.prevent="
+                    let btn = $el.querySelector('button');
+                    let input = $el.querySelector('input');
+                    let msg = input.value;
+                    if(!msg.trim()) return;
+                    input.disabled = true;
+                    btn.disabled = true;
+                    btn.innerHTML = `<i data-lucide='loader-2' class='w-4 h-4 animate-spin'></i>`;
+
+                    fetch('/api/eversinho/chat/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'mensagem=' + encodeURIComponent(msg)
+                    }).then(r => r.text()).then(html => {
+                        let body = document.getElementById('eversinho-chat-body');
+                        body.insertAdjacentHTML('beforeend', html);
+                        input.value = '';
+                        input.disabled = false;
+                        btn.disabled = false;
+                        btn.innerHTML = `<i data-lucide='send' class='w-4 h-4'></i>`;
+                        lucide.createIcons();
+                        setTimeout(() => body.scrollTop = body.scrollHeight, 100);
+                    }).catch(e => {
+                        input.disabled = false;
+                        btn.disabled = false;
+                        btn.innerHTML = `<i data-lucide='send' class='w-4 h-4'></i>`;
+                    });
+                " class="flex gap-2">
                     <input type="text" name="mensagem" required autocomplete="off" placeholder="Digite sua dúvida aqui..." class="flex-grow bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 shadow-md">
                         <i data-lucide="send" class="w-4 h-4"></i>
