@@ -785,11 +785,11 @@ def sysadmin_zerar_banco(request):
         ArquivoMidia.objects.all().delete()
         PastaVirtual.objects.all().delete()
 
-        # Gestão Membros (Modelos legados já removidos)
-        Departamento.objects.all().delete()
+        # Gestão Membros (Preserva departamentos estruturais do sistema)
+        Departamento.objects.filter(is_system=False).delete()
 
-        # Membros: Deleta todos exceto marcos@pvenseada.org
-        Membro.objects.exclude(email='marcos@pvenseada.org').delete()
+        # Membros: Preserva superadmins e a conta mestra para não travar o painel Sysadmin
+        Membro.objects.exclude(is_superuser=True).exclude(nivel_hierarquico='super_admin').exclude(email='marcos@pvenseada.org').delete()
 
         # Garantir que o Marcos existe e a senha está correta
         try:
