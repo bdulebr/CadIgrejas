@@ -32,5 +32,5 @@ COPY . /app/
 # Expor a porta 8000
 EXPOSE 8000
 
-# O Comando de inicialização será gerenciado pelo docker-compose para permitir migrações, mas deixamos um padrão:
-CMD ["gunicorn", "intranet.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "--timeout", "60"]
+# O Comando de inicialização será gerenciado pelo docker-compose para permitir migrações, mas deixamos um padrão ASGI com Daphne:
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "intranet.asgi:application"]

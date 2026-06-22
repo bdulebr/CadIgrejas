@@ -333,6 +333,8 @@ class DatabaseBackup(models.Model):
     arquivo = models.CharField(max_length=500, help_text="Caminho físico do arquivo de backup.")
     tamanho_mb = models.DecimalField(max_digits=10, decimal_places=2, help_text="Tamanho do arquivo em MB.")
     data_criacao = models.DateTimeField(auto_now_add=True)
+    enviado_nuvem = models.BooleanField(default=False, help_text="Indica se o backup já foi enviado para a nuvem.")
+    gdrive_file_id = models.CharField(max_length=255, blank=True, null=True, help_text="ID do arquivo no Google Drive.")
 
     class Meta:
         verbose_name = 'Backup de Banco de Dados'

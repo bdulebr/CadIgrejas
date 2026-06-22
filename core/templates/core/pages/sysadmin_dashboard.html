@@ -679,9 +679,13 @@
                                 <td class="px-4 py-3 text-gray-400 font-mono text-xs">db.sqlite3</td>
                                 <td class="px-4 py-3 font-bold">{{ db_size_mb|floatformat:2 }} MB</td>
                                 <td class="px-4 py-3 text-right flex justify-end gap-2">
-                                    <a href="{% url 'sysadmin_baixar_backup' %}" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded transition-colors" title="Baixar DB Atual">
-                                        <i data-lucide="download" class="w-4 h-4"></i>
-                                    </a>
+                                    <form method="POST" action="{% url 'sysadmin_baixar_backup' %}" class="inline" onsubmit="let pw = prompt('Digite sua senha de administrador para gerar e criptografar este ZIP:'); if(pw){ this.senha_admin.value=pw; return true; } return false;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="senha_admin" value="">
+                                        <button type="submit" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded transition-colors" title="Baixar DB Atual (ZIP)">
+                                            <i data-lucide="download" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
                                     <form method="POST" action="{% url 'sysadmin_backup_gdrive' %}" class="inline" onsubmit="return confirm('Enviar banco atual para o Google Drive?')">
                                         {% csrf_token %}
                                         <button type="submit" class="px-2 py-1 bg-green-900/50 hover:bg-green-800 text-green-400 rounded transition-colors" title="Subir para GDrive">
@@ -695,12 +699,21 @@
                             {% for b in backups_db %}
                             <tr class="hover:bg-white/5">
                                 <td class="px-4 py-3">{{ b.data_criacao|date:"d/m/Y H:i:s" }}</td>
-                                <td class="px-4 py-3 text-gray-400 font-mono text-xs">{{ b.arquivo }}</td>
+                                <td class="px-4 py-3 text-gray-400 font-mono text-xs">
+                                    {{ b.arquivo }}
+                                    {% if b.enviado_nuvem %}
+                                    <span class="ml-2 text-green-400 inline-flex items-center" title="Enviado para Nuvem"><i data-lucide="cloud-check" class="w-4 h-4"></i></span>
+                                    {% endif %}
+                                </td>
                                 <td class="px-4 py-3">{{ b.tamanho_mb }} MB</td>
                                 <td class="px-4 py-3 text-right flex justify-end gap-2">
-                                    <a href="{% url 'sysadmin_baixar_backup_id' b.id %}" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors" title="Baixar">
-                                        <i data-lucide="download" class="w-4 h-4"></i>
-                                    </a>
+                                    <form method="POST" action="{% url 'sysadmin_baixar_backup_id' b.id %}" class="inline" onsubmit="let pw = prompt('Digite sua senha de administrador para gerar e criptografar este ZIP:'); if(pw){ this.senha_admin.value=pw; return true; } return false;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="senha_admin" value="">
+                                        <button type="submit" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors" title="Baixar (ZIP)">
+                                            <i data-lucide="download" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
                                     <form method="POST" action="{% url 'sysadmin_backup_gdrive_id' b.id %}" class="inline" onsubmit="return confirm('Enviar este backup para o GDrive?')">
                                         {% csrf_token %}
                                         <button type="submit" class="px-2 py-1 bg-green-900/30 hover:bg-green-800 text-green-400 rounded transition-colors" title="Enviar Drive">
