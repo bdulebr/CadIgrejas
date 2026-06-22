@@ -332,6 +332,16 @@
                             <label class="block text-xs font-bold text-gray-400 mb-1">Permanent Access Token (Bearer Token)</label>
                             <input type="password" name="whatsapp_access_token" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-green-500 text-sm" value="{{ config.whatsapp_access_token|default:'' }}">
                         </div>
+                        <div class="grid grid-cols-2 gap-4 mt-2 border-t border-white/10 pt-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Webhook Verify Token</label>
+                                <input type="password" name="whatsapp_verify_token" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-green-500 text-sm" value="{{ config.whatsapp_verify_token|default:'' }}">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">App Secret (HMAC SHA-256)</label>
+                                <input type="password" name="whatsapp_app_secret" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-green-500 text-sm" value="{{ config.whatsapp_app_secret|default:'' }}">
+                            </div>
+                        </div>
                         <div class="mt-2">
                             <button type="submit" class="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-sm transition-colors text-sm">
                                 Salvar Credenciais do WhatsApp

@@ -205,6 +205,8 @@ class ConfiguracaoSistema(models.Model):
     whatsapp_ativo = models.BooleanField(default=False, help_text="Master switch. Se falso, nenhum WhatsApp será disparado.")
     whatsapp_phone_number_id = models.CharField(max_length=100, null=True, blank=True, help_text="ID do Número de Telefone (Meta Cloud API)")
     whatsapp_access_token = models.CharField(max_length=500, null=True, blank=True, help_text="Token de Acesso Permanente (Meta Cloud API)")
+    whatsapp_verify_token = models.CharField(max_length=100, null=True, blank=True, help_text="Verify Token (Webhook Challenge)")
+    whatsapp_app_secret = models.CharField(max_length=100, null=True, blank=True, help_text="App Secret (Webhook HMAC SHA256)")
 
     class Meta:
         verbose_name = 'Configuração do Sistema'

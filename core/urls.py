@@ -12,6 +12,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from . import webhooks
 
 urlpatterns = [
     path('', views.login_view, name='login'),
@@ -58,6 +59,9 @@ urlpatterns = [
     # Auditoria Zero-Trust Forense
     path('sysadmin/logs/', views.sysadmin_logs_list, name='sysadmin_logs'),
     path('sysadmin/logs/tracker/', views.sysadmin_ux_tracker, name='sysadmin_ux_tracker'),
+
+    # Webhooks Externos
+    path('webhook/whatsapp/', webhooks.whatsapp_webhook, name='whatsapp_webhook'),
     path('sysadmin/logs/<int:log_id>/pdf/', views.sysadmin_log_pdf, name='sysadmin_log_pdf'),
 
     # Spider Test

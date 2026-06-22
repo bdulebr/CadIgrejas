@@ -511,10 +511,19 @@ def sysadmin_salvar_whatsapp(request):
     if request.method == 'POST':
         config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
         config.whatsapp_phone_number_id = request.POST.get('whatsapp_phone_number_id', '')
-        # Only update token if it's not empty, allowing partial updates without overriding token
+        # Only update tokens if they are not empty, allowing partial updates
         token = request.POST.get('whatsapp_access_token', '').strip()
         if token:
             config.whatsapp_access_token = token
+
+        verify_token = request.POST.get('whatsapp_verify_token', '').strip()
+        if verify_token:
+            config.whatsapp_verify_token = verify_token
+
+        app_secret = request.POST.get('whatsapp_app_secret', '').strip()
+        if app_secret:
+            config.whatsapp_app_secret = app_secret
+
         config.save()
         messages.success(request, "Credenciais do WhatsApp Cloud API salvas com sucesso.")
     return redirect('sysadmin_dashboard')
