@@ -200,6 +200,7 @@ class ConfiguracaoSistema(models.Model):
 
     # Motor Global de Emails
     envios_email_ativos = models.BooleanField(default=True, help_text="Master switch. Se falso, nenhum email será disparado (modo silencioso/manutenção).")
+    intervalo_reenvio_emails_horas = models.IntegerField(default=1, help_text="Intervalo automático (em horas) para tentar reenviar e-mails que falharam.")
 
     # API WhatsApp (Meta Cloud)
     whatsapp_ativo = models.BooleanField(default=False, help_text="Master switch. Se falso, nenhum WhatsApp será disparado.")
@@ -287,7 +288,10 @@ class EmailLog(models.Model):
 
     destinatario = models.EmailField()
     assunto = models.CharField(max_length=255)
+    corpo_html = models.TextField(blank=True, null=True, help_text="Cópia do HTML para permitir reenvio")
+    anexos_json = models.TextField(blank=True, null=True, help_text="Lista serializada de caminhos de anexos")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
+    qtd_reenvios = models.IntegerField(default=0, help_text="Quantas vezes o sistema tentou reenviar")
     data_envio = models.DateTimeField(auto_now_add=True)
     erro_mensagem = models.TextField(blank=True, null=True)
 

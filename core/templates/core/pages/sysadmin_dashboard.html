@@ -201,6 +201,15 @@
                             {% endif %}
                         </button>
                     </form>
+
+                    <form method="POST" action="{% url 'sysadmin_salvar_config_email' %}" class="mt-4 border-t border-white/10 pt-4">
+                        {% csrf_token %}
+                        <label class="block text-xs font-bold text-gray-400 mb-1">Intervalo de Reenvio Automático (Horas)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="1" max="72" name="intervalo_reenvio_emails_horas" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-blue-500 text-sm" value="{{ config.intervalo_reenvio_emails_horas }}">
+                            <button type="submit" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold">Salvar</button>
+                        </div>
+                    </form>
                 </div>
 
                 <!-- Credenciais SMTP -->
@@ -241,8 +250,14 @@
 
             <!-- Tabela de Logs de E-mail -->
             <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden mb-8">
-                <div class="p-4 border-b border-white/5 bg-gray-900">
+                <div class="p-4 border-b border-white/5 bg-gray-900 flex justify-between items-center">
                     <h3 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="list"></i> Logs Recentes de Disparo</h3>
+                    <form method="POST" action="{% url 'sysadmin_reenviar_falhas' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2">
+                            <i data-lucide="refresh-ccw" class="w-4 h-4"></i> Reenviar Todas as Falhas
+                        </button>
+                    </form>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-gray-300">
@@ -270,7 +285,20 @@
                                 </td>
                                 <td class="px-6 py-3 font-mono text-xs text-blue-400">{{ log.destinatario }}</td>
                                 <td class="px-6 py-3 truncate max-w-[200px]">{{ log.assunto }}</td>
-                                <td class="px-6 py-3 text-xs text-gray-500 truncate max-w-[200px]">{{ log.erro_mensagem|default:"-" }}</td>
+                                <td class="px-6 py-3 text-xs text-gray-500 truncate max-w-[200px]">
+                                    {{ log.erro_mensagem|default:"-" }}
+                                    {% if log.status == 'falha' %}
+                                        <form method="POST" action="{% url 'sysadmin_reenviar_email_id' log.id %}" class="inline-block ml-2">
+                                            {% csrf_token %}
+                                            <button type="submit" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded text-xs transition-colors" title="Tentar reenviar agora">
+                                                Reenviar
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    {% if log.qtd_reenvios > 0 %}
+                                        <br><span class="text-[10px] text-yellow-500">Tentativas: {{ log.qtd_reenvios }}</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>

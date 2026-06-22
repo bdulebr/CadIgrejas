@@ -52,6 +52,11 @@ urlpatterns = [
     path('sysadmin/deploy/', views.sysadmin_deploy_producao, name='sysadmin_deploy_producao'),
     path('sysadmin/salvar-igreja/', views.sysadmin_salvar_igreja, name='sysadmin_salvar_igreja'),
 
+    # Motor de E-mail
+    path('sysadmin/salvar-config-email/', views.sysadmin_salvar_config_email, name='sysadmin_salvar_config_email'),
+    path('sysadmin/email/reenviar/<int:log_id>/', views.sysadmin_reenviar_email_id, name='sysadmin_reenviar_email_id'),
+    path('sysadmin/email/reenviar-falhas/', views.sysadmin_reenviar_falhas, name='sysadmin_reenviar_falhas'),
+
     # Links Rápidos
     path('sysadmin/links/salvar/', views.sysadmin_link_salvar, name='sysadmin_link_salvar'),
     path('sysadmin/links/<int:link_id>/deletar/', views.sysadmin_link_deletar, name='sysadmin_link_deletar'),

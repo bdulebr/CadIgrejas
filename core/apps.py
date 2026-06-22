@@ -16,3 +16,12 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         import core.signals
+
+        # Inicia o CRON apenas se não for comando de migração/shell para evitar duplicidades
+        import sys
+        if 'runserver' in sys.argv or 'gunicorn' in sys.argv or 'waitress' in sys.argv:
+            try:
+                from core.scheduler import start_scheduler
+                start_scheduler()
+            except Exception as e:
+                print(f"Erro ao iniciar o APScheduler: {e}")

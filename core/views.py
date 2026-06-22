@@ -495,6 +495,53 @@ def sysadmin_toggle_email(request):
 @login_required
 @csrf_exempt
 @requer_permissao('sysadmin', 'editar')
+def sysadmin_salvar_config_email(request):
+    if request.method == 'POST':
+        config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
+        horas = int(request.POST.get('intervalo_reenvio_emails_horas', 1))
+        config.intervalo_reenvio_emails_horas = max(1, horas)
+        config.save()
+        messages.success(request, f"Intervalo de reenvio configurado para {horas} hora(s).")
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
+def sysadmin_reenviar_email_id(request, log_id):
+    if request.method == 'POST':
+        from intranet.services.gmail_service import reenviar_email_falho
+        sucesso, msg = reenviar_email_falho(log_id)
+        if sucesso:
+            messages.success(request, msg)
+        else:
+            messages.error(request, msg)
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
+def sysadmin_reenviar_falhas(request):
+    if request.method == 'POST':
+        from intranet.services.gmail_service import reenviar_email_falho
+        from core.models import EmailLog
+        falhas = EmailLog.objects.filter(status='falha')
+        if not falhas.exists():
+            messages.info(request, "Não há e-mails com falha pendentes para reenvio.")
+            return redirect('sysadmin_dashboard')
+
+        sucessos = 0
+        erros = 0
+        for log in falhas:
+            suc, _ = reenviar_email_falho(log.id)
+            if suc: sucessos += 1
+            else: erros += 1
+
+        messages.success(request, f"Reenvio em lote concluído: {sucessos} enviados, {erros} ainda com falha.")
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_toggle_whatsapp(request):
     if request.method == 'POST':
         config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)

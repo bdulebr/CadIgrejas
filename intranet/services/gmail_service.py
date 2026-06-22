@@ -97,27 +97,82 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
                 msg.attach(nome_arquivo, conteudo, mimetype)
 
         # DISPARO REAL
+        # DISPARO REAL
         msg.send()
 
-        str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
+        str_destinatario = destinatario if isinstance(destinatario, list) else ", ".join(destinatario)[:254]
         EmailLog.objects.create(
             destinatario=str_destinatario,
             assunto=assunto_real,
-            status='enviado'
+            status='enviado',
+            corpo_html=html_content
         )
 
         print(f"[E-mail HTML Real Enviado] Para: {str_destinatario} | Assunto: {assunto_real}")
         return True
     except Exception as e:
         print(f"[FALHA E-MAIL REAL] Você configurou a Senha de Aplicativo no settings.py? Erro: {str(e)}")
-        str_destinatario = destinatario if isinstance(destinatario, str) else ", ".join(destinatario)[:254]
+        str_destinatario = destinatario if isinstance(destinatario, list) else destinatario
+        if isinstance(str_destinatario, list): str_destinatario = ", ".join(str_destinatario)[:254]
+        # Tentamos salvar o html_content, se ele não falhou antes de gerá-lo
+        try:
+            corpo = html_content
+        except NameError:
+            corpo = "Falha antes da geração do HTML"
+
         EmailLog.objects.create(
             destinatario=str_destinatario,
             assunto=assunto,
             status='falha',
-            erro_mensagem=str(e)
+            erro_mensagem=str(e),
+            corpo_html=corpo
         )
         return False
+
+def reenviar_email_falho(log_id):
+    """
+    Tenta reenviar um e-mail que falhou, recuperando seu corpo HTML.
+    """
+    from core.models import EmailLog
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    from django.conf import settings
+
+    try:
+        log = EmailLog.objects.get(id=log_id, status='falha')
+    except EmailLog.DoesNotExist:
+        return False, "Log não encontrado ou já enviado."
+
+    if not _is_email_active():
+        return False, "Envios globais estão pausados pelo SysAdmin."
+
+    if not log.corpo_html:
+        return False, "O corpo HTML não foi salvo para este e-mail. Não é possível reenviar."
+
+    log.qtd_reenvios += 1
+    log.save()
+
+    try:
+        text_content = strip_tags(log.corpo_html)
+        lista_destinatarios = [x.strip() for x in log.destinatario.split(",")]
+
+        msg = EmailMultiAlternatives(
+            subject=log.assunto,
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=lista_destinatarios
+        )
+        msg.attach_alternative(log.corpo_html, "text/html")
+        msg.send()
+
+        log.status = 'enviado'
+        log.erro_mensagem = None
+        log.save()
+        return True, "E-mail reenviado com sucesso!"
+    except Exception as e:
+        log.erro_mensagem = str(e)
+        log.save()
+        return False, f"Falha no reenvio: {str(e)}"
 
 def enviar_email_simples(destinatario, assunto, corpo, anexos=None):
     """
