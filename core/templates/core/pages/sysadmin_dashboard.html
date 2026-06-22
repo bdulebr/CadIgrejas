@@ -285,19 +285,27 @@
                                 </td>
                                 <td class="px-6 py-3 font-mono text-xs text-blue-400">{{ log.destinatario }}</td>
                                 <td class="px-6 py-3 truncate max-w-[200px]">{{ log.assunto }}</td>
-                                <td class="px-6 py-3 text-xs text-gray-500 truncate max-w-[200px]">
-                                    {{ log.erro_mensagem|default:"-" }}
-                                    {% if log.status == 'falha' %}
-                                        <form method="POST" action="{% url 'sysadmin_reenviar_email_id' log.id %}" class="inline-block ml-2">
-                                            {% csrf_token %}
-                                            <button type="submit" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded text-xs transition-colors" title="Tentar reenviar agora">
-                                                Reenviar
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                    {% if log.qtd_reenvios > 0 %}
-                                        <br><span class="text-[10px] text-yellow-500">Tentativas: {{ log.qtd_reenvios }}</span>
-                                    {% endif %}
+                                <td class="px-6 py-3">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs text-gray-500 truncate max-w-[200px]" title="{{ log.erro_mensagem|default:'' }}">
+                                                {{ log.erro_mensagem|default:"-" }}
+                                            </span>
+                                            {% if log.qtd_reenvios > 0 %}
+                                                <span class="text-[10px] text-yellow-500 mt-1">Tentativas: {{ log.qtd_reenvios }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            {% if log.status == 'falha' %}
+                                                <form method="POST" action="{% url 'sysadmin_reenviar_email_id' log.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded text-xs transition-colors shadow-sm" title="Tentar reenviar agora">
+                                                        Reenviar
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}
