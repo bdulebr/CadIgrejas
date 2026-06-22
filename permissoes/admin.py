@@ -4,9 +4,6 @@
 * DESCRIÇÃO: Código-fonte do módulo
 * DEV: Marcos Roberto Lira (marcos@pvenseada.org)
 * VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
 from django.contrib import admin
 from .models import ModuloSistema, PerfilAcesso, PermissaoMembro, PermissaoDepartamento, PermissaoPerfil
@@ -15,7 +12,7 @@ admin.site.register(ModuloSistema)
 admin.site.register(PerfilAcesso)
 
 class PermissaoBaseAdmin(admin.ModelAdmin):
-    list_display = ('modulo', 'pode_ver', 'pode_editar', 'pode_excluir', 'escopo_acesso', 'data_expiracao')
+    list_display = ('modulo', 'pode_ver', 'pode_ver_menu', 'pode_editar', 'pode_excluir', 'escopo_acesso', 'data_expiracao')
     list_filter = ('modulo', 'escopo_acesso')
     search_fields = ('modulo__nome',)
 

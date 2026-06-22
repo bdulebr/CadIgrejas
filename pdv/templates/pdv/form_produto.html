@@ -1,50 +1,146 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: pdv/templates/pdv/form_produto.html
-* DESCRIÇÃO: Código-fonte do módulo
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
-* LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
--->
 {% extends 'core/base.html' %}
 {% block title %}{% if produto %}Editar{% else %}Novo{% endif %} Produto{% endblock title %}
 {% block content %}
-<div class="min-h-screen p-8">
-    <div class="max-w-3xl mx-auto">
+<div class="min-h-screen p-8" x-data="produtoForm()">
+    <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl font-black text-white mb-6">{% if produto %}Editar Produto{% else %}Novo Produto{% endif %}</h1>
         <div class="bg-gray-900/50 backdrop-blur-md rounded-xl p-8 border border-white/10">
             <form method="POST" class="space-y-6">
                 {% csrf_token %}
+
+                <h2 class="text-xl font-bold text-gray-300 border-b border-gray-700 pb-2 mb-4">Dados Principais</h2>
                 <div class="grid grid-cols-2 gap-6">
                     <div class="col-span-2">
-                        <label class="block text-gray-400 text-sm mb-2">Nome do Produto</label>
-                        <input type="text" name="nome" value="{{ produto.nome }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                        <label class="block text-gray-400 text-sm mb-2">Nome do Produto *</label>
+                        <input type="text" name="nome" value="{{ produto.nome }}" x-model="nomeProduto" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-gray-400 text-sm mb-2">Código de Barras (EAN)</label>
-                        <input type="text" name="codigo_barras" value="{{ produto.codigo_barras|default:'' }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                        <input type="text" name="codigo_barras" value="{{ produto.codigo_barras|default:'' }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-gray-400 text-sm mb-2">Estoque Atual</label>
-                        <input type="number" name="estoque_atual" value="{{ produto.estoque_atual|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                        <input type="number" name="estoque_atual" value="{{ produto.estoque_atual|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-gray-400 text-sm mb-2">Preço de Custo (R$)</label>
-                        <input type="number" step="0.01" name="preco_custo" value="{{ produto.preco_custo|default:0 }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                        <label class="block text-gray-400 text-sm mb-2">Preço de Custo (R$) *</label>
+                        <input type="number" step="0.01" name="preco_custo" value="{{ produto.preco_custo|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-gray-400 text-sm mb-2">Preço de Venda (R$)</label>
-                        <input type="number" step="0.01" name="preco_venda" value="{{ produto.preco_venda|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700">
+                        <label class="block text-gray-400 text-sm mb-2">Preço de Venda (R$) *</label>
+                        <input type="number" step="0.01" name="preco_venda" value="{{ produto.preco_venda|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
                     </div>
                 </div>
-                <div class="pt-4 border-t border-gray-700 flex justify-end gap-3">
-                    <a href="{% url 'pdv_lista_produtos' %}" class="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold">Cancelar</a>
-                    <button type="submit" class="px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold">Salvar Produto</button>
+
+                <h2 class="text-xl font-bold text-gray-300 border-b border-gray-700 pb-2 mt-8 mb-4">Dados Fiscais (Reforma 2026)</h2>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="col-span-2 relative">
+                        <label class="block text-gray-400 text-sm mb-2">NCM (Nomenclatura Comum do Mercosul) *</label>
+                        <div class="flex gap-2">
+                            <input type="text" name="ncm" x-model="ncm" required class="flex-1 bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none" placeholder="Ex: 00000000">
+                            <button type="button" @click="buscarNCM()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-bold transition-colors flex items-center gap-2">
+                                <i data-lucide="search" class="w-4 h-4"></i> Buscar NCM
+                            </button>
+                        </div>
+
+                        <!-- Modal Busca NCM -->
+                        <div x-show="mostrandoBuscaNcm" class="absolute top-full left-0 w-full mt-2 bg-gray-800 border border-gray-600 rounded shadow-xl z-50 p-4" style="display: none;">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-white font-bold">Buscar NCM na BrasilAPI</h3>
+                                <button type="button" @click="mostrandoBuscaNcm = false" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                            </div>
+                            <div class="flex gap-2 mb-4">
+                                <input type="text" x-model="termoBusca" @keydown.enter.prevent="executarBusca()" class="flex-1 bg-gray-900 text-white rounded p-2 border border-gray-700 text-sm" placeholder="Digite o nome do produto...">
+                                <button type="button" @click="executarBusca()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded text-sm font-bold">Pesquisar</button>
+                            </div>
+                            <div x-show="buscando" class="text-center text-gray-400 text-sm py-4">Buscando...</div>
+                            <div class="max-h-60 overflow-y-auto custom-scrollbar">
+                                <template x-for="item in resultadosNcm" :key="item.codigo">
+                                    <div @click="selecionarNcm(item.codigo)" class="p-2 hover:bg-gray-700 cursor-pointer border-b border-gray-700/50">
+                                        <div class="text-white font-bold" x-text="item.codigo"></div>
+                                        <div class="text-gray-400 text-xs" x-text="item.descricao"></div>
+                                    </div>
+                                </template>
+                                <template x-if="resultadosNcm.length === 0 && !buscando && termoBusca !== ''">
+                                    <div class="text-gray-500 text-sm py-2">Nenhum resultado encontrado.</div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">CBS (%) - Opcional</label>
+                        <input type="number" step="0.01" name="cbs" value="{{ produto.cbs|default:'' }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">IBS (%) - Opcional</label>
+                        <input type="number" step="0.01" name="ibs" value="{{ produto.ibs|default:'' }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">Imposto Seletivo (IS %) - Opcional</label>
+                        <input type="number" step="0.01" name="imposto_seletivo" value="{{ produto.imposto_seletivo|default:'' }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-2">CFOP - Opcional</label>
+                        <input type="text" name="cfop" value="{{ produto.cfop|default:'' }}" class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none" placeholder="Ex: 5102">
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-gray-700 flex justify-end gap-3 mt-8">
+                    <a href="{% url 'pdv_lista_produtos' %}" class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-bold transition-colors">Cancelar</a>
+                    <button type="submit" class="px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(22,163,74,0.4)]">Salvar Produto</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+function produtoForm() {
+    return {
+        nomeProduto: "{{ produto.nome|escapejs }}",
+        ncm: "{{ produto.ncm|default:''|escapejs }}",
+        mostrandoBuscaNcm: false,
+        termoBusca: '',
+        resultadosNcm: [],
+        buscando: false,
+
+        buscarNCM() {
+            this.mostrandoBuscaNcm = true;
+            if (this.nomeProduto && !this.termoBusca) {
+                this.termoBusca = this.nomeProduto.split(' ')[0]; // Pega a primeira palavra
+                this.executarBusca();
+            }
+        },
+
+        async executarBusca() {
+            if (!this.termoBusca.trim()) return;
+            this.buscando = true;
+            this.resultadosNcm = [];
+
+            try {
+                // Remove acentos para a API BrasilAPI
+                const termo = this.termoBusca.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const res = await fetch(`https://brasilapi.com.br/api/ncm/v1?search=${encodeURIComponent(termo)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    this.resultadosNcm = data;
+                } else {
+                    this.resultadosNcm = [];
+                }
+            } catch (e) {
+                console.error("Erro ao buscar NCM", e);
+                this.resultadosNcm = [];
+            } finally {
+                this.buscando = false;
+            }
+        },
+
+        selecionarNcm(codigo) {
+            this.ncm = codigo;
+            this.mostrandoBuscaNcm = false;
+        }
+    }
+}
+</script>
 {% endblock content %}

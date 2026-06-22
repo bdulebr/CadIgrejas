@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Financeiro PDV</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin-top: 4.5cm;
+            margin-bottom: 2cm;
+            margin-left: 2cm;
+            margin-right: 2cm;
+
+            @frame header {
+                -pdf-frame-content: header_content;
+                top: 1cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 3.5cm;
+            }
+            @frame footer {
+                -pdf-frame-content: footer_content;
+                bottom: 1cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 1cm;
+            }
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            color: #333333;
+        }
+        .header-table {
+            width: 100%;
+            border-bottom: 2px solid #002a5c;
+            padding-bottom: 10px;
+        }
+        h1 {
+            color: #002a5c;
+            font-size: 20px;
+            margin: 0;
+            padding: 0;
+        }
+        h2 {
+            color: #555555;
+            font-size: 14px;
+            border-bottom: 1px solid #cccccc;
+            padding-bottom: 5px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+        table.data-table th {
+            background-color: #002a5c;
+            color: #ffffff;
+            font-weight: bold;
+            padding: 6px;
+            text-align: left;
+            font-size: 10px;
+        }
+        table.data-table td {
+            padding: 6px;
+            border-bottom: 1px solid #eeeeee;
+            vertical-align: top;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .total-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin-top: 0px;
+            font-size: 13px;
+        }
+        .total-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .total-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #002a5c;
+        }
+        .fiado-value {
+            color: #dc3545;
+        }
+        .item-list {
+            color: #777;
+            font-size: 9px;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header_content">
+        <table class="header-table">
+            <tr>
+                <td style="width: 20%; vertical-align: middle;">
+                    {% if sys_config and sys_config.igreja_logo %}
+                        <!-- xhtml2pdf handles absolute paths or MEDIA_ROOT well -->
+                        <img src="{{ sys_config.igreja_logo.path }}" height="60" />
+                    {% else %}
+                        <h1 style="font-size: 16px; margin-bottom:0;">PVE</h1>
+                    {% endif %}
+                </td>
+                <td style="width: 80%; vertical-align: middle;">
+                    <h1>Relatório Financeiro de Vendas</h1>
+                    <p style="margin: 0; padding: 0; font-size: 11px;">
+                        <strong>Período:</strong> {{ periodo_texto }}<br>
+                        <strong>Gerado em:</strong> {{ data_geracao|date:"d/m/Y H:i" }}
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="footer_content">
+        <p style="text-align: right; font-size: 9px; color: #888888; border-top: 1px solid #ddd; padding-top: 5px;">Documento gerado automaticamente pelo Sistema Intranet PVE - Página <pdf:pagenumber> de <pdf:pagecount></p>
+    </div>
+
+    <div class="total-box">
+        <table style="border: none; margin: 0; width: 100%;">
+            <tr>
+                <td style="border: none;">
+                    <span class="total-label">Total Recebido (Concluídas):</span><br>
+                    <span class="total-value">R$ {{ total_vendas|floatformat:2 }}</span>
+                </td>
+                <td style="border: none; text-align: right;">
+                    <span class="total-label">Total em Haver (Fiados):</span><br>
+                    <span class="total-value fiado-value">R$ {{ total_fiados|floatformat:2 }}</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h2>1. Extrato de Entradas (Recebidos)</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 15%">Data/Hora</th>
+                <th style="width: 25%">Cliente / Caixa</th>
+                <th style="width: 45%">Itens da Venda</th>
+                <th class="text-right" style="width: 15%">Valor (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vendas %}
+            {% if v.status_pagamento == 'pago' %}
+            <tr>
+                <td>{{ v.data_venda|date:"d/m/y H:i" }}</td>
+                <td>
+                    <strong>{% if v.nome_cliente_reserva %}{{ v.nome_cliente_reserva|upper }}{% elif v.cliente %}{{ v.cliente.nome|upper }}{% else %}BALCÃO{% endif %}</strong><br>
+                    <span style="font-size: 9px; color: #888;">Op: {{ v.caixa.operador.nome|default:"-" }} ({{ v.forma_pagamento }})</span>
+                </td>
+                <td>
+                    <div class="item-list">
+                        {% for item in v.itens.all %}
+                        - {{ item.quantidade }}x {{ item.produto.nome }} (R$ {{ item.valor_unitario|floatformat:2 }})<br>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td class="text-right"><strong>{{ v.total|floatformat:2 }}</strong></td>
+            </tr>
+            {% endif %}
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center;">Nenhum recebimento no período.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>2. Extrato de Fiados (Pendentes)</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 15%">Data/Hora</th>
+                <th style="width: 25%">Cliente / Caixa</th>
+                <th style="width: 45%">Itens da Venda</th>
+                <th class="text-right" style="width: 15%">Valor (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in fiados %}
+            <tr>
+                <td>{{ f.data_venda|date:"d/m/y H:i" }}</td>
+                <td>
+                    <strong>{% if f.nome_cliente_reserva %}{{ f.nome_cliente_reserva|upper }}{% elif f.cliente %}{{ f.cliente.nome|upper }}{% else %}DESCONHECIDO{% endif %}</strong><br>
+                    <span style="font-size: 9px; color: #888;">Op: {{ f.caixa.operador.nome|default:"-" }}</span>
+                </td>
+                <td>
+                    <div class="item-list">
+                        {% for item in f.itens.all %}
+                        - {{ item.quantidade }}x {{ item.produto.nome }} (R$ {{ item.valor_unitario|floatformat:2 }})<br>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td class="text-right" style="color: #dc3545;"><strong>{{ f.total|floatformat:2 }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center;">Nenhum fiado pendente no período.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

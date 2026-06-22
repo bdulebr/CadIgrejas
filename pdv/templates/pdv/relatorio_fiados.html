@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+{% block title %}Relatório de Fiados - PDV{% endblock title %}
+{% block content %}
+<div class="min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-black text-white uppercase"><i data-lucide="users" class="w-8 h-8 inline text-red-500"></i> Relatório de Fiados</h1>
+            <a href="{% url 'pdv_dashboard' %}" class="bg-[#002a5c] border border-[#004080] hover:bg-[#004080] text-white px-4 py-2 rounded font-bold uppercase transition-colors text-sm">Voltar ao Painel</a>
+        </div>
+
+        <div class="bg-gray-900/50 backdrop-blur-md rounded-xl p-6 border border-white/10">
+            <h3 class="text-xl font-bold text-gray-300 mb-4 border-b border-gray-700 pb-2">Itens Retirados e Não Pagos</h3>
+
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-black/40 text-gray-400 text-xs uppercase tracking-widest border-b-2 border-red-900">
+                            <th class="p-4 font-bold">Cliente</th>
+                            <th class="p-4 font-bold">Data da Retirada</th>
+                            <th class="p-4 font-bold text-right">Valor Pendente</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for f in fiados %}
+                        <tr class="border-b border-gray-800 hover:bg-white/5 transition-colors">
+                            <td class="p-4 font-bold text-white uppercase">{{ f.nome_cliente_reserva|default:f.cliente.nome|default:"Desconhecido" }}</td>
+                            <td class="p-4 text-gray-400">{{ f.data_venda|date:"d/m/Y H:i" }}</td>
+                            <td class="p-4 font-black text-red-400 text-right pos-font text-lg">R$ {{ f.total|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="p-8 text-center text-gray-500 font-bold uppercase tracking-widest">
+                                <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-3 text-green-500/50"></i>
+                                Nenhum fiado pendente no sistema.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if fiados %}
+                    <tfoot>
+                        <tr class="bg-red-900/20 border-t border-red-900">
+                            <td colspan="2" class="p-4 text-right font-bold text-white uppercase tracking-widest text-xs">Total Inadimplente:</td>
+                            <td class="p-4 font-black text-red-500 text-right pos-font text-2xl">R$ {{ total_fiado|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

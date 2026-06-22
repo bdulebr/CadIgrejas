@@ -32,6 +32,7 @@
       @keydown.window.f8.prevent="if(carrinho.length > 0 && !modalAtivo) abrirPagamento()"
       @keydown.window.f9.prevent="reimprimirUltima()"
       @keydown.window.f10.prevent="abrirModalFecharCaixa()"
+      @keydown.window.f11.prevent="limparCarrinho()"
       @keydown.window.escape.prevent="if(modalAtivo && modalCaixa === false) fecharModais();">
 
     <!-- Header / Status Bar -->
@@ -166,6 +167,10 @@
                         <kbd class="block text-yellow-400 font-black text-sm mb-0.5">F5</kbd>
                         <span class="text-gray-400 text-[10px] font-bold uppercase">Canc</span>
                     </button>
+                    <button class="text-center flex-1" title="Limpar Carrinho" @click="limparCarrinho()">
+                        <kbd class="block text-yellow-400 font-black text-sm mb-0.5">F11</kbd>
+                        <span class="text-gray-400 text-[10px] font-bold uppercase">Limpar</span>
+                    </button>
                     <button class="text-center flex-1" title="Cliente" @click="abrirIdentificarCliente()">
                         <kbd class="block text-yellow-400 font-black text-sm mb-0.5">F6</kbd>
                         <span class="text-gray-400 text-[10px] font-bold uppercase">CPF</span>
@@ -174,7 +179,17 @@
                         <kbd class="block text-red-400 font-black text-sm mb-0.5">F10</kbd>
                         <span class="text-red-200 text-[10px] font-bold uppercase">Fechar</span>
                     </button>
+
+                    <button class="text-center flex-1 bg-purple-900/40 rounded py-1 border border-purple-500/50" title="Ver Reservas" @click="abrirListaReservas()">
+                        <kbd class="block text-purple-400 font-black text-sm mb-0.5">F7</kbd>
+                        <span class="text-purple-200 text-[10px] font-bold uppercase">Reservas</span>
+                    </button>
+                    <button class="text-center flex-1 bg-[#005f9e] rounded py-1 border border-blue-400" title="Fazer Reserva" @click="if(carrinho.length > 0 && !modalAtivo) abrirReserva()">
+                        <kbd class="block text-white font-black text-sm mb-0.5 drop-shadow">F9</kbd>
+                        <span class="text-blue-100 text-[10px] font-bold uppercase">Reservar</span>
+                    </button>
                     <button class="text-center flex-1 bg-[#005f9e] rounded py-1 border border-blue-400" title="Finalizar Pagamento" @click="if(carrinho.length > 0 && !modalAtivo) abrirPagamento()">
+
                         <kbd class="block text-white font-black text-sm mb-0.5 drop-shadow">F8</kbd>
                         <span class="text-blue-100 text-[10px] font-bold uppercase">Pagar</span>
                     </button>
@@ -343,11 +358,19 @@
                 modalInputTitle: '',
                 modalInputValue: '',
 
+
                 modalCaixa: {% if caixa_atual %}false{% else %}'abrir'{% endif %},
                 valorCaixa: '',
 
+                modalReserva: false,
+                reservaStatusPagamento: 'pendente',
+                reservaNomeCliente: '',
+                modalListaReservas: false,
+                reservasPendentes: [],
+
+
                 get modalAtivo() {
-                    return this.modalPagamento || this.modalInput || this.modalCaixa !== false;
+                    return this.modalPagamento || this.modalInput || this.modalCaixa !== false || this.modalReserva || this.modalListaReservas;
                 },
 
                 get subtotalVenda() {
@@ -379,17 +402,31 @@
 
                     if(!val) return;
 
-                    // Tratamento de multiplicador direto ex: 5*12345
+                    // Tratamento de multiplicador ex: "5*12345", "10*", ou "*10"
                     if(val.includes('*')) {
                         const parts = val.split('*');
-                        if(parts.length === 2 && !isNaN(parts[0]) && parts[1]) {
-                            this.multiplicador = parseInt(parts[0]);
-                            this.adicionarProdutoByCodigo(parts[1]);
-                            return;
-                        } else if(parts.length === 2 && !isNaN(parts[0]) && !parts[1]) {
-                            // digitou "5*" e deu enter, seta o multiplicador e aguarda prox leitura
-                            this.multiplicador = parseInt(parts[0]);
-                            return;
+                        if (parts.length === 2) {
+                            let parsedMult = NaN;
+                            let productCode = '';
+
+                            // Se o formato for 10* ou 10*CODIGO
+                            if (parts[0] && !isNaN(parseInt(parts[0]))) {
+                                parsedMult = parseInt(parts[0]);
+                                productCode = parts[1].trim();
+                            }
+                            // Se o formato for *10 (apenas multiplicador)
+                            else if (!parts[0] && parts[1] && !isNaN(parseInt(parts[1]))) {
+                                parsedMult = parseInt(parts[1]);
+                                productCode = ''; // neste caso, consideraremos apenas a configuração do multiplicador
+                            }
+
+                            if (!isNaN(parsedMult) && parsedMult > 0) {
+                                this.multiplicador = parsedMult;
+                                if (productCode) {
+                                    this.adicionarProdutoByCodigo(productCode);
+                                }
+                                return;
+                            }
                         }
                     }
 
@@ -439,6 +476,8 @@
                     this.modalInput = false;
                     this.modalIdentificacao = false;
                     this.modalCaixa = false;
+                    this.modalReserva = false;
+                    this.modalListaReservas = false;
                     this.$refs.scannerInput.focus();
                 },
 
@@ -549,7 +588,86 @@
                     this.fecharModais();
                 },
 
+
                 // ---- PAGAMENTO ----
+
+                abrirListaReservas() {
+                    if(this.modalAtivo) return;
+                    this.carregarReservas();
+                    this.modalListaReservas = true;
+                },
+
+                async carregarReservas() {
+                    const res = await fetch('/pdv/api/reservas/');
+                    const data = await res.json();
+                    this.reservasPendentes = data.reservas || [];
+                },
+
+                async atualizarReserva(id, acao) {
+                    try {
+                        const res = await fetch(`/pdv/api/reservas/${id}/atualizar/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                            body: JSON.stringify({acao: acao})
+                        });
+                        const data = await res.json();
+                        if(data.success) {
+                            playBeep('success');
+                            this.carregarReservas();
+                        } else {
+                            playBeep('error'); alert(data.message);
+                        }
+                    } catch(e) {}
+                },
+
+                abrirReserva() {
+                    if(this.carrinho.filter(i => !i.cancelado).length === 0) {
+                        playBeep('error'); return;
+                    }
+                    this.modalReserva = true;
+                    this.reservaStatusPagamento = 'pendente';
+                    this.reservaNomeCliente = this.clienteNome || '';
+                    setTimeout(() => this.$refs.reservaNomeInput.focus(), 100);
+                },
+
+                async finalizarReserva() {
+                    if(!this.reservaNomeCliente) { playBeep('error'); alert("Nome Obrigatório"); return; }
+                    const itens = this.carrinho.filter(i => !i.cancelado);
+                    if(itens.length === 0) return;
+
+                    try {
+                        const res = await fetch('/pdv/api/venda/finalizar/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                            body: JSON.stringify({
+                                itens: itens,
+                                forma_pagamento: 'Dinheiro', // Reserva pode ser genérico se não for pago agora
+                                desconto: this.desconto,
+                                cpf: this.clienteCpf,
+                                nome_cliente: this.clienteNome,
+                                tipo_venda: 'reserva',
+                                status_pagamento: this.reservaStatusPagamento,
+                                status_entrega: 'retirar',
+                                nome_cliente_reserva: this.reservaNomeCliente
+                            })
+                        });
+
+                        const data = await res.json();
+                        if(data.success) {
+                            playBeep('success');
+                            this.ultimaVendaId = data.venda_id;
+                            this.novaVenda();
+                            this.fecharModais();
+                        } else {
+                            playBeep('error');
+                            alert("Erro: " + data.message);
+                        }
+                    } catch(e) {
+                        playBeep('error');
+                        alert("Falha ao finalizar reserva.");
+                    }
+                },
+
                 abrirPagamento() {
                     if(this.carrinho.filter(i => !i.cancelado).length === 0) {
                         playBeep('error'); return;
@@ -609,6 +727,16 @@
                     this.fecharModais();
                 },
 
+                limparCarrinho() {
+                    if (this.modalAtivo || this.carrinho.length === 0) return;
+                    if (confirm("Tem certeza que deseja remover todos os itens do carrinho? A identificação do cliente será mantida.")) {
+                        this.carrinho = [];
+                        this.ultimoItem = null;
+                        this.multiplicador = 1;
+                        this.fecharModais();
+                    }
+                },
+
                 reimprimirUltima() {
                     if(this.ultimaVendaId) {
                         window.open(`/pdv/venda/${this.ultimaVendaId}/cupom/`, '_blank', 'width=400,height=600');
@@ -620,5 +748,80 @@
         });
         lucide.createIcons();
     </script>
+
+    <!-- Modal Fazer Reserva -->
+    <template x-if="modalReserva">
+        <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+            <div class="bg-[#001f3f] border-2 border-blue-500 rounded p-8 max-w-lg w-full text-center">
+                <h2 class="text-3xl font-black text-blue-400 uppercase tracking-widest mb-6">Nova Reserva</h2>
+
+                <div class="text-left space-y-4 mb-6">
+                    <div>
+                        <label class="block text-gray-400 font-bold uppercase text-xs mb-1">Nome para Retirada</label>
+                        <input type="text" x-model="reservaNomeCliente" x-ref="reservaNomeInput" @keydown.enter="$refs.reservaPagamentoSelect.focus()" class="w-full bg-[#001122] border border-[#004080] p-4 text-2xl text-white outline-none focus:border-blue-500 uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-bold uppercase text-xs mb-1">Situação do Pagamento</label>
+                        <select x-model="reservaStatusPagamento" x-ref="reservaPagamentoSelect" @keydown.enter="finalizarReserva()" class="w-full bg-[#001122] border border-[#004080] p-4 text-xl text-yellow-400 font-bold uppercase outline-none focus:border-blue-500">
+                            <option value="pendente">Pendente (Paga na retirada)</option>
+                            <option value="pago">Pago Agora</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded uppercase text-xl" @click="fecharModais()">Cancelar</button>
+                    <button class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded uppercase text-xl" @click="finalizarReserva()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Modal Listar Reservas -->
+    <template x-if="modalListaReservas">
+        <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+            <div class="bg-[#001f3f] border-2 border-purple-500 rounded p-8 max-w-4xl w-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-black text-purple-400 uppercase tracking-widest">Reservas Pendentes</h2>
+                    <button class="text-gray-400 hover:text-white" @click="fecharModais()"><i data-lucide="x" class="w-8 h-8"></i></button>
+                </div>
+
+                <div class="overflow-y-auto max-h-[60vh] bg-[#001122] p-4 rounded border border-[#004080]">
+                    <template x-if="reservasPendentes.length === 0">
+                        <div class="text-center text-gray-500 py-8 font-bold">Nenhuma reserva pendente.</div>
+                    </template>
+                    <div class="space-y-4">
+                        <template x-for="r in reservasPendentes" :key="r.id">
+                            <div class="bg-black/50 p-4 rounded flex justify-between items-center border-l-4" :class="r.status_pagamento === 'pago' ? 'border-green-500' : 'border-yellow-500'">
+                                <div>
+                                    <div class="font-bold text-xl text-white uppercase" x-text="r.cliente"></div>
+                                    <div class="text-sm text-gray-400" x-text="r.data"></div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-black text-2xl text-white pos-font">R$ <span x-text="r.total.toFixed(2)"></span></div>
+                                    <div class="text-xs font-bold uppercase mb-2" :class="r.status_pagamento === 'pago' ? 'text-green-400' : 'text-yellow-400'">
+                                        <span x-text="r.status_pagamento === 'pago' ? 'PAGO' : 'PENDENTE DE PAGAMENTO'"></span>
+                                        <template x-if="r.status_entrega === 'entregue' && r.status_pagamento === 'pendente'">
+                                            <span class="text-red-400 ml-2"> (RETIRADO - FIADO)</span>
+                                        </template>
+                                    </div>
+
+                                    <div class="flex gap-2 justify-end">
+                                        <template x-if="r.status_pagamento === 'pendente'">
+                                            <button @click="atualizarReserva(r.id, 'pagar')" class="px-3 py-1 bg-green-700 hover:bg-green-600 text-white rounded text-xs font-bold uppercase">Receber Pag.</button>
+                                        </template>
+                                        <template x-if="r.status_entrega === 'retirar'">
+                                            <button @click="atualizarReserva(r.id, 'entregar')" class="px-3 py-1 bg-blue-700 hover:bg-blue-600 text-white rounded text-xs font-bold uppercase">Entregar Item</button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
 </body>
 </html>

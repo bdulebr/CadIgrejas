@@ -53,11 +53,16 @@ class Produto(models.Model):
     estoque_atual = models.IntegerField(default=0)
     estoque_minimo = models.IntegerField(default=5)
 
-    # Fiscal data for NFC-e readiness
-    ncm = models.CharField(max_length=20, blank=True, null=True)
+    # Fiscal data for NFC-e readiness and Reforma Fiscal 2026
+    ncm = models.CharField(max_length=20, default="00000000") # Obrigatório
     cest = models.CharField(max_length=20, blank=True, null=True)
     cfop = models.CharField(max_length=10, blank=True, null=True)
     icms_cst = models.CharField(max_length=5, blank=True, null=True)
+
+    # Novos impostos (Opcionais)
+    cbs = models.DecimalField('CBS (%)', max_digits=5, decimal_places=2, blank=True, null=True)
+    ibs = models.DecimalField('IBS (%)', max_digits=5, decimal_places=2, blank=True, null=True)
+    imposto_seletivo = models.DecimalField('Imposto Seletivo (%)', max_digits=5, decimal_places=2, blank=True, null=True)
 
     def __str__(self):
         return f"{self.codigo_barras} - {self.nome}"
@@ -96,6 +101,7 @@ class Venda(models.Model):
         ('cancelada', 'Cancelada'),
         ('aguardando', 'Aguardando')
     )
+    # Dados Principais
     caixa = models.ForeignKey(Caixa, on_delete=models.CASCADE, related_name='vendas')
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
     data_venda = models.DateTimeField(auto_now_add=True)
@@ -104,6 +110,24 @@ class Venda(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     forma_pagamento = models.CharField(max_length=50, default='Dinheiro')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='concluida')
+
+    # Sistema de Reservas
+    TIPO_VENDA_CHOICES = (
+        ('imediata', 'Pronta Entrega'),
+        ('reserva', 'Reserva')
+    )
+    STATUS_PAGAMENTO_CHOICES = (
+        ('pago', 'Pago'),
+        ('pendente', 'Pendente')
+    )
+    STATUS_ENTREGA_CHOICES = (
+        ('entregue', 'Entregue'),
+        ('retirar', 'A Retirar')
+    )
+    tipo_venda = models.CharField(max_length=20, choices=TIPO_VENDA_CHOICES, default='imediata')
+    status_pagamento = models.CharField(max_length=20, choices=STATUS_PAGAMENTO_CHOICES, default='pago')
+    status_entrega = models.CharField(max_length=20, choices=STATUS_ENTREGA_CHOICES, default='entregue')
+    nome_cliente_reserva = models.CharField(max_length=200, blank=True, null=True)
 
     # Fiscal NFC-e
     chave_acesso_nfce = models.CharField(max_length=100, blank=True, null=True)

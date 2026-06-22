@@ -31,8 +31,6 @@ urlpatterns = [
     path('seguranca/trocar-senha/', views.forcar_troca_senha, name='forcar_troca_senha'),
     path('sysadmin/', views.sysadmin_dashboard, name='sysadmin_dashboard'),
     path('pesquisa/', views.pesquisa_global_api, name='pesquisa_global_api'),
-    path('bi/', views.bi_dashboard_geral, name='bi_dashboard_geral'),
-    path('bi/data/<str:modulo>/', views.bi_data_async, name='bi_data_async'),
     path('sysadmin/toggle-manutencao/', views.sysadmin_toggle_manutencao, name='sysadmin_toggle_manutencao'),
     path('sysadmin/toggle-email/', views.sysadmin_toggle_email, name='sysadmin_toggle_email'),
     path('sysadmin/backup/baixar/', views.sysadmin_baixar_backup, name='sysadmin_baixar_backup'),
@@ -59,7 +57,6 @@ urlpatterns = [
     path('sysadmin/logs/', views.sysadmin_logs_list, name='sysadmin_logs'),
     path('sysadmin/logs/tracker/', views.sysadmin_ux_tracker, name='sysadmin_ux_tracker'),
     path('sysadmin/logs/<int:log_id>/pdf/', views.sysadmin_log_pdf, name='sysadmin_log_pdf'),
-    path('bi/ai-insights/', views.ai_insights_bi, name='ai_insights_bi'),
 
     # Spider Test
     path('sysadmin/rodar-spider/', views.sysadmin_rodar_spider, name='sysadmin_rodar_spider'),

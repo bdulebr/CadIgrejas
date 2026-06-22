@@ -51,6 +51,7 @@ class PermissaoBase(models.Model):
     pode_ver = models.BooleanField(default=False)
     pode_editar = models.BooleanField(default=False)
     pode_excluir = models.BooleanField(default=False)
+    pode_ver_menu = models.BooleanField(default=False, help_text="Se marcado, o menu lateral deste módulo será visível")
 
     # 2. Ações Granulares (Ex: {"aprovar_despesa": true})
     acoes_extras = models.JSONField(default=dict, blank=True, help_text='Dicionário JSON de ações customizadas')

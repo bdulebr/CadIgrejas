@@ -43,8 +43,14 @@
             <a href="{% url 'pdv_configuracoes' %}" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all border border-gray-700 flex items-center gap-2">
                 <i data-lucide="settings" class="w-4 h-4 text-gray-400"></i> Configurações
             </a>
+            <a href="{% url 'pdv_relatorios_painel' %}" class="px-4 py-2 bg-blue-900/30 hover:bg-blue-800/40 text-blue-300 font-bold rounded-xl transition-all border border-blue-900/50 flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i> Relatórios Financeiros
+            </a>
             <a href="{% url 'pdv_gerenciar_operadores' %}" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all border border-gray-700 flex items-center gap-2">
                 <i data-lucide="users" class="w-4 h-4 text-gray-400"></i> Operadores do Caixa
+            </a>
+            <a href="{% url 'pdv_relatorio_fiados' %}" class="px-4 py-2 bg-red-900/30 hover:bg-red-800/40 text-red-300 font-bold rounded-xl transition-all border border-red-900/50 flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-red-500"></i> Fiados e Inadimplentes
             </a>
         </div>
 

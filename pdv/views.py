@@ -177,13 +177,22 @@ def api_finalizar_venda(request):
             subtotal = sum(float(i['preco']) * int(i['qtd']) for i in itens)
             total = subtotal - desconto
 
+            tipo_venda = data.get('tipo_venda', 'imediata')
+            status_pagamento = data.get('status_pagamento', 'pago')
+            status_entrega = data.get('status_entrega', 'entregue')
+            nome_cliente_reserva = data.get('nome_cliente_reserva', '')
+
             venda = Venda.objects.create(
                 caixa=caixa_atual,
                 cliente=cliente,
                 subtotal=subtotal,
                 desconto=desconto,
                 total=total,
-                forma_pagamento=forma_pagamento
+                forma_pagamento=forma_pagamento,
+                tipo_venda=tipo_venda,
+                status_pagamento=status_pagamento,
+                status_entrega=status_entrega,
+                nome_cliente_reserva=nome_cliente_reserva
             )
 
             for i in itens:
@@ -199,15 +208,15 @@ def api_finalizar_venda(request):
                 prod.estoque_atual -= qtd
                 prod.save()
 
-            MovimentoCaixa.objects.create(
-                caixa=caixa_atual,
-                tipo='entrada',
-                valor=total,
-                descricao=f'Venda #{venda.id}'
-            )
-
-            caixa_atual.saldo_final_esperado += total
-            caixa_atual.save()
+            if status_pagamento == 'pago':
+                MovimentoCaixa.objects.create(
+                    caixa=caixa_atual,
+                    tipo='entrada',
+                    valor=total,
+                    descricao=f'Venda #{venda.id}' if tipo_venda == 'imediata' else f'Reserva Paga #{venda.id}'
+                )
+                caixa_atual.saldo_final_esperado += total
+                caixa_atual.save()
 
             return JsonResponse({'success': True, 'venda_id': venda.id, 'total': float(total)})
         except Exception as e:
@@ -287,13 +296,23 @@ def novo_produto(request):
         preco_custo = request.POST.get('preco_custo', 0)
         preco_venda = request.POST.get('preco_venda', 0)
         estoque_atual = request.POST.get('estoque_atual', 0)
+        ncm = request.POST.get('ncm', '00000000')
+        cfop = request.POST.get('cfop', '')
+        cbs = request.POST.get('cbs', '')
+        ibs = request.POST.get('ibs', '')
+        is_val = request.POST.get('imposto_seletivo', '')
 
         Produto.objects.create(
             nome=nome,
             codigo_barras=codigo_barras,
             preco_custo=preco_custo,
             preco_venda=preco_venda,
-            estoque_atual=estoque_atual
+            estoque_atual=estoque_atual,
+            ncm=ncm,
+            cfop=cfop,
+            cbs=cbs if cbs else None,
+            ibs=ibs if ibs else None,
+            imposto_seletivo=is_val if is_val else None
         )
         messages.success(request, 'Produto cadastrado com sucesso!')
         return redirect('pdv_lista_produtos')
@@ -310,6 +329,16 @@ def editar_produto(request, produto_id):
         produto.preco_custo = request.POST.get('preco_custo', 0)
         produto.preco_venda = request.POST.get('preco_venda', 0)
         produto.estoque_atual = request.POST.get('estoque_atual', 0)
+        produto.ncm = request.POST.get('ncm', '00000000')
+        produto.cfop = request.POST.get('cfop', '')
+
+        cbs = request.POST.get('cbs', '')
+        ibs = request.POST.get('ibs', '')
+        is_val = request.POST.get('imposto_seletivo', '')
+        produto.cbs = cbs if cbs else None
+        produto.ibs = ibs if ibs else None
+        produto.imposto_seletivo = is_val if is_val else None
+
         produto.save()
         messages.success(request, 'Produto atualizado com sucesso!')
 
@@ -326,13 +355,23 @@ def novo_produto(request):
         preco_custo = request.POST.get('preco_custo', 0)
         preco_venda = request.POST.get('preco_venda', 0)
         estoque_atual = request.POST.get('estoque_atual', 0)
+        ncm = request.POST.get('ncm', '00000000')
+        cfop = request.POST.get('cfop', '')
+        cbs = request.POST.get('cbs', '')
+        ibs = request.POST.get('ibs', '')
+        is_val = request.POST.get('imposto_seletivo', '')
 
         Produto.objects.create(
             nome=nome,
             codigo_barras=codigo_barras,
             preco_custo=preco_custo,
             preco_venda=preco_venda,
-            estoque_atual=estoque_atual
+            estoque_atual=estoque_atual,
+            ncm=ncm,
+            cfop=cfop,
+            cbs=cbs if cbs else None,
+            ibs=ibs if ibs else None,
+            imposto_seletivo=is_val if is_val else None
         )
         messages.success(request, 'Produto cadastrado com sucesso!')
         return redirect('pdv_lista_produtos')
@@ -356,6 +395,16 @@ def editar_produto(request, produto_id):
         produto.preco_custo = request.POST.get('preco_custo', 0)
         produto.preco_venda = request.POST.get('preco_venda', 0)
         produto.estoque_atual = request.POST.get('estoque_atual', 0)
+        produto.ncm = request.POST.get('ncm', '00000000')
+        produto.cfop = request.POST.get('cfop', '')
+
+        cbs = request.POST.get('cbs', '')
+        ibs = request.POST.get('ibs', '')
+        is_val = request.POST.get('imposto_seletivo', '')
+        produto.cbs = cbs if cbs else None
+        produto.ibs = ibs if ibs else None
+        produto.imposto_seletivo = is_val if is_val else None
+
         produto.save()
         messages.success(request, 'Produto atualizado com sucesso!')
         return redirect('pdv_lista_produtos')
@@ -434,3 +483,189 @@ def livro_caixa(request):
     caixas = Caixa.objects.all().order_by('-data_abertura')
     movimentos = MovimentoCaixa.objects.all().order_by('-data_movimento')[:50]
     return render(request, 'pdv/livro_caixa.html', {'caixas': caixas, 'movimentos': movimentos})
+
+@pdv_auth_required
+def api_listar_reservas(request):
+    from django.db.models import Q
+    reservas = Venda.objects.filter(
+        Q(tipo_venda='reserva') & (Q(status_pagamento='pendente') | Q(status_entrega='retirar'))
+    ).order_by('-data_venda')
+    data = []
+    for r in reservas:
+        data.append({
+            'id': r.id,
+            'cliente': r.nome_cliente_reserva or (r.cliente.nome if r.cliente else 'Desconhecido'),
+            'total': float(r.total),
+            'status_pagamento': r.status_pagamento,
+            'status_entrega': r.status_entrega,
+            'data': r.data_venda.strftime('%d/%m/%Y %H:%M')
+        })
+    return JsonResponse({'reservas': data})
+
+@csrf_exempt
+@pdv_auth_required
+def api_atualizar_reserva(request, reserva_id):
+    if request.method == 'POST':
+        caixa_atual = Caixa.objects.filter(status='aberto').last()
+        if not caixa_atual:
+            return JsonResponse({'success': False, 'message': 'Nenhum caixa aberto para receber pagamento.'})
+        try:
+            reserva = Venda.objects.get(id=reserva_id, tipo_venda='reserva')
+            data = json.loads(request.body)
+            acao = data.get('acao') # 'pagar' ou 'entregar' ou 'pagar_entregar'
+
+            if 'pagar' in acao and reserva.status_pagamento == 'pendente':
+                reserva.status_pagamento = 'pago'
+                MovimentoCaixa.objects.create(
+                    caixa=caixa_atual,
+                    tipo='entrada',
+                    valor=reserva.total,
+                    descricao=f'Pagamento Reserva #{reserva.id}'
+                )
+                caixa_atual.saldo_final_esperado += reserva.total
+                caixa_atual.save()
+
+            if 'entregar' in acao:
+                reserva.status_entrega = 'entregue'
+
+            reserva.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False})
+
+@pdv_auth_required
+def relatorio_fiados(request):
+    # Fiados = Entregue mas pendente de pagamento
+    fiados = Venda.objects.filter(tipo_venda='reserva', status_pagamento='pendente', status_entrega='entregue').order_by('-data_venda')
+    total_fiado = sum(v.total for v in fiados)
+    return render(request, 'pdv/relatorio_fiados.html', {'fiados': fiados, 'total_fiado': total_fiado})
+
+from django.template.loader import get_template
+from django.http import HttpResponse
+from datetime import datetime
+try:
+    from xhtml2pdf import pisa
+except ImportError:
+    pisa = None
+
+@pdv_auth_required
+def relatorios_painel(request):
+    periodo = request.GET.get('periodo', 'hoje')
+    data_inicio_str = request.GET.get('data_inicio', '')
+    data_fim_str = request.GET.get('data_fim', '')
+
+    hoje = timezone.now().date()
+    vendas = Venda.objects.prefetch_related('itens__produto').all()
+    fiados = Venda.objects.prefetch_related('itens__produto').filter(tipo_venda='reserva', status_pagamento='pendente', status_entrega='entregue')
+
+    data_inicio = None
+    data_fim = None
+
+    if periodo == 'hoje':
+        vendas = vendas.filter(data_venda__date=hoje)
+        fiados = fiados.filter(data_venda__date=hoje)
+    elif periodo == 'mes':
+        vendas = vendas.filter(data_venda__year=hoje.year, data_venda__month=hoje.month)
+        fiados = fiados.filter(data_venda__year=hoje.year, data_venda__month=hoje.month)
+    elif periodo == 'ano':
+        vendas = vendas.filter(data_venda__year=hoje.year)
+        fiados = fiados.filter(data_venda__year=hoje.year)
+    elif periodo == 'personalizado' and data_inicio_str and data_fim_str:
+        try:
+            data_inicio = datetime.fromisoformat(data_inicio_str)
+            data_fim = datetime.fromisoformat(data_fim_str)
+            if timezone.is_naive(data_inicio): data_inicio = timezone.make_aware(data_inicio)
+            if timezone.is_naive(data_fim): data_fim = timezone.make_aware(data_fim)
+            vendas = vendas.filter(data_venda__range=(data_inicio, data_fim))
+            fiados = fiados.filter(data_venda__range=(data_inicio, data_fim))
+        except ValueError:
+            pass # Invalid format fallback
+
+    vendas = vendas.order_by('-data_venda')
+    fiados = fiados.order_by('-data_venda')
+
+    total_vendas = sum(v.total for v in vendas if v.status_pagamento == 'pago')
+    total_fiados = sum(v.total for v in fiados)
+
+    context = {
+        'periodo': periodo,
+        'data_inicio_str': data_inicio_str,
+        'data_fim_str': data_fim_str,
+        'vendas': vendas,
+        'fiados': fiados,
+        'total_vendas': total_vendas,
+        'total_fiados': total_fiados,
+        'data_atual': hoje
+    }
+    return render(request, 'pdv/relatorios_painel.html', context)
+
+@pdv_auth_required
+def exportar_financeiro_pdf(request):
+    periodo = request.GET.get('periodo', 'hoje')
+    data_inicio_str = request.GET.get('data_inicio', '')
+    data_fim_str = request.GET.get('data_fim', '')
+
+    hoje = timezone.now().date()
+    vendas = Venda.objects.prefetch_related('itens__produto').all()
+    fiados = Venda.objects.prefetch_related('itens__produto').filter(tipo_venda='reserva', status_pagamento='pendente', status_entrega='entregue')
+
+    periodo_texto = "Data: " + hoje.strftime("%d/%m/%Y")
+
+    if periodo == 'hoje':
+        vendas = vendas.filter(data_venda__date=hoje)
+        fiados = fiados.filter(data_venda__date=hoje)
+        periodo_texto = "Vendas de Hoje (" + hoje.strftime("%d/%m/%Y") + ")"
+    elif periodo == 'mes':
+        vendas = vendas.filter(data_venda__year=hoje.year, data_venda__month=hoje.month)
+        fiados = fiados.filter(data_venda__year=hoje.year, data_venda__month=hoje.month)
+        periodo_texto = "Vendas do Mês (" + hoje.strftime("%m/%Y") + ")"
+    elif periodo == 'ano':
+        vendas = vendas.filter(data_venda__year=hoje.year)
+        fiados = fiados.filter(data_venda__year=hoje.year)
+        periodo_texto = "Vendas do Ano (" + hoje.strftime("%Y") + ")"
+    elif periodo == 'personalizado' and data_inicio_str and data_fim_str:
+        try:
+            data_inicio = datetime.fromisoformat(data_inicio_str)
+            data_fim = datetime.fromisoformat(data_fim_str)
+            if timezone.is_naive(data_inicio): data_inicio = timezone.make_aware(data_inicio)
+            if timezone.is_naive(data_fim): data_fim = timezone.make_aware(data_fim)
+            vendas = vendas.filter(data_venda__range=(data_inicio, data_fim))
+            fiados = fiados.filter(data_venda__range=(data_inicio, data_fim))
+            periodo_texto = "De {} até {}".format(data_inicio.strftime("%d/%m/%Y %H:%M"), data_fim.strftime("%d/%m/%Y %H:%M"))
+        except ValueError:
+            pass
+
+    vendas = vendas.order_by('data_venda')
+    fiados = fiados.order_by('data_venda')
+
+    total_vendas = sum(v.total for v in vendas if v.status_pagamento == 'pago')
+    total_fiados = sum(v.total for v in fiados)
+
+    # Try to load System Settings for Logo
+    from core.models import ConfiguracaoSistema
+    sys_config = ConfiguracaoSistema.objects.first()
+
+    context = {
+        'periodo_texto': periodo_texto,
+        'vendas': vendas,
+        'fiados': fiados,
+        'total_vendas': total_vendas,
+        'total_fiados': total_fiados,
+        'data_geracao': timezone.now(),
+        'sys_config': sys_config
+    }
+
+    template = get_template('pdv/relatorio_financeiro_pdf.html')
+    html = template.render(context)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Relatorio_Financeiro_{periodo}.pdf"'
+
+    if pisa:
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        if pisa_status.err:
+            return HttpResponse('Erro ao gerar PDF', status=500)
+        return response
+    else:
+        return HttpResponse('xhtml2pdf não está instalado no servidor.', status=500)

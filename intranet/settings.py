@@ -245,6 +245,10 @@ STORAGES = {
     },
 }
 
+if DEBUG:
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = True
+
 AUTH_USER_MODEL = 'core.Membro'
 
 LOGIN_URL = 'login'

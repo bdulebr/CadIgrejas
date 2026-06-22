@@ -13,11 +13,17 @@ from . import views
 
 urlpatterns = [
     path('', views.pdv_dashboard, name='pdv_dashboard'),
+    path('relatorios/fiados/', views.relatorio_fiados, name='pdv_relatorio_fiados'),
+    path('relatorios/', views.relatorios_painel, name='pdv_relatorios_painel'),
+    path('relatorios/exportar-pdf/', views.exportar_financeiro_pdf, name='pdv_exportar_financeiro_pdf'),
+
     path('login/', views.pdv_login, name='pdv_login'),
     path('logout/', views.pdv_logout, name='pdv_logout'),
     path('frente-caixa/', views.pdv_frente_caixa, name='pdv_frente_caixa'),
     path('api/produto/<str:codigo>/', views.api_buscar_produto, name='api_buscar_produto'),
     path('api/venda/finalizar/', views.api_finalizar_venda, name='api_finalizar_venda'),
+    path('api/reservas/', views.api_listar_reservas, name='api_listar_reservas'),
+    path('api/reservas/<int:reserva_id>/atualizar/', views.api_atualizar_reserva, name='api_atualizar_reserva'),
     path('api/caixa/abrir/', views.api_abrir_caixa, name='api_abrir_caixa'),
     path('api/caixa/fechar/', views.api_fechar_caixa, name='api_fechar_caixa'),
     path('venda/<int:venda_id>/cupom/', views.imprimir_cupom, name='pdv_imprimir_cupom'),
