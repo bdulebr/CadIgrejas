@@ -73,20 +73,21 @@
                 <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp API
             </button>
             <button @click="activeTab = 'seguranca'" :class="{'border-red-500 text-red-400': activeTab === 'seguranca', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'seguranca'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
-                <i data-lucide="shield-alert" class="w-4 h-4"></i> Segurança & Controle Mestre
+                <i data-lucide="shield-alert" class="w-4 h-4"></i> Segurança & Controle
+            </button>
+            <button @click="activeTab = 'backup'" :class="{'border-blue-500 text-blue-400': activeTab === 'backup', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'backup'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+                <i data-lucide="database-backup" class="w-4 h-4"></i> Banco de Dados & Backups
             </button>
             <button @click="activeTab = 'instituicao'" :class="{'border-blue-500 text-blue-400': activeTab === 'instituicao', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'instituicao'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
                 <i data-lucide="church" class="w-4 h-4"></i> Instituição
             </button>
-
             <button @click="activeTab = 'links'" :class="{'border-blue-500 text-blue-400': activeTab === 'links', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'links'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
                 <i data-lucide="link" class="w-4 h-4"></i> Links Rápidos
             </button>
-        </div>
-
-                    <button @click="activeTab = 'spider'" :class="{'border-blue-500 text-blue-400': activeTab === 'spider', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'spider'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+            <button @click="activeTab = 'spider'" :class="{'border-blue-500 text-blue-400': activeTab === 'spider', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'spider'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
                 <i data-lucide="spider" class="w-4 h-4"></i> Teste E2E (Spider)
             </button>
+        </div>
 
         <!-- CONTEÚDO DAS ABAS -->
 
@@ -482,6 +483,8 @@
             </div>
         </div>
 
+        <!-- ABA EXCLUSIVA DE BACKUP E NUVEM -->
+        <div x-show="activeTab === 'backup'" style="display: none;" x-transition>
             <!-- Gestão de Backups e Nuvem -->
             <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl mb-8">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -569,7 +572,9 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
+        </div>
 
         <!-- ABA 4: INSTITUIÇÃO -->
         <div x-show="activeTab === 'instituicao'" style="display: none;" x-transition>
