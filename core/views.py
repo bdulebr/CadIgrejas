@@ -412,6 +412,9 @@ def sysadmin_dashboard(request):
     spider_logs = SpiderTestLog.objects.all().order_by('-data_execucao')[:10]
     ai_logs = AIEngineerLog.objects.all().order_by('-data_execucao')[:10]
 
+    from core.models import LogWhatsApp
+    logs_whatsapp = LogWhatsApp.objects.all()[:150]
+
     context = {
         'config': config,
         'cpu_percent': cpu_percent,
@@ -431,6 +434,7 @@ def sysadmin_dashboard(request):
         'templates': templates,
         'links_rapidos': links_rapidos,
         'email_logs': email_logs,
+        'logs_whatsapp': logs_whatsapp,
         'backups_db': backups_db,
         'spider_logs': spider_logs,
         'ai_logs': ai_logs
@@ -542,37 +546,65 @@ def sysadmin_reenviar_falhas(request):
 @login_required
 @csrf_exempt
 @requer_permissao('sysadmin', 'editar')
+def sysadmin_salvar_whatsapp(request):
+    if request.method == 'POST':
+        config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
+        config.whatsapp_phone_number_id = request.POST.get('whatsapp_phone_number_id', config.whatsapp_phone_number_id)
+        config.whatsapp_access_token = request.POST.get('whatsapp_access_token', config.whatsapp_access_token)
+
+        # Opcional: pegar também a hora
+        if 'intervalo_reenvio_whatsapp_horas' in request.POST:
+            config.intervalo_reenvio_whatsapp_horas = max(1, int(request.POST.get('intervalo_reenvio_whatsapp_horas', 1)))
+
+        config.save()
+        messages.success(request, "Credenciais e/ou configurações da Meta Cloud API salvas com sucesso.")
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_toggle_whatsapp(request):
     if request.method == 'POST':
         config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
         config.whatsapp_ativo = not config.whatsapp_ativo
         config.save()
         status = "ATIVADO" if config.whatsapp_ativo else "DESATIVADO"
-        messages.warning(request, f"Envios via WhatsApp {status}.")
+        messages.warning(request, f"Master Switch WhatsApp {status}.")
     return redirect('sysadmin_dashboard')
 
 @login_required
 @csrf_exempt
 @requer_permissao('sysadmin', 'editar')
-def sysadmin_salvar_whatsapp(request):
+def sysadmin_reenviar_whatsapp_id(request, log_id):
     if request.method == 'POST':
-        config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
-        config.whatsapp_phone_number_id = request.POST.get('whatsapp_phone_number_id', '')
-        # Only update tokens if they are not empty, allowing partial updates
-        token = request.POST.get('whatsapp_access_token', '').strip()
-        if token:
-            config.whatsapp_access_token = token
+        from intranet.services.whatsapp_service import reenviar_whatsapp_falho
+        sucesso, msg = reenviar_whatsapp_falho(log_id)
+        if sucesso:
+            messages.success(request, msg)
+        else:
+            messages.error(request, msg)
+    return redirect('sysadmin_dashboard')
 
-        verify_token = request.POST.get('whatsapp_verify_token', '').strip()
-        if verify_token:
-            config.whatsapp_verify_token = verify_token
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
+def sysadmin_reenviar_whatsapp_falhas(request):
+    if request.method == 'POST':
+        from intranet.services.whatsapp_service import reenviar_whatsapp_falho
+        from core.models import LogWhatsApp
+        falhas = LogWhatsApp.objects.filter(status='falha').exclude(corpo_json__isnull=True).exclude(corpo_json__exact='')
+        if not falhas.exists():
+            messages.info(request, "Não há mensagens de WhatsApp com falha elegíveis para reenvio.")
+            return redirect('sysadmin_dashboard')
 
-        app_secret = request.POST.get('whatsapp_app_secret', '').strip()
-        if app_secret:
-            config.whatsapp_app_secret = app_secret
+        sucessos = 0
+        erros = 0
+        for log in falhas:
+            suc, _ = reenviar_whatsapp_falho(log.id)
+            if suc: sucessos += 1
+            else: erros += 1
 
-        config.save()
-        messages.success(request, "Credenciais do WhatsApp Cloud API salvas com sucesso.")
+        messages.success(request, f"Reenvio de WhatsApp em lote concluído: {sucessos} enviados, {erros} ainda com falha.")
     return redirect('sysadmin_dashboard')
 
 @login_required

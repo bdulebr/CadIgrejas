@@ -27,6 +27,7 @@ from django.db.models import Q
 # Serviços externos
 from intranet.services.google_calendar import criar_evento_escala
 from intranet.services.gmail_service import enviar_email_html
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 from .pdf_generator import gerar_pdf_competencia
 
 import openpyxl
@@ -360,6 +361,12 @@ def salvar_slot_escala(request, comp_id):
                         'departamento_logo': '',
                         'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
                     })
+                    if getattr(membro, 'telefone', None):
+                        enviar_whatsapp_template(membro.telefone, "escala_atualizada.txt", {
+                            'nome': membro.first_name,
+                            'departamento': comp.departamento.nome,
+                            'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                        })
             messages.success(request, 'Slot salvo com sucesso.')
         except IntegrityError:
             messages.error(request, 'Conflito! A mesma pessoa já está alocada neste exato dia/horário.')
@@ -393,6 +400,15 @@ def deletar_slot_escala(request, escala_id):
                 'horario_fim': horario_fim,
                 'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
             })
+            if getattr(membro, 'telefone', None):
+                enviar_whatsapp_template(membro.telefone, "escala_cancelada.txt", {
+                    'nome': membro.first_name,
+                    'departamento': departamento,
+                    'data': data_escala,
+                    'horario_inicio': horario_inicio,
+                    'horario_fim': horario_fim,
+                    'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                })
 
     messages.success(request, 'Slot removido.')
     return redirect('editor_escala_manual', comp_id=comp_id)
@@ -427,6 +443,13 @@ def publicar_competencia(request, comp_id):
                 'horario_fim': "Vários",
                 'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
             })
+            if getattr(membro, 'telefone', None):
+                enviar_whatsapp_template(membro.telefone, "nova_escala.txt", {
+                    'nome': membro.first_name,
+                    'departamento': comp.departamento.nome,
+                    'data': comp.mes_ano,
+                    'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                })
 
     messages.success(request, f'A Escala de {comp.mes_ano} foi publicada e emails enviados!')
     return redirect('painel_escalas')

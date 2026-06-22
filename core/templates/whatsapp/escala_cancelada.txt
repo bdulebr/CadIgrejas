@@ -1,0 +1,4 @@
+Olá {{ nome }}. Informamos que o seu slot na escala do departamento *{{ departamento }}* foi CANCELADO.
+Data: {{ data }} ({{ horario_inicio }} às {{ horario_fim }}).
+Acesse o painel para mais informações:
+{{ link_painel }}

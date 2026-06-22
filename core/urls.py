@@ -57,6 +57,10 @@ urlpatterns = [
     path('sysadmin/email/reenviar/<int:log_id>/', views.sysadmin_reenviar_email_id, name='sysadmin_reenviar_email_id'),
     path('sysadmin/email/reenviar-falhas/', views.sysadmin_reenviar_falhas, name='sysadmin_reenviar_falhas'),
 
+    # Motor de WhatsApp
+    path('sysadmin/whatsapp/reenviar/<int:log_id>/', views.sysadmin_reenviar_whatsapp_id, name='sysadmin_reenviar_whatsapp_id'),
+    path('sysadmin/whatsapp/reenviar-falhas/', views.sysadmin_reenviar_whatsapp_falhas, name='sysadmin_reenviar_whatsapp_falhas'),
+
     # Links Rápidos
     path('sysadmin/links/salvar/', views.sysadmin_link_salvar, name='sysadmin_link_salvar'),
     path('sysadmin/links/<int:link_id>/deletar/', views.sysadmin_link_deletar, name='sysadmin_link_deletar'),

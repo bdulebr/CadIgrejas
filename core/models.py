@@ -204,6 +204,7 @@ class ConfiguracaoSistema(models.Model):
 
     # API WhatsApp (Meta Cloud)
     whatsapp_ativo = models.BooleanField(default=False, help_text="Master switch. Se falso, nenhum WhatsApp será disparado.")
+    intervalo_reenvio_whatsapp_horas = models.IntegerField(default=1, help_text="Intervalo automático (em horas) para tentar reenviar whatsapps que falharam.")
     whatsapp_phone_number_id = models.CharField(max_length=100, null=True, blank=True, help_text="ID do Número de Telefone (Meta Cloud API)")
     whatsapp_access_token = models.CharField(max_length=500, null=True, blank=True, help_text="Token de Acesso Permanente (Meta Cloud API)")
     whatsapp_verify_token = models.CharField(max_length=100, null=True, blank=True, help_text="Verify Token (Webhook Challenge)")
@@ -302,6 +303,30 @@ class EmailLog(models.Model):
 
     def __str__(self):
         return f"[{self.get_status_display()}] {self.assunto} -> {self.destinatario}"
+
+
+class LogWhatsApp(models.Model):
+    STATUS_CHOICES = [
+        ('enviado', 'Enviado'),
+        ('pendente', 'Pendente'),
+        ('falha', 'Falha ao Enviar'),
+    ]
+
+    destinatario_numero = models.CharField(max_length=30)
+    template_usado = models.CharField(max_length=150, help_text="Nome do template na Meta ou tipo de envio")
+    corpo_json = models.TextField(blank=True, null=True, help_text="Payload original em JSON para reenvio exato")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
+    qtd_reenvios = models.IntegerField(default=0, help_text="Quantas vezes o sistema tentou reenviar")
+    data_envio = models.DateTimeField(auto_now_add=True)
+    erro_mensagem = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Log de WhatsApp'
+        verbose_name_plural = 'Logs de WhatsApp'
+        ordering = ['-data_envio']
+
+    def __str__(self):
+        return f"[{self.get_status_display()}] {self.template_usado} -> {self.destinatario_numero}"
 
 
 class DatabaseBackup(models.Model):

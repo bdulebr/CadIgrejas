@@ -361,9 +361,15 @@
 
                     <form method="POST" action="{% url 'sysadmin_salvar_whatsapp' %}" class="grid grid-cols-1 gap-4">
                         {% csrf_token %}
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 mb-1">Phone Number ID (ID do Telefone)</label>
-                            <input type="text" name="whatsapp_phone_number_id" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-green-500 text-sm" value="{{ config.whatsapp_phone_number_id|default:'' }}">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Phone Number ID (ID do Telefone)</label>
+                                <input type="text" name="whatsapp_phone_number_id" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-green-500 text-sm" value="{{ config.whatsapp_phone_number_id|default:'' }}">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Intervalo CRON (h)</label>
+                                <input type="number" name="intervalo_reenvio_whatsapp_horas" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-green-500 text-sm" min="1" value="{{ config.intervalo_reenvio_whatsapp_horas|default:'1' }}">
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-400 mb-1">Permanent Access Token (Bearer Token)</label>
@@ -385,6 +391,98 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Tabela de Logs do WhatsApp -->
+            <div class="mt-8 bg-gray-900/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
+                <div class="p-6 border-b border-white/5 flex justify-between items-center bg-black/20">
+                    <div>
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="message-square" class="text-green-500"></i> Logs do WhatsApp
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-1">Histórico dos últimos envios via API Oficial da Meta.</p>
+                    </div>
+                    <div>
+                        <form method="POST" action="{% url 'sysadmin_reenviar_whatsapp_falhas' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm text-sm flex items-center gap-2 transition-colors">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reenviar Todas as Falhas
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="text-xs text-gray-400 uppercase bg-black/40 sticky top-0 z-10 backdrop-blur-md">
+                            <tr>
+                                <th class="px-6 py-4">Data/Hora</th>
+                                <th class="px-6 py-4">Template/Tipo</th>
+                                <th class="px-6 py-4">Destinatário</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4">Erro/Retentativas</th>
+                                <th class="px-6 py-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% for log in logs_whatsapp %}
+                            <tr class="hover:bg-white/5 transition-colors group">
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-400 text-xs">
+                                    {{ log.data_envio|date:"d/m/Y H:i:s" }}
+                                </td>
+                                <td class="px-6 py-4 font-medium text-white truncate max-w-[200px]" title="{{ log.template_usado }}">
+                                    {{ log.template_usado|truncatechars:35 }}
+                                </td>
+                                <td class="px-6 py-4 truncate max-w-[150px]">
+                                    {{ log.destinatario_numero }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if log.status == 'enviado' %}
+                                        <span class="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-[10px] font-bold uppercase">ENVIADO</span>
+                                    {% elif log.status == 'pendente' %}
+                                        <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 w-max">
+                                            <i data-lucide="loader" class="w-3 h-3 animate-spin"></i> PENDENTE
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-[10px] font-bold uppercase">FALHA</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-[10px] text-gray-400 flex flex-col gap-1 max-w-[300px]">
+                                    {% if log.erro_mensagem %}
+                                        <span class="text-red-400 font-mono break-words line-clamp-2" title="{{ log.erro_mensagem }}">{{ log.erro_mensagem }}</span>
+                                    {% else %}
+                                        <span>-</span>
+                                    {% endif %}
+                                    {% if log.qtd_reenvios > 0 %}
+                                        <span class="text-blue-400">Reenvios: {{ log.qtd_reenvios }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    {% if log.status == 'falha' and log.corpo_json %}
+                                    <form method="POST" action="{% url 'sysadmin_reenviar_whatsapp_id' log.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="p-2 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded transition-colors group-hover:opacity-100 opacity-50" title="Tentar Reenviar">
+                                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                    {% elif log.status == 'falha' and not log.corpo_json %}
+                                    <span class="text-red-500/50 text-[10px] uppercase font-bold" title="O JSON foi perdido. Impossível reenviar.">FALHA ANTIGA</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                    <div class="flex flex-col items-center justify-center gap-3">
+                                        <i data-lucide="ghost" class="w-8 h-8 opacity-50"></i>
+                                        <p>Nenhum log de WhatsApp registrado ainda.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
