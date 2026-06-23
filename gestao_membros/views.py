@@ -742,6 +742,20 @@ def excluir_membro(request, membro_id):
     return redirect('painel_membros')
 
 @login_required
+def salvar_instrucoes_escala(request, dep_id):
+    dep = get_object_or_404(Departamento, id=dep_id)
+    if not (is_sysadmin_ou_lider_global(request.user) or request.user.departamentos_liderados.filter(id=dep.id).exists()):
+        return HttpResponseForbidden("Sem permissão.")
+
+    if request.method == 'POST':
+        texto = request.POST.get('instrucoes_padrao_escala', '').strip()
+        dep.instrucoes_padrao_escala = texto
+        dep.save()
+        messages.success(request, f'Instruções de escala salvas com sucesso para o departamento {dep.nome}.')
+
+    return redirect('detalhes_departamento', dep_id=dep_id)
+
+@login_required
 def salvar_configuracao_slot(request, dep_id):
     dep = get_object_or_404(Departamento, id=dep_id)
     if not (is_sysadmin_ou_lider_global(request.user) or request.user.departamentos_liderados.filter(id=dep.id).exists()):

@@ -29,6 +29,7 @@ urlpatterns = [
     path('departamentos/detalhes/<int:dep_id>/', views.detalhes_departamento, name='detalhes_departamento'),
     path('departamentos/excluir/<int:dep_id>/', views.excluir_departamento, name='excluir_departamento'),
     path('departamento/<int:dep_id>/atribuir-lideranca/', views.atribuir_lideranca, name='atribuir_lideranca'),
+    path('departamentos/<int:dep_id>/salvar-instrucoes-escala/', views.salvar_instrucoes_escala, name='salvar_instrucoes_escala'),
     path('departamento/<int:dep_id>/salvar-slot/', views.salvar_configuracao_slot, name='salvar_configuracao_slot'),
     path('departamento/remover-slot/<int:config_id>/', views.remover_configuracao_slot, name='remover_configuracao_slot'),
     path('membros/', views.painel_membros, name='painel_membros'),

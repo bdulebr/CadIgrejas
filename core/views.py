@@ -431,6 +431,10 @@ def sysadmin_dashboard(request):
     from core.models import LogWhatsApp
     logs_whatsapp = LogWhatsApp.objects.all()[:150]
 
+    from core.models import LogAuditoria, AlertaInvasao
+    logs_auditoria = LogAuditoria.objects.all().order_by('-data_hora')[:50]
+    alertas_invasao = AlertaInvasao.objects.all().select_related('membro').order_by('-data_hora')[:50]
+
     context = {
         'config': config,
         'cache_motor': cache_motor,
@@ -438,12 +442,12 @@ def sysadmin_dashboard(request):
         'is_redis_ativo': is_redis_ativo,
         'cpu_percent': cpu_percent,
         'ram_percent': ram_percent,
-        'ram_used_gb': ram_used_gb,
-        'ram_total_gb': ram_total_gb,
+        'ram_used_gb': round(ram_used_gb, 2),
+        'ram_total_gb': round(ram_total_gb, 2),
         'disk_percent': disk_percent,
-        'disk_free_gb': disk_free_gb,
-        'disk_total_gb': disk_total_gb,
-        'db_size_mb': db_size_mb,
+        'disk_free_gb': round(disk_free_gb, 2),
+        'disk_total_gb': round(disk_total_gb, 2),
+        'db_size_mb': round(db_size_mb, 2),
         'os_info': os_info,
         'hostname': hostname,
         'local_ip': local_ip,
@@ -456,7 +460,9 @@ def sysadmin_dashboard(request):
         'logs_whatsapp': logs_whatsapp,
         'backups_db': backups_db,
         'spider_logs': spider_logs,
-        'ai_logs': ai_logs
+        'ai_logs': ai_logs,
+        'logs_auditoria': logs_auditoria,
+        'alertas_invasao': alertas_invasao
     }
     return render(request, 'core/pages/sysadmin_dashboard.html', context)
 
@@ -773,6 +779,19 @@ def sysadmin_salvar_igreja(request):
         config.save()
         messages.success(request, "Informações da Igreja atualizadas com sucesso!")
 
+    return redirect('sysadmin_dashboard')
+
+@login_required
+@csrf_exempt
+@requer_permissao('sysadmin', 'editar')
+def sysadmin_salvar_alertas_invasao(request):
+    if request.method == 'POST':
+        config, _ = ConfiguracaoSistema.objects.get_or_create(id=1)
+        config.alerta_invasao_ativo = request.POST.get('alerta_invasao_ativo') == 'on'
+        config.whatsapp_admin_alertas = request.POST.get('whatsapp_admin_alertas', config.whatsapp_admin_alertas)
+        config.email_admin_alertas = request.POST.get('email_admin_alertas', config.email_admin_alertas)
+        config.save()
+        messages.success(request, "Configurações de Alertas de Segurança atualizadas!")
     return redirect('sysadmin_dashboard')
 
 from .models import LinkRapido

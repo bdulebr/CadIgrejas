@@ -50,3 +50,56 @@ def enviar_notificacao_real_time(usuario, titulo, mensagem, link_acao=None):
         )
 
     return notif
+
+def disparar_alerta_invasao_403(alerta_id):
+    from core.models import AlertaInvasao, ConfiguracaoSistema
+    from intranet.services.gmail_service import enviar_email_html
+    from intranet.services.whatsapp_service import enviar_whatsapp_template
+    from django.template.loader import render_to_string
+    import os
+
+    try:
+        alerta = AlertaInvasao.objects.get(id=alerta_id)
+        config = ConfiguracaoSistema.objects.get(id=1)
+
+        if not config.alerta_invasao_ativo:
+            return
+
+        nome = alerta.membro.get_full_name() if alerta.membro else "Visitante Anônimo"
+        email_membro = alerta.membro.email if alerta.membro else "N/A"
+        telefone = alerta.membro.telefone_celular if alerta.membro else "N/A"
+        departamentos = ", ".join([d.nome for d in alerta.membro.departamentos.all()]) if alerta.membro else "N/A"
+
+        contexto = {
+            'is_membro': bool(alerta.membro),
+            'nome': nome,
+            'email_membro': email_membro,
+            'telefone': telefone,
+            'departamentos': departamentos,
+            'data_hora': alerta.data_hora.strftime("%d/%m/%Y %H:%M:%S"),
+            'ip': alerta.ip or "Desconhecido",
+            'rota': alerta.caminho_url
+        }
+
+        # Enviar Email se configurado
+        if config.email_admin_alertas:
+            html_content = render_to_string('core/emails/alerta_invasao_403.html', contexto)
+            # Envia assíncrono via Celery/Thread local do gmail_service, assumindo que enviar_email_html joga pra DB de logs
+            enviar_email_html(
+                destinatario=config.email_admin_alertas,
+                assunto="🚨 ALERTA: Tentativa de Invasão (Acesso Negado 403)",
+                html_content=html_content
+            )
+
+        # Enviar WhatsApp
+        if config.whatsapp_admin_alertas and config.whatsapp_ativo:
+            txt_content = render_to_string('core/whatsapp/alerta_invasao_403.txt', contexto)
+            # Template simples via WhatsApp Service
+            enviar_whatsapp_template(
+                numero_destino=config.whatsapp_admin_alertas,
+                mensagem=txt_content
+            )
+
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Erro ao disparar alerta 403: {e}")

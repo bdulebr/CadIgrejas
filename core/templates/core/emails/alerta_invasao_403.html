@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>🚨 Alerta de Segurança (Acesso Negado 403) 🚨</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <tr>
+            <td style="background-color: #ef4444; color: #ffffff; text-align: center; padding: 20px;">
+                <h1 style="margin: 0; font-size: 24px;">🚨 Tentativa de Invasão Detectada 🚨</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 30px;">
+                <p style="font-size: 16px; color: #374151; margin-top: 0;">Olá, Administrador,</p>
+                <p style="font-size: 16px; color: #374151;">O sistema detectou uma tentativa de acesso a uma área restrita (Erro 403). Abaixo estão os detalhes coletados:</p>
+
+                <table width="100%" cellpadding="10" cellspacing="0" style="margin-top: 20px; background-color: #fee2e2; border-radius: 6px; border: 1px solid #fca5a5;">
+                    {% if is_membro %}
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b; width: 30%;">Nome:</td>
+                        <td style="color: #7f1d1d;">{{ nome }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b;">E-mail:</td>
+                        <td style="color: #7f1d1d;">{{ email_membro }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b;">Telefone:</td>
+                        <td style="color: #7f1d1d;">{{ telefone }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b;">Departamento(s):</td>
+                        <td style="color: #7f1d1d;">{{ departamentos }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b; width: 30%;">Usuário:</td>
+                        <td style="color: #7f1d1d;">Visitante (Não Autenticado)</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b;">Data/Hora:</td>
+                        <td style="color: #7f1d1d;">{{ data_hora }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b;">IP Origem:</td>
+                        <td style="color: #7f1d1d;">{{ ip }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; color: #991b1b;">Rota Tentada:</td>
+                        <td style="color: #7f1d1d; font-family: monospace;">{{ rota }}</td>
+                    </tr>
+                </table>
+
+                <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
+                    Esta é uma notificação automática do seu Painel Sysadmin. Para investigar, acesse a aba "Histórico de Invasões" no dashboard.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

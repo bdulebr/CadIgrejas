@@ -19,9 +19,14 @@ class CoreConfig(AppConfig):
 
         # Inicia o CRON apenas se não for comando de migração/shell para evitar duplicidades
         import sys
-        if 'runserver' in sys.argv or 'gunicorn' in sys.argv or 'waitress' in sys.argv:
+
+        # Considera os principais servidores WSGI/ASGI e o dev server do Django
+        is_server = any(x in sys.argv for x in ['runserver', 'gunicorn', 'waitress', 'daphne', 'uvicorn', 'hupper'])
+
+        if is_server:
             try:
                 from core.scheduler import start_scheduler
                 start_scheduler()
             except Exception as e:
-                print(f"Erro ao iniciar o APScheduler: {e}")
+                import logging
+                logging.getLogger(__name__).error(f"Erro ao iniciar o APScheduler: {e}")

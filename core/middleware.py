@@ -112,6 +112,26 @@ _thread_locals = threading.local()
 def get_current_request():
     return getattr(_thread_locals, 'request', None)
 
+def _registrar_invasao(request):
+    try:
+        from core.models import ConfiguracaoSistema, AlertaInvasao
+        config = ConfiguracaoSistema.objects.get(id=1)
+        if config.alerta_invasao_ativo:
+            ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'Desconhecido'))
+            if ',' in ip: ip = ip.split(',')[0]
+            membro = request.user if request.user.is_authenticated else None
+            alerta = AlertaInvasao.objects.create(
+                membro=membro,
+                ip=ip,
+                caminho_url=request.path[:250],
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:250]
+            )
+            import threading
+            from core.utils_notifications import disparar_alerta_invasao_403
+            threading.Thread(target=disparar_alerta_invasao_403, args=(alerta.id,)).start()
+    except Exception as e:
+        pass
+
 class RequestMiddleware:
     """
     Middleware para capturar o request globalmente por thread.
@@ -192,9 +212,13 @@ class AIAutoEngineerMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        # INTERCEPTA ERROS HTTP QUE NÃO GERAM EXCEPTION (400 e 403)
-        if response.status_code in [400, 403]:
-            # Ignora rotas de login que dão 400 por senha errada
+        # INTERCEPTA ERRO 403 ESPECIFICAMENTE
+        if response.status_code == 403:
+            _registrar_invasao(request)
+            return render(request, 'core/pages/eversinho_403.html', status=403)
+
+        # INTERCEPTA ERROS HTTP QUE NÃO GERAM EXCEPTION (400)
+        if response.status_code == 400:
             if '/login/' not in request.path:
                 from core.models import AIEngineerLog
                 import logging
@@ -220,9 +244,14 @@ class AIAutoEngineerMiddleware:
         from django.http import Http404
         from django.core.exceptions import PermissionDenied
 
-        # Filtro Inteligente de Erros 404 (Ignora 404 para não acionar a IA à toa quando dados não existem)
+        # Filtro Inteligente de Erros 404
         if isinstance(exception, Http404):
             return None
+
+        # Filtro Inteligente de Erro 403 (Permissão Negada)
+        if isinstance(exception, PermissionDenied):
+            _registrar_invasao(request)
+            return render(request, 'core/pages/eversinho_403.html', status=403)
 
         # A fatal bug happened! Put it in the queue for the AI Daemon.
         from core.models import AIEngineerLog

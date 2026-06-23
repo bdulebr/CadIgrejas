@@ -1,0 +1,18 @@
+🚨 *TENTATIVA DE INVASÃO (403)* 🚨
+
+O sistema bloqueou um acesso não autorizado. Detalhes:
+
+{% if is_membro %}
+👤 *Nome:* {{ nome }}
+📧 *Email:* {{ email_membro }}
+📱 *Telefone:* {{ telefone }}
+🏢 *Departamento:* {{ departamentos }}
+{% else %}
+👻 *Visitante Anônimo*
+{% endif %}
+
+🕒 *Data:* {{ data_hora }}
+💻 *IP Origem:* {{ ip }}
+📍 *Rota Alvo:* {{ rota }}
+
+Acesse o Sysadmin para mais opções disciplinares.

@@ -170,5 +170,12 @@
         </tbody>
     </table>
 
+    {% if competencia.departamento.instrucoes_padrao_escala %}
+    <div style="margin-top: 20px; padding: 10px; border: 1px dashed #3b82f6; background-color: #f0f7ff;">
+        <p style="font-weight: bold; margin-top: 0; margin-bottom: 5px; font-size: 10pt; color: #3b82f6; text-transform: uppercase;">INSTRUÇÕES DA LIDERANÇA</p>
+        <div style="font-size: 9pt; color: #333; white-space: pre-wrap;">{{ competencia.departamento.instrucoes_padrao_escala|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+
 </body>
 </html>

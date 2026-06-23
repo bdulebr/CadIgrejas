@@ -181,6 +181,24 @@ class LogAuditoria(models.Model):
             self.hash_atual = hashlib.sha256(dados_str.encode()).hexdigest()
         super().save(*args, **kwargs)
 
+
+class AlertaInvasao(models.Model):
+    membro = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True, blank=True, related_name='tentativas_invasao')
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    caminho_url = models.CharField(max_length=255)
+    data_hora = models.DateTimeField(auto_now_add=True)
+    user_agent = models.CharField(max_length=255, null=True, blank=True)
+    resolvido = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Alerta de Invasão'
+        verbose_name_plural = 'Alertas de Invasão'
+        ordering = ['-data_hora']
+
+    def __str__(self):
+        nome = self.membro.get_full_name() if self.membro else f"Visitante (IP: {self.ip})"
+        return f"Invasão em {self.caminho_url} por {nome}"
+
 class ConfiguracaoSistema(models.Model):
     is_maintenance = models.BooleanField(default=False)
     ultima_atualizacao = models.DateTimeField(auto_now=True)
@@ -208,6 +226,11 @@ class ConfiguracaoSistema(models.Model):
     whatsapp_access_token = models.CharField(max_length=500, null=True, blank=True, help_text="Token de Acesso Permanente (Meta Cloud API)")
     whatsapp_verify_token = models.CharField(max_length=100, null=True, blank=True, help_text="Verify Token (Webhook Challenge)")
     whatsapp_app_secret = models.CharField(max_length=100, null=True, blank=True, help_text="App Secret (Webhook HMAC SHA256)")
+
+    # Alertas de Segurança / Invasão (Erro 403)
+    alerta_invasao_ativo = models.BooleanField(default=False, help_text="Se ativado, envia um alerta ao administrador quando alguém tentar acessar rotas sem permissão (Erro 403).")
+    whatsapp_admin_alertas = models.CharField(max_length=20, default='5513991346297', help_text="Número de WhatsApp do administrador que receberá os alertas (Apenas números, com DDI e DDD).")
+    email_admin_alertas = models.EmailField(null=True, blank=True, help_text="Email do administrador que receberá os alertas de invasão.")
 
     class Meta:
         verbose_name = 'Configuração do Sistema'

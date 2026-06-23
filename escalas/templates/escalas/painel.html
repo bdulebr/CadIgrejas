@@ -16,28 +16,40 @@
 {% block title %}Escalas - PVE{% endblock title %}
 
 {% block content %}
-<div class="min-h-screen bg-transparent p-4 md:p-8">
+<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ aba_ativa: 'gestao' }">
     <div class="max-w-6xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Gestão de Escalas</h1>
                 <p class="text-gray-300 font-medium">Controle de meses e grupos de escalas (Competências).</p>
             </div>
             <div class="flex flex-wrap gap-3 mt-4 md:mt-0">
                 <a href="{% url 'checkins_hoje_desktop' %}" class="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(22,163,74,0.4)] border border-green-500 flex items-center gap-2">
-                    <i data-lucide="check-square" class="w-4 h-4 text-green-200"></i> Painel de Check-ins Hoje
+                    <i data-lucide="check-square" class="w-4 h-4 text-green-200"></i> Check-ins Hoje
                 </a>
                 {% if request.user.nivel_hierarquico == 'super_admin' or request.user.is_superuser %}
                 <a href="{% url 'gerenciar_cultos' %}" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg backdrop-blur-md border border-indigo-500 flex items-center gap-2">
-                    <i data-lucide="settings" class="w-4 h-4 text-indigo-200"></i> Configurar Cultos/Eventos
+                    <i data-lucide="settings" class="w-4 h-4 text-indigo-200"></i> Eventos Globais
                 </a>
                 {% endif %}
-                <a href="{% url 'dashboard' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg backdrop-blur-md border border-gray-600">Voltar ao Painel</a>
+                <a href="{% url 'dashboard' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg backdrop-blur-md border border-gray-600">Voltar</a>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- ABAS NAVEGAÇÃO -->
+        <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700/50 pb-2">
+            <button @click="aba_ativa = 'gestao'" :class="aba_ativa === 'gestao' ? 'bg-blue-600 text-white border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-gray-800/60 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white'" class="px-5 py-2.5 rounded-xl font-bold border transition-all flex items-center gap-2">
+                <i data-lucide="calendar" class="w-4 h-4"></i> Escalas Mensais
+            </button>
+            <button @click="aba_ativa = 'ocr'" :class="aba_ativa === 'ocr' ? 'bg-purple-600 text-white border-purple-500 shadow-[0_0_15px_rgba(147,51,234,0.4)]' : 'bg-gray-800/60 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white'" class="px-5 py-2.5 rounded-xl font-bold border transition-all flex items-center gap-2">
+                <i data-lucide="scan-text" class="w-4 h-4"></i> Importar PDF / Excel (IA)
+            </button>
+        </div>
 
+        <!-- CONTEÚDO DAS ABAS -->
+
+        <!-- ABA: GESTÃO -->
+        <div x-show="aba_ativa === 'gestao'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Nova Competência -->
             <div class="bg-gray-900/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] border border-gray-700/50 h-fit relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
@@ -65,42 +77,6 @@
 
                     <button type="submit" class="w-full py-4 mt-6 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]">
                         CRIAR E EDITAR ESCALAS
-                    </button>
-                </form>
-            </div>
-
-
-            <!-- Importar via OCR -->
-            <div class="bg-gray-900/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] border border-gray-700/50 h-fit relative overflow-hidden mt-6">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-pink-500"></div>
-
-                <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
-                    <i data-lucide="scan-text" class="w-5 h-5 text-purple-400"></i>
-                    IA OCR Escalas
-                </h3>
-
-                <form method="POST" action="{% url 'importar_escala_ocr' %}" enctype="multipart/form-data" class="space-y-4">
-                    {% csrf_token %}
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mês de Referência da Escala</label>
-                        <input type="month" name="mes_ano_input" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-white font-mono">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Departamento</label>
-                        <select name="departamento_id" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-white">
-                            {% for dept in departamentos %}
-                            <option value="{{ dept.id }}">{{ dept.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Arquivo PDF, CSV ou Excel</label>
-                        <input type="file" name="arquivo_escala" accept=".pdf,.xlsx,.xls,.csv" required class="w-full px-4 py-2 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-gray-300">
-                    </div>
-                    <button type="submit" class="w-full py-3 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center justify-center gap-2">
-                        ✨ GERAR ESCALA
                     </button>
                 </form>
             </div>
@@ -148,7 +124,7 @@
                                     </td>
                                     <td class="px-6 py-4 text-right flex justify-end gap-2 items-center h-full">
                                         <a href="{% url 'editor_escala_manual' comp.id %}" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600/20 hover:bg-blue-600 border border-blue-500/50 hover:border-blue-500 text-blue-300 hover:text-white font-bold rounded-lg transition-all text-xs">
-                                            {% if comp.status == 'rascunho' %}EDITAR ESCALAS{% else %}VER E EDITAR{% endif %}
+                                            {% if comp.status == 'rascunho' %}EDITAR ESCALAS{% else %}VER ESCALAS{% endif %}
                                         </a>
                                         {% if comp.pdf_gerado %}
                                         <a href="{{ comp.pdf_gerado.url }}" target="_blank" class="inline-flex items-center justify-center px-3 py-2 bg-gray-800 border border-gray-600 hover:bg-green-600 hover:border-green-500 text-gray-300 hover:text-white font-bold rounded-lg transition-all text-xs">
@@ -173,8 +149,54 @@
                     </div>
                 </div>
             </div>
-
         </div>
+
+        <!-- ABA: OCR (Inteligência Artificial) -->
+        <div x-cloak x-show="aba_ativa === 'ocr'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
+            <!-- Importar via OCR -->
+            <div class="bg-gray-900/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] border border-gray-700/50 max-w-2xl mx-auto relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-pink-500"></div>
+
+                <h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-2">
+                    <i data-lucide="scan-text" class="w-6 h-6 text-purple-400"></i>
+                    Importador Inteligente de Escalas
+                </h3>
+                <p class="text-gray-400 mb-6 text-sm">Se o seu departamento possui uma escala pronta em Excel (.xlsx), CSV ou um arquivo PDF de listagem, nossa IA fará o escaneamento e vai alocar todo mundo no sistema automaticamente (Requer que os nomes estejam corretos).</p>
+
+                <form method="POST" action="{% url 'importar_escala_ocr' %}" enctype="multipart/form-data" class="space-y-5">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mês de Referência</label>
+                            <input type="month" name="mes_ano_input" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Departamento</label>
+                            <select name="departamento_id" required class="w-full px-4 py-3 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-950/60 text-white">
+                                {% for dept in departamentos %}
+                                <option value="{{ dept.id }}">{{ dept.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Arquivo Base (PDF, XLSX, CSV)</label>
+                        <div class="relative w-full h-32 border-2 border-dashed border-purple-500/50 hover:border-purple-500 bg-purple-900/10 hover:bg-purple-900/20 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors group">
+                            <input type="file" name="arquivo_escala" accept=".pdf,.xlsx,.xls,.csv" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <i data-lucide="upload-cloud" class="w-8 h-8 text-purple-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-sm text-gray-300 font-bold">Clique ou arraste o arquivo aqui</p>
+                            <p class="text-xs text-purple-400/80 mt-1">PDFs legíveis, XLSX ou CSV (.csv separado por ;)</p>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-lg rounded-xl transition-all shadow-[0_0_20px_rgba(168,85,247,0.5)] flex items-center justify-center gap-2">
+                        ✨ MÁGICA: GERAR ESCALA AUTOMÁTICA
+                    </button>
+                </form>
+            </div>
+        </div>
+
     </div>
 </div>
 <script>

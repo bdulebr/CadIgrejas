@@ -45,6 +45,16 @@ def ler_assinar_termo(request):
         else:
             ip = request.META.get('REMOTE_ADDR')
 
+        user_agent = request.META.get('HTTP_USER_AGENT', 'Intranet IPVE')
+        data_atual = timezone.now()
+
+        historico = [{
+            'data': data_atual.isoformat(),
+            'acao': 'aceito',
+            'ip': ip,
+            'user_agent': user_agent
+        }]
+
         registro = RegistroAceiteLGPD.objects.create(
             membro=request.user,
             nome_completo=request.user.get_full_name() or request.user.username,
@@ -52,9 +62,10 @@ def ler_assinar_termo(request):
             cpf=request.user.cpf,
             termo=termo_ativo,
             status='aceito',
-            data_resposta=timezone.now(),
+            data_resposta=data_atual,
             ip_registro=ip,
-            user_agent=request.META.get('HTTP_USER_AGENT', 'Intranet IPVE')
+            user_agent=user_agent,
+            historico_alteracoes=historico
         )
 
         # Gerar PDF via xhtml2pdf
@@ -82,6 +93,23 @@ def ler_assinar_termo(request):
             pdf_bytes = None
         registro.save()
 
+        # Integração PV Drive (Regra 4)
+        if registro.arquivo_pdf:
+            from midia_lgpd.models import PastaVirtual, ArquivoMidia
+            pasta_destino, _ = PastaVirtual.objects.get_or_create(
+                dono_membro=request.user,
+                tipo_pasta='usuario',
+                defaults={'nome': f'Pasta de {request.user.get_full_name()}', 'is_sistema': True}
+            )
+            ArquivoMidia.objects.create(
+                titulo=f'Comprovante LGPD - Aceito - {registro.nome_completo}',
+                arquivo=registro.arquivo_pdf,
+                pasta=pasta_destino,
+                dono_membro=request.user,
+                tamanho_bytes=registro.arquivo_pdf.size,
+                extensao='pdf'
+            )
+
         if pdf_bytes:
             enviar_email_html(
                 destinatario=request.user.email,
@@ -93,7 +121,7 @@ def ler_assinar_termo(request):
                 anexos=[(f"Termo_LGPD_{request.user.first_name}.pdf", pdf_bytes, 'application/pdf')]
             )
 
-        messages.success(request, 'Obrigado! O Termo de Uso de Imagem e LGPD foi assinado digitalmente. Uma cópia em PDF foi enviada para o seu e-mail.')
+        messages.success(request, 'Obrigado! O Termo de Uso de Imagem e LGPD foi assinado digitalmente. Uma cópia em PDF foi enviada para o seu e-mail e salva no seu Drive Pessoal.')
         return redirect('dashboard')
 
     return render(request, 'midia_lgpd/termo_aceite.html', {

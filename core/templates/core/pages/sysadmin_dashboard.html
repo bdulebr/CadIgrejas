@@ -87,6 +87,9 @@
             <button @click="activeTab = 'spider'" :class="{'border-blue-500 text-blue-400': activeTab === 'spider', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'spider'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
                 <i data-lucide="spider" class="w-4 h-4"></i> Teste E2E (Spider)
             </button>
+            <button @click="activeTab = 'invasoes'" :class="{'border-red-500 text-red-400': activeTab === 'invasoes', 'border-transparent text-gray-500 hover:text-gray-300': activeTab !== 'invasoes'}" class="pb-3 border-b-2 font-bold transition-colors whitespace-nowrap flex items-center gap-2">
+                <i data-lucide="siren" class="w-4 h-4"></i> Histórico de Invasões 403
+            </button>
         </div>
 
         <!-- CONTEÚDO DAS ABAS -->
@@ -540,6 +543,40 @@
                 </form>
             </div>
             {% endif %}
+
+                <!-- Alertas de Invasão (Erro 403) -->
+                <div class="md:col-span-2 bg-gray-900/50 backdrop-blur-md text-white p-6 rounded-2xl border border-white/5 flex flex-col">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2"><i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i> Alerta de Invasão & Acesso Negado (403)</h3>
+                        <p class="text-sm text-gray-400">Notifique os administradores imediatamente (via WhatsApp e E-mail) caso alguém tente acessar rotas protegidas sem permissão.</p>
+                    </div>
+
+                    <form method="POST" action="{% url 'sysadmin_salvar_alertas_invasao' %}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% csrf_token %}
+                        <div class="col-span-1 md:col-span-2 mb-2">
+                            <label class="flex items-center gap-3 cursor-pointer p-4 rounded-xl border {% if config.alerta_invasao_ativo %}bg-green-900/20 border-green-500/50 text-green-400{% else %}bg-gray-800/50 border-gray-600 text-gray-400{% endif %} transition-colors">
+                                <input type="checkbox" name="alerta_invasao_ativo" class="w-5 h-5 rounded focus:ring-green-500" {% if config.alerta_invasao_ativo %}checked{% endif %}>
+                                <div>
+                                    <span class="font-bold block">Monitoramento de Invasões (Ativar Alertas)</span>
+                                    <span class="text-xs opacity-80">Captura IP, localização, membro (se logado) e envia relatórios em tempo real.</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1">WhatsApp para Alertas (Ex: 551399...)</label>
+                            <input type="text" name="whatsapp_admin_alertas" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-red-500 text-sm" value="{{ config.whatsapp_admin_alertas }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1">E-mail para Alertas</label>
+                            <input type="email" name="email_admin_alertas" class="bg-black/40 text-white w-full px-3 py-2 border border-white/10 rounded-lg focus:border-red-500 text-sm" value="{{ config.email_admin_alertas }}">
+                        </div>
+                        <div class="col-span-1 md:col-span-2 mt-2">
+                            <button type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Salvar Configurações de Vigilância
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
                 <!-- Zona de Perigo: Zerar Banco -->
                 <div class="bg-red-950/30 backdrop-blur-md border border-red-900/50 p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
@@ -1003,6 +1040,71 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- ABA DE INVASÕES (403) -->
+        <div x-show="activeTab === 'invasoes'" style="display: none;" x-transition>
+            <div class="bg-gray-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-red-500 flex items-center gap-2"><i data-lucide="siren" class="w-5 h-5"></i> Histórico de Invasões (Erro 403)</h2>
+                        <p class="text-sm text-gray-400 mt-1">Monitoramento de acesso negado. Lista de quem tentou acessar rotas restritas e dados coletados.</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-red-500/10">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-red-900/40 text-xs uppercase font-bold text-red-300">
+                            <tr>
+                                <th class="px-4 py-3">Data/Hora</th>
+                                <th class="px-4 py-3">Usuário/Visitante</th>
+                                <th class="px-4 py-3">IP Origem</th>
+                                <th class="px-4 py-3">Caminho (URL)</th>
+                                <th class="px-4 py-3 text-center">Status</th>
+                                <th class="px-4 py-3 text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% for alerta in alertas_invasao %}
+                            <tr class="hover:bg-red-900/10">
+                                <td class="px-4 py-3 whitespace-nowrap">{{ alerta.data_hora|date:"d/m/Y H:i:s" }}</td>
+                                <td class="px-4 py-3 font-bold {% if alerta.membro %}text-yellow-400{% else %}text-gray-500{% endif %}">
+                                    {% if alerta.membro %}
+                                    <i data-lucide="user-x" class="w-4 h-4 inline-block mr-1"></i> {{ alerta.membro.get_full_name }}
+                                    {% else %}
+                                    <i data-lucide="ghost" class="w-4 h-4 inline-block mr-1"></i> Visitante (Anônimo)
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 font-mono text-xs text-blue-300">{{ alerta.ip|default:"Desconhecido" }}</td>
+                                <td class="px-4 py-3 text-xs text-gray-400 max-w-[200px] truncate" title="{{ alerta.caminho_url }}">{{ alerta.caminho_url }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    {% if alerta.resolvido %}
+                                    <span class="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-bold block w-full">Tratado</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs font-bold block w-full">Alerta Ativo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    {% if alerta.membro %}
+                                    <button onclick="alert('Detalhes Completos:\n\nNome: {{ alerta.membro.get_full_name }}\nEmail: {{ alerta.membro.email }}\nTelefone: {{ alerta.membro.telefone_celular }}\nIP: {{ alerta.ip }}\nTentou acessar: {{ alerta.caminho_url }}\n\nAções sugeridas: advertência verbal ou desligamento na área de membros.')" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded border border-gray-600 text-xs transition-colors flex items-center justify-end gap-1 ml-auto">
+                                        <i data-lucide="eye" class="w-3 h-3"></i> Detalhes
+                                    </button>
+                                    {% else %}
+                                    <button onclick="alert('Detalhes Completos:\n\nVisitante Anônimo\nIP: {{ alerta.ip }}\nUser-Agent: {{ alerta.user_agent|escapejs }}\nTentou acessar: {{ alerta.caminho_url }}')" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded border border-gray-600 text-xs transition-colors flex items-center justify-end gap-1 ml-auto">
+                                        <i data-lucide="eye" class="w-3 h-3"></i> Ver IP
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-gray-500"><i data-lucide="shield-check" class="w-12 h-12 mx-auto mb-2 text-green-500 opacity-50"></i>Nenhuma tentativa de invasão registrada.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
     </div>

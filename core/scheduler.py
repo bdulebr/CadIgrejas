@@ -44,8 +44,36 @@ def reenviar_whatsapp_pendentes_job():
     except Exception as e:
         logger.error(f"Erro no CRON de reenvio de WhatsApp: {e}")
 
+def rotina_diaria_00h():
+    """
+    Job disparado via CRON todos os dias à meia-noite (00:00).
+    """
+    from django.core.management import call_command
+    try:
+        call_command('rotina_meia_noite')
+    except Exception as e:
+        logger.error(f"Erro no CRON de rotina_meia_noite: {e}")
+
+def rotina_diaria_08h():
+    """
+    Job disparado via CRON todos os dias às 08:00 da manhã.
+    """
+    from django.core.management import call_command
+    try:
+        call_command('enviar_lembretes_curso')
+    except Exception as e:
+        logger.error(f"Erro no CRON de enviar_lembretes_curso: {e}")
+
+    try:
+        call_command('avisar_agendamentos')
+    except Exception as e:
+        logger.error(f"Erro no CRON de avisar_agendamentos: {e}")
+
+
 def start_scheduler():
     from core.models import ConfiguracaoSistema
+    # Para usar cron, precisamos importar do triggers
+    from apscheduler.triggers.cron import CronTrigger
 
     scheduler = BackgroundScheduler()
 
@@ -61,7 +89,13 @@ def start_scheduler():
     except Exception:
         pass
 
+    # Jobs Frequentes
     scheduler.add_job(reenviar_emails_pendentes_job, 'interval', hours=intervalo_email, id='reenvio_email', replace_existing=True)
     scheduler.add_job(reenviar_whatsapp_pendentes_job, 'interval', hours=intervalo_wpp, id='reenvio_whatsapp', replace_existing=True)
+
+    # Jobs Diários (CRON)
+    scheduler.add_job(rotina_diaria_00h, CronTrigger(hour=0, minute=0), id='rotina_meia_noite', replace_existing=True)
+    scheduler.add_job(rotina_diaria_08h, CronTrigger(hour=8, minute=0), id='rotina_manha_08h', replace_existing=True)
+
     scheduler.start()
-    logger.info(f"APScheduler Iniciado: Reenvio automático E-mail ({intervalo_email}h) | WhatsApp ({intervalo_wpp}h).")
+    logger.info(f"APScheduler Iniciado: Reenvio automático E-mail ({intervalo_email}h) | WhatsApp ({intervalo_wpp}h). Tarefas diárias 00h e 08h agendadas.")

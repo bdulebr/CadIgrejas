@@ -52,6 +52,7 @@ urlpatterns = [
     path('sysadmin/salvar-env/', views.sysadmin_salvar_env, name='sysadmin_salvar_env'),
     path('sysadmin/deploy/', views.sysadmin_deploy_producao, name='sysadmin_deploy_producao'),
     path('sysadmin/salvar-igreja/', views.sysadmin_salvar_igreja, name='sysadmin_salvar_igreja'),
+    path('sysadmin/salvar-alertas-invasao/', views.sysadmin_salvar_alertas_invasao, name='sysadmin_salvar_alertas_invasao'),
 
     # Motor de E-mail
     path('sysadmin/salvar-config-email/', views.sysadmin_salvar_config_email, name='sysadmin_salvar_config_email'),

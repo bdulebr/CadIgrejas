@@ -3,10 +3,10 @@
 * ARQUIVO: escalas/templates/escalas/editor_manual.html
 * DESCRIÇÃO: Código-fonte do módulo
 * DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
+* VERSÃO: 2.0.0
+* DATA DA ÚLTIMA ALTERAÇÃO: 23/06/2026
 * LOG DE ALTERAÇÕES:
-* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
+* - 23/06/2026: Remoção de modal, adoção de Sidebar Fixa e cliques rápidos.
 -->
 {% extends 'core/base.html' %}
 {% load static %}
@@ -16,13 +16,13 @@
 {% block title %}Painel de Escala - {{ competencia.departamento.nome }}{% endblock title %}
 
 {% block content %}
-<div class="h-[calc(100vh-80px)] flex flex-col p-4 md:p-6 overflow-hidden">
+<div class="h-[calc(100vh-80px)] flex flex-col p-4 md:p-6 overflow-hidden" x-data="{ selectedMemberId: null, selectedMemberName: '', searchTerm: '' }">
     <!-- HEADER -->
     <div class="flex flex-col md:flex-row justify-start items-start md:items-center mb-4 gap-4 md:gap-8 shrink-0">
         <div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white drop-shadow-lg flex items-center gap-3">
                 <a href="{% url 'painel_escalas' %}" class="text-gray-400 hover:text-white transition-colors" title="Voltar"><i data-lucide="arrow-left-circle" class="w-7 h-7"></i></a>
-                Editor Visual: {{ competencia.mes_ano }}
+                Editor Rápido: {{ competencia.mes_ano }}
             </h1>
             <p class="text-gray-300 font-medium ml-10">Departamento: <span class="font-bold text-blue-300">{{ competencia.departamento.nome }}</span></p>
         </div>
@@ -55,8 +55,58 @@
         </div>
     </div>
 
-    <!-- MAIN BOARD (Painel) -->
+    <!-- MAIN BOARD (Sidebar + Painel) -->
     <div class="flex gap-4 h-full overflow-hidden">
+
+        <!-- SIDEBAR DE MEMBROS (Fixo à esquerda) -->
+        <div class="w-80 shrink-0 bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl flex flex-col overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+            <div class="p-4 border-b border-gray-800 bg-gray-950/40">
+                <h3 class="text-white font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <i data-lucide="users" class="w-4 h-4 text-blue-400"></i> Membros Disponíveis
+                </h3>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-500"></i>
+                    <input type="text" x-model="searchTerm" placeholder="Buscar..." class="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-blue-500 transition-colors shadow-inner">
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+                {% for membro in membros %}
+                <button type="button"
+                        x-show="searchTerm === '' || '{{ membro.get_full_name|lower }}'.includes(searchTerm.toLowerCase())"
+                        @click="selectedMemberId = '{{ membro.id }}'; selectedMemberName = '{{ membro.get_full_name }}'"
+                        :class="selectedMemberId === '{{ membro.id }}' ? 'bg-blue-600 border-blue-400 shadow-[0_0_10px_rgba(37,99,235,0.5)]' : 'bg-gray-800/50 border-gray-700 hover:border-blue-500 hover:bg-gray-800'"
+                        class="w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all group border">
+                    {% if membro.foto_perfil %}
+                    <img src="{{ membro.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover border border-gray-600 pointer-events-none">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 font-bold text-sm pointer-events-none">{{ membro.first_name|slice:":1" }}</div>
+                    {% endif %}
+                    <div class="pointer-events-none overflow-hidden flex-1">
+                        <p class="font-bold text-white text-sm truncate leading-tight">{{ membro.get_full_name }}</p>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            {% for hab in membro.habilidades.all %}
+                            <span class="text-[10px] bg-gray-900 text-gray-400 px-1.5 py-0.5 rounded border border-gray-800">{{ hab.nome }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </button>
+                {% empty %}
+                <div class="text-center py-8">
+                    <i data-lucide="user-x" class="w-10 h-10 text-gray-600 mx-auto mb-2"></i>
+                    <p class="text-xs text-gray-400 font-medium">Nenhum voluntário configurado.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Indicador de Seleção -->
+            <div class="p-3 bg-blue-900/40 border-t border-blue-500/30 text-xs text-blue-200" x-show="selectedMemberId">
+                Selecionado: <strong class="text-white" x-text="selectedMemberName"></strong>
+            </div>
+            <div class="p-3 bg-gray-800/50 border-t border-gray-700 text-xs text-gray-400" x-show="!selectedMemberId">
+                Clique num membro acima para começar a alocar.
+            </div>
+        </div>
 
         <!-- COLUNAS DOS DIAS -->
         <div class="w-full flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
@@ -90,14 +140,14 @@
                             </div>
 
                             <!-- DROPZONE -->
-                            <div class="p-2 min-h-[60px] dropzone transition-all flex flex-col gap-2 cursor-pointer hover:bg-white/5 rounded-xl"
+                            <div class="p-2 min-h-[60px] dropzone transition-all flex flex-col gap-2 cursor-pointer hover:bg-white/5 rounded-xl relative"
                                  data-data="{{ dia.data_str }}"
                                  data-evento="{{ dia.evento_id }}"
                                  data-funcao="{{ funcao.funcao_id }}">
 
                                 <!-- Renderizar Alocados Atuais -->
                                 {% for alocado in funcao.alocados %}
-                                <div class="bg-blue-900/30 border border-blue-500/40 p-2 rounded-lg flex justify-between items-center shadow-sm group">
+                                <div class="bg-blue-900/30 border border-blue-500/40 p-2 rounded-lg flex justify-between items-center shadow-sm group relative z-10" onclick="event.stopPropagation()">
                                     <div class="flex items-center gap-2">
                                         {% if alocado.membro_foto %}
                                         <img src="{{ alocado.membro_foto }}" class="w-6 h-6 rounded-full object-cover">
@@ -110,7 +160,7 @@
                                         {% if alocado.checkin_realizado %}
                                             <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400" title="Presente"></i>
                                         {% else %}
-                                            <form method="POST" action="{% url 'checkin_manual_lider' alocado.escala_id %}" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <form method="POST" action="{% url 'checkin_manual_lider' alocado.escala_id %}" class="opacity-0 group-hover:opacity-100 transition-opacity m-0">
                                                 {% csrf_token %}
                                                 <button type="submit" onclick="return confirm('Confirmar check-in manual?')" class="text-blue-400 hover:text-blue-300" title="Dar Presença Manual">
                                                     <i data-lucide="check" class="w-4 h-4"></i>
@@ -128,9 +178,9 @@
                                 {% endfor %}
 
                                 {% if competencia.status == 'rascunho' %}
-                                <button type="button" class="w-full mt-2 py-1.5 border border-dashed border-gray-600 rounded-lg text-xs font-bold text-gray-400 hover:text-white hover:border-blue-500 hover:bg-blue-600/20 transition-colors flex items-center justify-center gap-1 btn-open-modal">
-                                    <i data-lucide="plus" class="w-3 h-3"></i> Escalar
-                                </button>
+                                <div class="mt-auto pt-2 opacity-50 flex items-center justify-center text-xs text-gray-500 pointer-events-none">
+                                    <i data-lucide="plus" class="w-3 h-3 mr-1"></i> Clicar para Escalar
+                                </div>
                                 {% endif %}
 
                             </div>
@@ -154,147 +204,44 @@
     </div>
 </div>
 
-<!-- MODAL DE VOLUNTÁRIOS -->
-<div id="modal_voluntarios" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] overflow-hidden transform scale-95 opacity-0 transition-all duration-200" id="modal_content">
-        <!-- Header Modal -->
-        <div class="p-4 border-b border-gray-800 bg-gray-950/40 flex justify-between items-center shrink-0">
-            <h3 class="text-white font-bold flex items-center gap-2">
-                <i data-lucide="users" class="w-5 h-5 text-blue-400"></i> Selecione um Voluntário
-            </h3>
-            <button type="button" id="btn_fechar_modal" class="text-gray-400 hover:text-red-400 transition-colors">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-        </div>
-
-        <!-- Busca -->
-        <div class="p-4 bg-gray-900 border-b border-gray-800 shrink-0">
-            <div class="relative">
-                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-500"></i>
-                <input type="text" id="busca_voluntario_modal" placeholder="Buscar por nome..." class="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm outline-none focus:border-blue-500 transition-colors shadow-inner">
-            </div>
-        </div>
-
-        <!-- Lista -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar" id="lista_voluntarios_modal">
-            {% for membro in membros %}
-            <button type="button" class="w-full text-left voluntario-modal-btn bg-gray-800/50 border border-gray-700 hover:border-blue-500 hover:bg-gray-800 p-3 rounded-xl flex items-center gap-3 transition-colors shadow-sm group"
-                 data-id="{{ membro.id }}"
-                 data-nome="{{ membro.get_full_name }}">
-                {% if membro.foto_perfil %}
-                <img src="{{ membro.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover border border-gray-600 pointer-events-none">
-                {% else %}
-                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 font-bold text-sm pointer-events-none">{{ membro.first_name|slice:":1" }}</div>
-                {% endif %}
-                <div class="pointer-events-none overflow-hidden flex-1">
-                    <p class="font-bold text-white text-sm truncate leading-tight">{{ membro.get_full_name }}</p>
-                    <div class="flex flex-wrap gap-1 mt-1">
-                        {% for hab in membro.habilidades.all %}
-                        <span class="text-[10px] bg-gray-900 text-gray-400 px-1.5 py-0.5 rounded border border-gray-800">{{ hab.nome }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-            </button>
-            {% empty %}
-            <div class="text-center py-8">
-                <i data-lucide="user-x" class="w-12 h-12 text-gray-600 mx-auto mb-3"></i>
-                <p class="text-sm text-gray-400 font-medium">Nenhum voluntário configurado.</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-
 
 <style>
-    .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: rgba(31, 41, 55, 0.5); border-radius: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(75, 85, 99, 0.8); border-radius: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 1); }
-    .dropzone-hover { background-color: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.5); }
-    .is-dragging { opacity: 0.5; }
 </style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     lucide.createIcons();
 
-    // Variáveis Globais para o Modal
-    const modal = document.getElementById('modal_voluntarios');
-    const modalContent = document.getElementById('modal_content');
-    const btnFecharModal = document.getElementById('btn_fechar_modal');
-    const buscaModal = document.getElementById('busca_voluntario_modal');
-    const voluntarioBtns = document.querySelectorAll('.voluntario-modal-btn');
-
-    let currentDropzone = null;
-    let currentData = null;
-    let currentEvento = null;
-    let currentFuncao = null;
-
     const comp_id = "{{ competencia.id }}";
     const status_comp = "{{ competencia.status }}";
 
-    // Se estiver publicada, bloqueia botões e remoção
     if(status_comp !== 'rascunho') {
-        document.querySelectorAll('.btn-open-modal').forEach(b => b.remove());
         document.querySelectorAll('.btn-remover').forEach(b => b.remove());
         return;
     }
 
-    // Filtro de Voluntários no Modal
-    buscaModal.addEventListener('input', function(e) {
-        const termo = e.target.value.toLowerCase();
-        voluntarioBtns.forEach(btn => {
-            const nome = btn.getAttribute('data-nome').toLowerCase();
-            btn.style.display = nome.includes(termo) ? 'flex' : 'none';
-        });
-    });
+    document.querySelectorAll('.dropzone').forEach(zone => {
+        zone.addEventListener('click', async function(e) {
+            const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+            const membro_id = alpineData.selectedMemberId;
 
-    // Abrir Modal
-    document.querySelectorAll('.btn-open-modal').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation(); // Evita conflitos
-            currentDropzone = this.closest('.dropzone');
-            currentData = currentDropzone.getAttribute('data-data');
-            currentEvento = currentDropzone.getAttribute('data-evento');
-            currentFuncao = currentDropzone.getAttribute('data-funcao');
+            if(!membro_id) {
+                this.classList.add('bg-red-500/20', 'border-red-500');
+                setTimeout(() => this.classList.remove('bg-red-500/20', 'border-red-500'), 300);
+                alert("Selecione um membro na barra lateral primeiro!");
+                return;
+            }
 
-            modal.classList.remove('hidden');
-            // Animação de entrada
-            setTimeout(() => {
-                modalContent.classList.remove('scale-95', 'opacity-0');
-                modalContent.classList.add('scale-100', 'opacity-100');
-            }, 10);
+            const currentData = this.getAttribute('data-data');
+            const currentEvento = this.getAttribute('data-evento');
+            const currentFuncao = this.getAttribute('data-funcao');
+            const targetZone = this;
 
-            setTimeout(() => buscaModal.focus(), 200);
-        });
-    });
-
-    // Fechar Modal
-    function fecharModal() {
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            buscaModal.value = '';
-            buscaModal.dispatchEvent(new Event('input')); // reseta filtro
-        }, 200);
-    }
-
-    btnFecharModal.addEventListener('click', fecharModal);
-    modal.addEventListener('click', function(e) {
-        if(e.target === modal) fecharModal();
-    });
-
-    // Clique no Voluntário do Modal
-    voluntarioBtns.forEach(btn => {
-        btn.addEventListener('click', async function() {
-            const membro_id = this.getAttribute('data-id');
-            const targetZone = currentDropzone;
-            const btnOpenModal = targetZone.querySelector('.btn-open-modal');
-
-            fecharModal();
-            targetZone.style.opacity = '0.5'; // loading indicator
+            targetZone.style.opacity = '0.5';
 
             try {
                 const response = await fetch("{% url 'alocar_slot_api' %}", {
@@ -319,7 +266,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         : `<div class="w-6 h-6 rounded-full bg-blue-800 flex items-center justify-center text-xs font-bold text-white"><i data-lucide="user" class="w-3 h-3"></i></div>`;
 
                     const alocadoHtml = `
-                        <div class="bg-blue-900/30 border border-blue-500/40 p-2 rounded-lg flex justify-between items-center shadow-sm group">
+                        <div class="bg-blue-900/30 border border-blue-500/40 p-2 rounded-lg flex justify-between items-center shadow-sm group relative z-10" onclick="event.stopPropagation()">
                             <div class="flex items-center gap-2">
                                 ${fotoHtml}
                                 <span class="text-xs font-bold text-blue-100 truncate w-32">${result.membro_nome}</span>
@@ -330,9 +277,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         </div>
                     `;
 
-                    // Inserir ANTES do botão "Escalar"
-                    if(btnOpenModal) {
-                        btnOpenModal.insertAdjacentHTML('beforebegin', alocadoHtml);
+                    const placeholder = targetZone.querySelector('.pointer-events-none');
+                    if(placeholder) {
+                        placeholder.insertAdjacentHTML('beforebegin', alocadoHtml);
                     } else {
                         targetZone.insertAdjacentHTML('beforeend', alocadoHtml);
                     }
@@ -340,7 +287,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     lucide.createIcons();
                     attachRemoverEvents();
 
-                    // Increment counter
                     const badge = targetZone.previousElementSibling.querySelector('span:last-child');
                     if(badge) {
                         const parts = badge.innerText.split('/');
@@ -357,7 +303,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Remover alocação
     function attachRemoverEvents() {
         document.querySelectorAll('.btn-remover').forEach(btn => {
             const novoBtn = btn.cloneNode(true);

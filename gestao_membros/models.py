@@ -37,10 +37,10 @@ class Departamento(models.Model):
     is_system = models.BooleanField(default=False, help_text="Departamentos do sistema não podem ser excluídos e garantem o funcionamento de módulos cruciais.")
     logo = models.ImageField(upload_to='departamentos/logos/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'svg', 'webp'])])
 
+    instrucoes_padrao_escala = models.TextField(blank=True, help_text="Instruções padrão que aparecerão no rodapé do PDF das escalas.")
+
     lideres = models.ManyToManyField(Membro, related_name='departamentos_liderados', blank=True)
     sub_lideres = models.ManyToManyField(Membro, related_name='departamentos_subliderados', blank=True)
-    membros_ativos = models.ManyToManyField(Membro, related_name='departamentos_ativos', blank=True)
-
     membros_ativos = models.ManyToManyField(Membro, related_name='departamentos_ativos', blank=True)
 
     def __str__(self):
