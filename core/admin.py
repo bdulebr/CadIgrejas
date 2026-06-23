@@ -22,9 +22,13 @@ class MembroAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ('PV Enseada Dados', {'fields': (
             'apelido', 'cpf', 'rg', 'telefone', 'foto_perfil', 'data_nascimento', 'data_casamento',
-            'conjuge', 'filhos', 'sexo', 'estado_civil', 'profissao', 'escolaridade',
-            'habilidades', 'nivel_hierarquico', 'status_conta', 'anotacoes_lideranca'
+            'conjuge', 'filhos', 'sexo', 'estado_civil', 'profissao', 'escolaridade'
         )}),
+        ('Acesso e Status', {
+            'fields': (
+                'habilidades', 'nivel_hierarquico', 'status_conta'
+            )
+        }),
         ('Endereço', {'fields': (
             'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado'
         )}),

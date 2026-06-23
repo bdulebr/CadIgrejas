@@ -1,0 +1,48 @@
+<div class="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50 relative overflow-hidden group hover:border-blue-500/50 transition-colors">
+    <!-- Efeito Glassmorphism Hover -->
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+    <div class="relative z-10">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-700 pb-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="{{ mod.icone_lucide }}" class="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors"></i>
+                <h4 class="text-white font-medium">{{ mod.nome }}</h4>
+            </div>
+            <!-- Status Badge if Active -->
+            {% if p.ver or p.editar or p.excluir %}
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+            {% endif %}
+        </div>
+
+        <div class="space-y-3 mb-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="ver_{{ mod.id }}" class="form-checkbox h-5 w-5 text-blue-500 rounded border-slate-600 bg-slate-700 focus:ring-blue-500 focus:ring-offset-slate-800" {% if p.ver %}checked{% endif %}>
+                <span class="text-slate-300 text-sm">Pode Acessar (Ver)</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="editar_{{ mod.id }}" class="form-checkbox h-5 w-5 text-emerald-500 rounded border-slate-600 bg-slate-700 focus:ring-emerald-500 focus:ring-offset-slate-800" {% if p.editar %}checked{% endif %}>
+                <span class="text-slate-300 text-sm">Pode Criar/Editar</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="excluir_{{ mod.id }}" class="form-checkbox h-5 w-5 text-rose-500 rounded border-slate-600 bg-slate-700 focus:ring-rose-500 focus:ring-offset-slate-800" {% if p.excluir %}checked{% endif %}>
+                <span class="text-slate-300 text-sm">Pode Excluir</span>
+            </label>
+        </div>
+
+        <!-- RBAC 2.0: Escopo e Validade -->
+        <div class="pt-3 border-t border-slate-700 space-y-3">
+            <div>
+                <label class="text-xs text-slate-400 flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> Nível de Acesso (RLS)</label>
+                <select name="escopo_{{ mod.id }}" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded text-sm text-slate-300 focus:ring-blue-500 focus:border-blue-500 p-1.5">
+                    <option value="global" {% if p.escopo == 'global' %}selected{% endif %}>Global (Toda a Igreja)</option>
+                    <option value="departamento" {% if p.escopo == 'departamento' %}selected{% endif %}>Restrito (Apenas Departamento)</option>
+                    <option value="proprio" {% if p.escopo == 'proprio' %}selected{% endif %}>Estrito (Apenas Próprios Dados)</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs text-slate-400 flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3"></i> Expira em (Opcional)</label>
+                <input type="datetime-local" name="expiracao_{{ mod.id }}" value="{{ p.expiracao|date:'Y-m-d\TH:i' }}" class="mt-1 w-full bg-slate-800 border border-slate-600 rounded text-sm text-slate-300 focus:ring-blue-500 focus:border-blue-500 p-1.5">
+            </div>
+        </div>
+    </div>
+</div>

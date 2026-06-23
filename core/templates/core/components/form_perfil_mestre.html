@@ -199,17 +199,31 @@
                     <input type="text" name="igreja_anterior" value="{{ membro.igreja_anterior|default:'' }}" class="w-full px-4 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-brand-500">
                 </div>
                 {% if is_lider_view or is_master %}
-                <div class="col-span-full bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl mt-2">
-                    <label class="block text-sm font-bold text-blue-300 mb-2">Nível Hierárquico no Sistema</label>
-                    <select name="nivel_hierarquico" class="w-full max-w-xs px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-blue-500">
-                        <option value="membro_voluntario" {% if membro.nivel_hierarquico == 'membro_voluntario' %}selected{% endif %}>Membro / Voluntário</option>
-                        <option value="sub_lider" {% if membro.nivel_hierarquico == 'sub_lider' %}selected{% endif %}>Sub-líder</option>
-                        <option value="lider" {% if membro.nivel_hierarquico == 'lider' %}selected{% endif %}>Líder</option>
-                        <option value="pastor" {% if membro.nivel_hierarquico == 'pastor' %}selected{% endif %}>Pastor</option>
-                        {% if is_master %}
-                        <option value="super_admin" {% if membro.nivel_hierarquico == 'super_admin' %}selected{% endif %}>Super Admin (Acesso Total)</option>
-                        {% endif %}
-                    </select>
+                <div class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl mt-2">
+                    <div>
+                        <label class="block text-sm font-bold text-blue-300 mb-2">Nível Hierárquico no Sistema</label>
+                        <select name="nivel_hierarquico" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white outline-none focus:border-blue-500">
+                            <option value="membro_voluntario" {% if membro.nivel_hierarquico == 'membro_voluntario' %}selected{% endif %}>Membro / Voluntário</option>
+                            <option value="sub_lider" {% if membro.nivel_hierarquico == 'sub_lider' %}selected{% endif %}>Sub-líder</option>
+                            <option value="lider" {% if membro.nivel_hierarquico == 'lider' %}selected{% endif %}>Líder</option>
+                            <option value="pastor" {% if membro.nivel_hierarquico == 'pastor' %}selected{% endif %}>Pastor</option>
+                            {% if is_master %}
+                            <option value="super_admin" {% if membro.nivel_hierarquico == 'super_admin' %}selected{% endif %}>Super Admin (Acesso Total)</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-red-300 mb-2">Status da Conta</label>
+                        <select name="status_conta" class="w-full px-4 py-2 bg-gray-950/60 border border-red-700/50 rounded-lg text-white outline-none focus:border-red-500">
+                            <option value="ativo" {% if membro.status_conta == 'ativo' %}selected{% endif %}>Ativo (Acesso Normal)</option>
+                            <option value="pendente" {% if membro.status_conta == 'pendente' %}selected{% endif %}>Pendente de Aprovação</option>
+                            <option value="inativo" {% if membro.status_conta == 'inativo' %}selected{% endif %}>Inativo (Sem acesso / Expulso)</option>
+                            <option value="bloqueado" {% if membro.status_conta == 'bloqueado' %}selected{% endif %}>Bloqueado</option>
+                            <option value="transferido" {% if membro.status_conta == 'transferido' %}selected{% endif %}>Transferido de Igreja</option>
+                            <option value="falecido" {% if membro.status_conta == 'falecido' %}selected{% endif %}>Falecido</option>
+                        </select>
+                        <p class="text-[10px] text-gray-400 mt-1">Status 'Inativo/Bloqueado' remove imediatamente todos os vínculos departamentais ativos da pessoa.</p>
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -264,15 +278,7 @@
                     </div>
                 </div>
 
-                {% if is_lider_view or is_master %}
-                <div class="col-span-full mt-6 border-t border-red-500/20 pt-6">
-                    <label class="block text-sm font-bold text-red-400 mb-1 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        Anotações Confidenciais da Liderança
-                    </label>
-                    <textarea name="anotacoes_lideranca" rows="3" class="w-full px-4 py-3 bg-red-950/10 border border-red-900/30 rounded-lg text-white outline-none focus:border-red-500 text-sm" placeholder="Apenas líderes podem ver isso...">{{ membro.anotacoes_lideranca|default:'' }}</textarea>
-                </div>
-                {% endif %}
+
             </div>
         </div>
 

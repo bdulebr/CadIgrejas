@@ -7,6 +7,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         MODULOS = [
             ('membros', 'Gestão de Membros', 'users'),
+            ('rh', 'Recursos Humanos', 'users-cog'),
             ('tesouraria', 'Tesouraria', 'wallet'),
             ('escalas', 'Gestão de Escalas', 'calendar'),
             ('almoxarifado', 'Almoxarifado', 'box'),

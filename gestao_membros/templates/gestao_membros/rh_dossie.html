@@ -19,7 +19,13 @@
             <div class="flex items-center gap-4">
                 <a href="{% url 'rh_painel' %}" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-white"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
                 <div>
-                    <h1 class="text-3xl font-black text-white">{{ membro.get_full_name|default:membro.username }}</h1>
+                    <h1 class="text-3xl font-black text-white">
+                        {% if membro.first_name %}
+                            {{ membro.first_name }} {% if membro.apelido %}({{ membro.apelido }}){% else %}{{ membro.last_name }}{% endif %}
+                        {% else %}
+                            {{ membro.username }}
+                        {% endif %}
+                    </h1>
                     <p class="text-gray-400 text-sm">Dossiê e Histórico de Voluntariado</p>
                 </div>
             </div>
@@ -99,6 +105,37 @@
                         </div>
                         {% empty %}
                         <p class="text-gray-500 text-sm">Membro com ficha limpa (sem ocorrências).</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Nova Seção: Anotações Confidenciais do Líder -->
+                <div class="bg-gray-900 p-6 rounded-xl border border-red-900/50 mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">Apenas RH / Líder</div>
+                    <h3 class="text-white font-bold mb-4 flex items-center gap-2 border-b border-gray-800 pb-2">
+                        <i data-lucide="lock" class="w-5 h-5 text-red-500"></i> Anotações Confidenciais
+                    </h3>
+
+                    <form method="POST" class="mb-6 bg-gray-950 p-4 rounded-lg border border-gray-800">
+                        {% csrf_token %}
+                        <label class="block text-gray-400 text-xs uppercase mb-2">Adicionar Nova Observação Interna</label>
+                        <textarea name="nova_anotacao" rows="2" class="w-full bg-gray-900 text-white rounded border border-gray-700 p-3 text-sm focus:border-red-500 outline-none" placeholder="Escreva algo que apenas líderes verão..." required></textarea>
+                        <div class="flex justify-end mt-2">
+                            <button type="submit" class="px-4 py-2 bg-red-900/80 hover:bg-red-800 text-white font-bold rounded-lg text-sm transition-colors">Salvar Nota Restrita</button>
+                        </div>
+                    </form>
+
+                    <div class="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                        {% for nota in anotacoes %}
+                        <div class="bg-red-950/20 p-4 rounded-lg border border-red-900/30">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-300 text-xs font-bold">{{ nota.autor.first_name }} {{ nota.autor.last_name }}</span>
+                                <span class="bg-gray-900 text-gray-400 text-xs px-2 py-1 rounded">{{ nota.data_criacao|date:"d/m/Y H:i" }}</span>
+                            </div>
+                            <p class="text-red-200 text-sm whitespace-pre-line">{{ nota.anotacao }}</p>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-sm italic">Nenhuma anotação confidencial registrada para este membro.</p>
                         {% endfor %}
                     </div>
                 </div>

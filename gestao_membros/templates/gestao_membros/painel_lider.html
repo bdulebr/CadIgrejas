@@ -259,9 +259,9 @@
                                         <div class="text-[10px] uppercase font-bold text-gray-500 mt-1">{{ membro.get_nivel_hierarquico_display }}</div>
                                     </div>
                                 </div>
-                                <button onclick="openGerirModal('{{ membro.id }}', '{{ membro.first_name }}', '{{ membro.nivel_hierarquico }}', '{{ membro.horario_trabalho_inicio|time:'H:i' }}', '{{ membro.horario_trabalho_fim|time:'H:i' }}', '{{ membro.dias_trabalho }}', '{{ membro.dias_folga }}', `{{ membro.anotacoes_lideranca|escapejs }}`)" class="text-gray-400 hover:text-white p-2 bg-gray-900 rounded-lg border border-gray-700 opacity-0 group-hover:opacity-100 transition-all">
+                                <a href="{% url 'rh_dossie_membro' membro.id %}" class="text-gray-400 hover:text-white p-2 bg-gray-900 rounded-lg border border-gray-700 opacity-0 group-hover:opacity-100 transition-all" title="Acessar Dossiê de RH">
                                     <i data-lucide="settings" class="w-4 h-4"></i>
-                                </button>
+                                </a>
                             </div>
                             <div class="flex items-center gap-2 text-xs text-gray-400 mt-3 border-t border-gray-800/50 pt-3">
                                 <i data-lucide="phone" class="w-3 h-3 text-brand-400"></i> {{ membro.telefone|default:"Sem celular" }}
@@ -410,54 +410,6 @@
                     <div class="text-sm text-gray-300 space-y-2">
                         <div class="flex justify-between border-b border-gray-800 pb-2"><span class="font-bold text-gray-500">Expediente:</span> <span id="modalExpediente" class="text-white">--:-- às --:--</span></div>
                         <div class="flex justify-between border-b border-gray-800 pb-2"><span class="font-bold text-gray-500">Dias Trab:</span> <span id="modalDiasTrab" class="text-white">-</span></div>
-                        <div class="flex justify-between"><span class="font-bold text-gray-500">Folga Fixa:</span> <span id="modalFolga" class="text-white">-</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-6 flex flex-col justify-between">
-                <form method="POST" id="formAnotacoes" class="flex-1 flex flex-col bg-gray-800/30 p-5 rounded-2xl border border-gray-800 shadow-inner">
-                    {% csrf_token %}
-                    <input type="hidden" name="acao" value="salvar_anotacoes">
-                    <input type="hidden" name="depto_id" value="{{ departamento_ativo.id }}">
-
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex justify-between items-center">
-                        Anotações Privadas
-                        <span class="text-[9px] bg-red-900/30 text-red-400 px-2 py-0.5 rounded border border-red-500/30 normal-case">Visível só para Liderança</span>
-                    </label>
-                    <textarea name="anotacoes_lideranca" id="modalAnotacoes" rows="4" class="w-full bg-gray-950/80 border border-gray-700 text-white text-sm rounded-xl p-4 outline-none focus:border-brand-500 flex-1 resize-none shadow-sm" placeholder="Escreva observações de comportamento ou necessidades da pessoa..."></textarea>
-
-                    <button type="submit" class="w-full mt-4 py-3 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg border border-brand-500">SALVAR NOTA DE FEEDBACK</button>
-                </form>
-
-                <div class="pt-2">
-                    <form method="POST" id="formRemoverBanco">
-                        {% csrf_token %}
-                        <input type="hidden" name="acao" value="remover_setor">
-                        <input type="hidden" name="depto_id" value="{{ departamento_ativo.id }}">
-
-                        <button type="submit" class="w-full flex items-center justify-center gap-2 py-3 bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/30 text-xs font-bold rounded-xl transition-all" onclick="return confirm('Atenção: O voluntário será desvinculado deste departamento. Tem certeza?')">
-                            <i data-lucide="user-minus" class="w-4 h-4"></i> ENVIAR P/ BANCO DE VOLUNTÁRIOS
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    function openGerirModal(id, nome, nivel, hr_inicio, hr_fim, dias_trab, dias_folga, anotacoes) {
-        document.getElementById('modalMembroNome').innerText = nome;
-        document.getElementById('formEvoluirNivel').action = `/membros/evoluir/${id}/`;
-        document.getElementById('formAnotacoes').action = `/membro/gerir-lider/${id}/`;
-        document.getElementById('formRemoverBanco').action = `/membro/gerir-lider/${id}/`;
-
-        document.getElementById('modalNivel').value = nivel;
-        document.getElementById('modalAnotacoes').value = anotacoes;
-
-        const hrStr = (hr_inicio || hr_fim) ? `${hr_inicio || '--:--'} às ${hr_fim || '--:--'}` : 'Não declarado';
-        document.getElementById('modalExpediente').innerText = hrStr;
         document.getElementById('modalDiasTrab').innerText = dias_trab || 'Não declarado';
         document.getElementById('modalFolga').innerText = dias_folga || 'Não declarado';
 

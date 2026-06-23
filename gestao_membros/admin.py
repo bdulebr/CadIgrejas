@@ -72,7 +72,7 @@ class AcaoDisciplinarAdmin(admin.ModelAdmin):
     list_filter = ('tipo', 'data_aplicacao', 'enviado_email')
     search_fields = ('membro__first_name', 'motivo', 'autor__first_name')
 
-from .models import VagaSetor, CandidaturaVaga, EventoInternoSetor
+from .models import VagaSetor, CandidaturaVaga, EventoInternoSetor, AnotacaoRH
 
 @admin.register(VagaSetor)
 class VagaSetorAdmin(admin.ModelAdmin):
@@ -91,3 +91,9 @@ class EventoInternoSetorAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'departamento', 'data_inicio', 'local')
     list_filter = ('departamento', 'data_inicio')
     search_fields = ('titulo', 'departamento__nome')
+
+@admin.register(AnotacaoRH)
+class AnotacaoRHAdmin(admin.ModelAdmin):
+    list_display = ('membro', 'autor', 'data_criacao')
+    list_filter = ('data_criacao', 'autor')
+    search_fields = ('membro__first_name', 'autor__first_name', 'anotacao')

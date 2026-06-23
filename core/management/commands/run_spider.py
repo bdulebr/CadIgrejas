@@ -259,6 +259,10 @@ class Command(BaseCommand):
                 elif "HTTP Error 400 gerado como Response na rota: /casais/casal/1/atualizar-status/ Method: GET" in error_message:
                     log_lines.append(f"[INFO (EXPECTED)] GET {path} -> Status 400 (Bad Request - Expected POST)")
                     # Do NOT increment errors_found, as it's an expected security behavior
+                # Special handling for expected Membro.DoesNotExist on dossier path
+                elif "Membro matching query does not exist." in error_message and path.startswith('/painel-lider/rh/dossie/') and "Traceback (most recent call last):" in tb and "get_object_or_404" in tb:
+                    log_lines.append(f"[INFO (EXPECTED)] GET {path} -> Membro.DoesNotExist (Expected 404 for non-existent Membro ID)")
+                    # Do NOT increment errors_found, as it's an expected behavior for missing dynamic content
                 # Special handling for known intentional test errors (previously existing)
                 elif "ERRO 500 PROVOCADO: Vamos testar se o Watchdog e a IA pegam isso." in error_message:
                     log_lines.append(f"[INFO (INTENTIONAL EXCEPTION)] {path} -> {e}")

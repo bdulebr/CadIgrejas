@@ -579,7 +579,7 @@ def adicionar_membro(request):
         tel_val = request.POST.get('telefone', '').strip()
         membro.telefone = tel_val if tel_val else None
 
-        membro.anotacoes_lideranca = request.POST.get('anotacoes_lideranca', '')
+
 
         data_nascimento = request.POST.get('data_nascimento')
         membro.data_nascimento = data_nascimento if data_nascimento else None
@@ -633,7 +633,7 @@ def adicionar_membro(request):
 
 @login_required
 def gerir_membro_lider(request, membro_id):
-    return redirect('painel_membros')
+    return redirect('rh_dossie_membro', membro_id=membro_id)
 
 @login_required
 @requer_permissao('membros', 'editar')
@@ -649,8 +649,17 @@ def editar_membro(request, membro_id):
         nivel = request.POST.get('nivel_hierarquico', membro.nivel_hierarquico)
         membro.nivel_hierarquico = nivel
 
+        status = request.POST.get('status_conta')
+        if status:
+            membro.status_conta = status
+
         departamentos_ids = request.POST.getlist('departamentos')
-        membro.departamentos_ativos.set(departamentos_ids)
+        if membro.status_conta == 'ativo':
+            membro.departamentos_ativos.set(departamentos_ids)
+        else:
+            membro.departamentos_ativos.clear()
+            membro.departamentos_liderados.clear()
+            membro.departamentos_subliderados.clear()
 
         # CPF needs to be None if empty to avoid UNIQUE constraint violations
         cpf_val = request.POST.get('cpf', '').strip()
@@ -662,7 +671,6 @@ def editar_membro(request, membro_id):
         tel_val = request.POST.get('telefone', '').strip()
         membro.telefone = tel_val if tel_val else None
 
-        membro.anotacoes_lideranca = request.POST.get('anotacoes_lideranca', membro.anotacoes_lideranca)
 
         data_nascimento = request.POST.get('data_nascimento')
         membro.data_nascimento = data_nascimento if data_nascimento else None
@@ -723,7 +731,14 @@ def editar_membro(request, membro_id):
 @requer_permissao('membros', 'editar')
 def excluir_membro(request, membro_id):
     if request.method == 'POST':
-        messages.error(request, 'Blindagem Zero-Trust: Servidores da Palavra (Membros) não podem ser excluídos para manter o histórico de auditoria. Inative o perfil invés de apagar.')
+        if not request.user.is_superuser:
+            messages.error(request, 'Blindagem Zero-Trust: Apenas o Super Administrador do sistema pode excluir um membro definitivamente. Inative o perfil invés de apagar.')
+            return redirect('painel_membros')
+
+        membro = get_object_or_404(Membro, id=membro_id)
+        nome = membro.get_full_name() or membro.username
+        membro.delete()
+        messages.success(request, f'Membro {nome} foi EXCLUÍDO definitivamente do sistema.')
     return redirect('painel_membros')
 
 @login_required
@@ -783,15 +798,23 @@ from django.template import Context, Template
 from intranet.services.pdf_service import gerar_pdf
 
 @login_required
-@requer_permissao('membros', 'editar')
 def rh_painel(request):
     """Painel principal do RH mostrando todos os voluntários sob gestão do líder ou todos para admin"""
-    if is_super_admin(request.user):
+    from permissoes.utils import obter_escopo_acesso
+    from django.core.exceptions import PermissionDenied
+
+    escopo_rh = obter_escopo_acesso(request.user, 'rh')
+
+    if is_super_admin(request.user) or escopo_rh == 'global':
         membros = Membro.objects.filter(is_active=True).order_by('first_name')
         departamentos = Departamento.objects.all()
     else:
         # Pega todos os membros dos departamentos que este líder lidera ou sublidera
         deps_liderados = request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
+
+        if not deps_liderados.exists() and escopo_rh == 'nenhum':
+            raise PermissionDenied("Você não tem autorização para acessar o painel de Recursos Humanos.")
+
         departamentos = deps_liderados.distinct()
         membros = Membro.objects.filter(departamentos_ativos__in=departamentos, is_active=True).distinct().order_by('first_name')
 
@@ -812,19 +835,51 @@ def rh_painel(request):
     })
 
 @login_required
-@requer_permissao('membros', 'editar')
 def rh_dossie_membro(request, membro_id):
-    """Visualiza o histórico completo do membro (Avaliações, Ocorrências, Ações Disciplinares)"""
+    """Visualiza o histórico completo do membro (Avaliações, Ocorrências, Ações Disciplinares, Anotações RH)"""
     membro = get_object_or_404(Membro, id=membro_id)
+
+    from permissoes.utils import obter_escopo_acesso
+    from django.core.exceptions import PermissionDenied
+
+    escopo_rh = obter_escopo_acesso(request.user, 'rh')
+
+    # Validação de Segurança Zero-Trust
+    if not is_super_admin(request.user) and escopo_rh != 'global':
+        deps_membro = membro.departamentos_ativos.all()
+        deps_liderados = request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
+
+        # O usuário logado lidera algum departamento onde o membro serve?
+        is_lider_direto = any(d in deps_liderados for d in deps_membro)
+
+        if not is_lider_direto and escopo_rh == 'nenhum':
+            raise PermissionDenied("Você não tem autorização para ver o Dossiê RH deste membro.")
+
+    if request.method == 'POST':
+        nova_anotacao = request.POST.get('nova_anotacao')
+        if nova_anotacao:
+            from gestao_membros.models import AnotacaoRH
+            AnotacaoRH.objects.create(
+                membro=membro,
+                autor=request.user,
+                anotacao=nova_anotacao
+            )
+            messages.success(request, 'Anotação adicionada ao dossiê com sucesso.')
+            return redirect('rh_dossie_membro', membro_id=membro.id)
+
     avaliacoes = membro.avaliacoes_recebidas.all().order_by('-data')
     acoes = membro.acoes_disciplinares.all().order_by('-data_aplicacao')
     ocorrencias = Ocorrencia.objects.filter(envolvidos=membro).order_by('-data_ocorrencia')
+
+    from gestao_membros.models import AnotacaoRH
+    anotacoes = AnotacaoRH.objects.filter(membro=membro)
 
     return render(request, 'gestao_membros/rh_dossie.html', {
         'membro': membro,
         'avaliacoes': avaliacoes,
         'acoes': acoes,
-        'ocorrencias': ocorrencias
+        'ocorrencias': ocorrencias,
+        'anotacoes': anotacoes
     })
 
 @login_required

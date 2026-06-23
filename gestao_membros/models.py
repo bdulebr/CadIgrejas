@@ -213,3 +213,15 @@ class EventoInternoSetor(models.Model):
 
     def __str__(self):
         return f"{self.titulo} - {self.departamento.nome}"
+
+class AnotacaoRH(models.Model):
+    membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='anotacoes_rh')
+    autor = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='anotacoes_rh_criadas')
+    anotacao = models.TextField()
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f"Anotação sobre {self.membro.first_name} por {self.autor.first_name}"

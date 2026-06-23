@@ -220,14 +220,9 @@ class AIAutoEngineerMiddleware:
         from django.http import Http404
         from django.core.exceptions import PermissionDenied
 
-        # Filtro Inteligente de Erros 404 (Ignora se o usuário digitou uma rota aleatória/typo)
+        # Filtro Inteligente de Erros 404 (Ignora 404 para não acionar a IA à toa quando dados não existem)
         if isinstance(exception, Http404):
-            referer = request.META.get('HTTP_REFERER', '')
-            host = request.get_host()
-            # Se não tem referer (digitado no navegador) ou veio de site externo, NÃO é bug do sistema.
-            if not referer or host not in referer:
-                return None
-            # Se tem referer interno, significa que algum botão ou link DA INTRANET está quebrado! A IA precisa consertar.
+            return None
 
         # A fatal bug happened! Put it in the queue for the AI Daemon.
         from core.models import AIEngineerLog

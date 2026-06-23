@@ -88,7 +88,6 @@ class Membro(AbstractUser):
     horario_trabalho_fim = models.TimeField(null=True, blank=True, help_text="Fim do expediente de trabalho ou estudo")
     dias_trabalho = models.CharField(max_length=50, blank=True, help_text="Dias trabalhados separados por vírgula (0=Seg, 6=Dom)")
     dias_folga = models.CharField(max_length=50, blank=True, help_text="Dias de folga separados por vírgula (0=Seg, 6=Dom)")
-    anotacoes_lideranca = models.TextField(blank=True, help_text="Anotações privadas da liderança sobre o membro")
 
     def __str__(self):
         nome_base = self.get_full_name() or self.username
