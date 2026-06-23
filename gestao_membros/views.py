@@ -55,9 +55,18 @@ def painel_lider(request):
 
     depto_id = request.GET.get('depto_id') or request.GET.get('depto')
     if depto_id:
-        departamento_ativo = get_object_or_404(Departamento, id=depto_id)
+        departamento_ativo = get_object_or_404(
+            Departamento.objects.prefetch_related(
+                'membros_ativos',
+                'vagas_abertas__candidaturas',
+                'eventos_internos'
+            ), id=depto_id)
     else:
-        departamento_ativo = departamentos.first() if departamentos.exists() else None
+        departamento_ativo = departamentos.prefetch_related(
+            'membros_ativos',
+            'vagas_abertas__candidaturas',
+            'eventos_internos'
+        ).first() if departamentos.exists() else None
 
     if departamento_ativo:
         membros_pendentes = departamento_ativo.membros_ativos.filter(status_conta='pendente', is_active=False)
@@ -107,11 +116,61 @@ def painel_lider(request):
         proximos_cultos = []
 
     aniversariantes = []
+    vagas = []
+    ensaios = []
+    analytics = {
+        'total_membros': 0,
+        'taxa_presenca': 100,
+        'alertas_faltas': 0
+    }
+
     if departamento_ativo:
         aniversariantes = departamento_ativo.membros_ativos.filter(
             data_nascimento__month=hoje.month,
             is_active=True
         ).order_by('data_nascimento__day')
+
+        # Novas features
+        from gestao_membros.models import VagaSetor, EventoInternoSetor
+        vagas = departamento_ativo.vagas_abertas.all()
+        ensaios = departamento_ativo.eventos_internos.filter(data_inicio__gte=timezone.now()).order_by('data_inicio')[:5]
+
+        # Analytics
+        analytics['total_membros'] = membros_aprovados.count()
+
+        # Calcular taxa de presenca das ultimas 30 escalas do departamento
+        try:
+            from escalas.models import Escala
+            ultimas_escalas = Escala.objects.filter(
+                departamento_alocado=departamento_ativo,
+                data_escala__lt=hoje,
+                status__in=['presente', 'falta_justificada', 'substituido', 'confirmado']
+            ).order_by('-data_escala')[:100]
+
+            total_avaliado = 0
+            presentes = 0
+            for e in ultimas_escalas:
+                # Se passou do dia e ficou 'confirmado', consideramos falta injustificada na matemática bruta,
+                # mas o status que marca presenca é 'presente'
+                total_avaliado += 1
+                if e.status in ['presente', 'substituido', 'falta_justificada']:
+                    presentes += 1
+
+            if total_avaliado > 0:
+                analytics['taxa_presenca'] = int((presentes / total_avaliado) * 100)
+
+            from datetime import timedelta
+            # Alertas de faltas (quem faltou recentemente)
+            faltosos = Escala.objects.filter(
+                departamento_alocado=departamento_ativo,
+                data_escala__gte=hoje - timedelta(days=30),
+                data_escala__lt=hoje,
+                status='confirmado' # Significa que não fez check-in
+            ).values('membro_escalado').distinct()
+            analytics['alertas_faltas'] = faltosos.count()
+
+        except Exception:
+            pass
 
     return render(request, 'gestao_membros/painel_lider.html', {
         'departamentos': departamentos,
@@ -122,7 +181,10 @@ def painel_lider(request):
         'escalas_rascunho': escalas_rascunho,
         'proximos_cultos': proximos_cultos, # Passed to the template
         'avisos': avisos, # Passed to the template
-        'aniversariantes': aniversariantes
+        'aniversariantes': aniversariantes,
+        'vagas': vagas,
+        'ensaios': ensaios,
+        'analytics': analytics
     })
 
 import string
@@ -357,7 +419,23 @@ def exportar_aviso_pdf(request, aviso_id):
 
 @login_required
 def detalhes_departamento(request, dep_id):
-    dep = get_object_or_404(Departamento, id=dep_id)
+    dep = get_object_or_404(
+        Departamento.objects.prefetch_related(
+            'membros_ativos',
+            'lideres',
+            'sub_lideres',
+            'funcoes',
+            'avisos',
+            'avisos__autor',
+            'configuracao_slots',
+            'configuracao_slots__funcao',
+            'vagas_abertas',
+            'vagas_abertas__candidaturas',
+            'vagas_abertas__candidaturas__membro',
+            'eventos_internos'
+        ),
+        id=dep_id
+    )
     is_super = is_super_admin(request.user)
     is_lider_master = request.user.departamentos_liderados.filter(id=dep.id).exists()
 
@@ -856,11 +934,9 @@ def rh_gerar_pdf_disciplina(request, acao_id):
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="Disciplina_{acao.membro.first_name}_{acao.tipo}.pdf"'
         return response
-        return HttpResponse("Erro ao gerar PDF", status=500)
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json
 from intranet.services.gemini_ai import extrair_dados_membro_texto
 
 @login_required
@@ -878,3 +954,158 @@ def api_autofill_membro(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Apenas POST'}, status=405)
+
+
+# --- RECRUTAMENTO (Vagas) ---
+
+@login_required
+def criar_vaga_setor(request, dep_id):
+    dep = get_object_or_404(Departamento, id=dep_id)
+    is_super = is_super_admin(request.user)
+    is_lider_master = request.user.departamentos_liderados.filter(id=dep.id).exists()
+
+    if not (is_super or is_lider_master):
+        return HttpResponseForbidden("Apenas líderes podem abrir vagas.")
+
+    if request.method == 'POST':
+        from .models import VagaSetor
+        titulo = request.POST.get('titulo')
+        descricao = request.POST.get('descricao')
+        quantidade = int(request.POST.get('quantidade', 1))
+
+        VagaSetor.objects.create(
+            departamento=dep,
+            titulo=titulo,
+            descricao=descricao,
+            quantidade=quantidade
+        )
+        messages.success(request, f'Vaga "{titulo}" aberta com sucesso para o departamento!')
+        return redirect('detalhes_departamento', dep_id=dep.id)
+    return redirect('detalhes_departamento', dep_id=dep.id)
+
+@login_required
+def excluir_vaga_setor(request, vaga_id):
+    from .models import VagaSetor
+    vaga = get_object_or_404(VagaSetor, id=vaga_id)
+    is_super = is_super_admin(request.user)
+    is_lider_master = request.user.departamentos_liderados.filter(id=vaga.departamento.id).exists()
+
+    if not (is_super or is_lider_master):
+        return HttpResponseForbidden("Apenas líderes podem excluir vagas.")
+
+    dep_id = vaga.departamento.id
+    vaga.delete()
+    messages.success(request, 'Vaga excluída.')
+    return redirect('detalhes_departamento', dep_id=dep_id)
+
+@login_required
+def painel_vagas_publico(request):
+    from .models import VagaSetor
+    vagas_abertas = VagaSetor.objects.filter(ativa=True).order_by('-data_criacao')
+    minhas_candidaturas = request.user.minhas_candidaturas.all() if not request.user.is_anonymous else []
+
+    return render(request, 'gestao_membros/painel_vagas.html', {
+        'vagas': vagas_abertas,
+        'minhas_candidaturas': minhas_candidaturas
+    })
+
+@login_required
+def candidatar_vaga(request, vaga_id):
+    from .models import VagaSetor, CandidaturaVaga
+    vaga = get_object_or_404(VagaSetor, id=vaga_id, ativa=True)
+
+    if CandidaturaVaga.objects.filter(vaga=vaga, membro=request.user).exists():
+        messages.warning(request, 'Você já se candidatou para esta vaga.')
+        return redirect('painel_vagas_publico')
+
+    if request.method == 'POST':
+        mensagem = request.POST.get('mensagem', '')
+        CandidaturaVaga.objects.create(
+            vaga=vaga,
+            membro=request.user,
+            mensagem=mensagem
+        )
+        messages.success(request, 'Candidatura enviada ao líder do setor! Aguarde a avaliação.')
+        return redirect('painel_vagas_publico')
+
+    return redirect('painel_vagas_publico')
+
+@login_required
+def avaliar_candidatura(request, candidatura_id, acao):
+    from .models import CandidaturaVaga
+    from django.utils import timezone
+    candidatura = get_object_or_404(CandidaturaVaga, id=candidatura_id)
+    dep = candidatura.vaga.departamento
+    is_super = is_super_admin(request.user)
+    is_lider_master = request.user.departamentos_liderados.filter(id=dep.id).exists()
+
+    if not (is_super or is_lider_master):
+        return HttpResponseForbidden("Apenas líderes podem avaliar candidaturas.")
+
+    if acao == 'aprovar':
+        candidatura.status = 'aprovado'
+        candidatura.data_resposta = timezone.now()
+        candidatura.save()
+        # Adiciona o membro ao departamento
+        dep.membros_ativos.add(candidatura.membro)
+        messages.success(request, f'{candidatura.membro.first_name} foi aprovado e adicionado ao departamento!')
+    elif acao == 'rejeitar':
+        candidatura.status = 'rejeitado'
+        candidatura.data_resposta = timezone.now()
+        candidatura.save()
+        messages.warning(request, f'Candidatura de {candidatura.membro.first_name} foi rejeitada.')
+
+    return redirect('detalhes_departamento', dep_id=dep.id)
+
+# --- AGENDA DO SETOR (Eventos Internos) ---
+
+@login_required
+def criar_evento_setor(request, dep_id):
+    dep = get_object_or_404(Departamento, id=dep_id)
+    is_super = is_super_admin(request.user)
+    is_lider_master = request.user.departamentos_liderados.filter(id=dep.id).exists()
+
+    if not (is_super or is_lider_master):
+        return HttpResponseForbidden("Apenas líderes podem criar eventos.")
+
+    if request.method == 'POST':
+        from .models import EventoInternoSetor
+        from datetime import datetime
+        titulo = request.POST.get('titulo')
+        descricao = request.POST.get('descricao', '')
+        local = request.POST.get('local', '')
+        data_inicio_str = request.POST.get('data_inicio')
+        data_fim_str = request.POST.get('data_fim')
+
+        try:
+            data_inicio = datetime.fromisoformat(data_inicio_str)
+            data_fim = datetime.fromisoformat(data_fim_str) if data_fim_str else None
+
+            EventoInternoSetor.objects.create(
+                departamento=dep,
+                titulo=titulo,
+                descricao=descricao,
+                local=local,
+                data_inicio=data_inicio,
+                data_fim=data_fim
+            )
+            messages.success(request, 'Evento interno criado para a equipe!')
+        except ValueError:
+            messages.error(request, 'Formato de data inválido.')
+
+    return redirect('detalhes_departamento', dep_id=dep.id)
+
+@login_required
+def excluir_evento_setor(request, evento_id):
+    from .models import EventoInternoSetor
+    evento = get_object_or_404(EventoInternoSetor, id=evento_id)
+    is_super = is_super_admin(request.user)
+    is_lider_master = request.user.departamentos_liderados.filter(id=evento.departamento.id).exists()
+
+    if not (is_super or is_lider_master):
+        return HttpResponseForbidden("Acesso negado.")
+
+    dep_id = evento.departamento.id
+    evento.delete()
+    messages.success(request, 'Evento interno excluído.')
+    return redirect('detalhes_departamento', dep_id=dep_id)

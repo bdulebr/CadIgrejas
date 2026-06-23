@@ -7,7 +7,7 @@
 {% block title %}Detalhes do Departamento - PVE{% endblock title %}
 
 {% block content %}
-<div class="min-h-screen bg-transparent p-8">
+<div class="min-h-screen bg-transparent p-4 md:p-8" x-data="{ activeTab: 'dashboard' }">
     <div class="max-w-7xl mx-auto space-y-6">
 
         <!-- Header -->
@@ -33,264 +33,686 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                {% if is_super and not dep.is_system %}
-                <form method="POST" action="{% url 'excluir_departamento' dep.id %}" onsubmit="return confirm('Deseja realmente apagar este departamento? Isso não pode ser desfeito.')">
-                    {% csrf_token %}
-                    <button type="submit" class="px-5 py-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 rounded-xl font-bold transition-all">Apagar Setor</button>
-                </form>
-                {% endif %}
                 <a href="{% url 'departamentos' %}" class="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg border border-gray-600">Voltar</a>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-2 overflow-x-auto pb-1 scrollbar-hide border-b border-gray-800/60">
+            <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm border-t border-x border-transparent" :style="activeTab === 'dashboard' ? 'border-color: rgba(59, 130, 246, 0.5)' : ''">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+            </button>
+            <button @click="activeTab = 'equipe'" :class="activeTab === 'equipe' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm border-t border-x border-transparent" :style="activeTab === 'equipe' ? 'border-color: rgba(59, 130, 246, 0.5)' : ''">
+                <i data-lucide="users" class="w-4 h-4"></i> Equipe & Liderança
+            </button>
+            <button @click="activeTab = 'escalas'" :class="activeTab === 'escalas' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm border-t border-x border-transparent" :style="activeTab === 'escalas' ? 'border-color: rgba(59, 130, 246, 0.5)' : ''">
+                <i data-lucide="calendar-cog" class="w-4 h-4"></i> Slots de Escala
+            </button>
+            <button @click="activeTab = 'cargos'" :class="activeTab === 'cargos' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm border-t border-x border-transparent" :style="activeTab === 'cargos' ? 'border-color: rgba(59, 130, 246, 0.5)' : ''">
+                <i data-lucide="briefcase" class="w-4 h-4"></i> Cargos e Funções
+            </button>
+            <button @click="activeTab = 'agenda'" :class="activeTab === 'agenda' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm border-t border-x border-transparent" :style="activeTab === 'agenda' ? 'border-color: rgba(59, 130, 246, 0.5)' : ''">
+                <i data-lucide="calendar-clock" class="w-4 h-4"></i> Agenda
+            </button>
+            <button @click="activeTab = 'recrutamento'" :class="activeTab === 'recrutamento' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm border-t border-x border-transparent" :style="activeTab === 'recrutamento' ? 'border-color: rgba(59, 130, 246, 0.5)' : ''">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Recrutamento
+            </button>
+            <button @click="activeTab = 'mural'" :class="activeTab === 'mural' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm border-t border-x border-transparent" :style="activeTab === 'mural' ? 'border-color: rgba(59, 130, 246, 0.5)' : ''">
+                <i data-lucide="megaphone" class="w-4 h-4"></i> Mural de Avisos
+            </button>
+            {% if is_super or is_lider_master %}
+            <button @click="activeTab = 'config'" :class="activeTab === 'config' ? 'bg-gray-800 text-white shadow-lg' : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800'" class="px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 text-sm ml-auto border-t border-x border-transparent" :style="activeTab === 'config' ? 'border-color: rgba(75, 85, 99, 0.5)' : ''">
+                <i data-lucide="settings" class="w-4 h-4"></i> Configurações
+            </button>
+            {% endif %}
+        </div>
 
-            <!-- Coluna Esq: Info e Funções -->
-            <div class="space-y-6 lg:col-span-1">
+        <!-- Tab Contents -->
+        <div class="relative pt-2">
 
-                <!-- Info Editor -->
-                {% if is_super or is_lider_master %}
-                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
-                    <h3 class="font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-2">
-                        <i data-lucide="edit-3" class="w-5 h-5 text-blue-400"></i> Editar Informações
-                    </h3>
-                    <form method="POST" action="{% url 'detalhes_departamento' dep.id %}" enctype="multipart/form-data" class="space-y-4">
-                        {% csrf_token %}
-                        <input type="hidden" name="acao" value="editar">
+            <!-- TAB: Dashboard -->
+            <div x-show="activeTab === 'dashboard'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Estatisticas basicas -->
+                    <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg flex items-center gap-4">
+                        <div class="w-14 h-14 bg-blue-600/20 rounded-2xl flex items-center justify-center border border-blue-500/30">
+                            <i data-lucide="users" class="w-7 h-7 text-blue-400"></i>
+                        </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nome</label>
-                            <input type="text" name="nome" value="{{ dep.nome }}" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total de Voluntários</p>
+                            <p class="text-3xl font-extrabold text-white">{{ membros.count }}</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg flex items-center gap-4">
+                        <div class="w-14 h-14 bg-indigo-600/20 rounded-2xl flex items-center justify-center border border-indigo-500/30">
+                            <i data-lucide="briefcase" class="w-7 h-7 text-indigo-400"></i>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Categoria</label>
-                            <select name="categoria" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <option value="grupo" {% if dep.categoria == 'grupo' %}selected{% endif %}>Grupo</option>
-                                <option value="setor" {% if dep.categoria == 'setor' %}selected{% endif %}>Setor</option>
-                                <option value="ministerio" {% if dep.categoria == 'ministerio' %}selected{% endif %}>Ministério</option>
-                                <option value="departamento" {% if dep.categoria == 'departamento' %}selected{% endif %}>Departamento</option>
-                            </select>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Cargos/Funções</p>
+                            <p class="text-3xl font-extrabold text-white">{{ dep.funcoes.count }}</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg flex items-center gap-4">
+                        <div class="w-14 h-14 bg-green-600/20 rounded-2xl flex items-center justify-center border border-green-500/30">
+                            <i data-lucide="calendar-check" class="w-7 h-7 text-green-400"></i>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Logo do Departamento</label>
-                            <input type="file" name="logo" accept="image/*" class="w-full px-4 py-2 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30">
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Slots Configurados</p>
+                            <p class="text-3xl font-extrabold text-white">{{ config_slots.count|default:"0" }}</p>
                         </div>
-                        <button type="submit" class="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg">Salvar Modificações</button>
-                    </form>
-                </div>
-
-                <!-- Criar Nova Função -->
-                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
-                    <h3 class="font-bold text-white mb-2 flex items-center gap-2 border-b border-gray-800 pb-2">
-                        <i data-lucide="briefcase" class="w-5 h-5 text-indigo-400"></i> Funções e Cargos
-                    </h3>
-                    <p class="text-xs text-gray-400 mb-4">Crie cargos específicos que existem neste departamento.</p>
-                    <form method="POST" action="{% url 'criar_funcao' dep.id %}">
-                        {% csrf_token %}
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-300">Nome da Função</label>
-                                <input type="text" name="nome" required placeholder="Ex: Operador de Câmera" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none text-sm">
-                            </div>
-                            <button type="submit" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl text-sm transition-colors border border-gray-600">+ Cadastrar Função</button>
-                        </div>
-                    </form>
-
-                    <div class="mt-6 space-y-2">
-                        {% for funcao in dep.funcoes.all %}
-                        <div class="p-3 border border-gray-700 bg-gray-800/50 rounded-xl flex justify-between items-center group hover:border-gray-500 transition-colors">
-                            <h4 class="font-bold text-white text-sm">{{ funcao.nome }}</h4>
-                            <form method="POST" action="{% url 'excluir_funcao' funcao.id %}" onsubmit="return confirm('Apagar função?')">
-                                {% csrf_token %}
-                                <button type="submit" class="text-red-500 hover:text-red-400 opacity-50 group-hover:opacity-100 transition-opacity" title="Excluir">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </form>
-                        </div>
-                        {% empty %}
-                        <p class="text-xs text-gray-500 text-center">Nenhum cargo cadastrado.</p>
-                        {% endfor %}
                     </div>
                 </div>
-                {% endif %}
 
+                <!-- Info rápida p/ Líderes -->
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
+                    <h3 class="font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="info" class="w-5 h-5 text-blue-400"></i> Bem-vindo ao Painel do Setor</h3>
+                    <p class="text-gray-400 text-sm">Este é o painel de gerenciamento isolado para o setor <strong>{{ dep.nome }}</strong>. Navegue pelas abas acima para montar sua equipe, configurar como as escalas automáticas devem funcionar e gerenciar os cargos necessários.</p>
+                </div>
             </div>
 
-            <!-- Coluna Central: Configuração de Escalas -->
-            <div class="lg:col-span-1 space-y-6">
+            <!-- TAB: Equipe -->
+            <div x-cloak x-show="activeTab === 'equipe'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
 
-                <div class="bg-gray-900/80 backdrop-blur-xl border border-blue-500/30 p-6 rounded-3xl shadow-[0_0_20px_rgba(59,130,246,0.1)] relative">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-t-3xl"></div>
-                    <h3 class="font-bold text-white mb-2 flex items-center gap-2 border-b border-gray-800 pb-2">
-                        <i data-lucide="calendar-cog" class="w-5 h-5 text-blue-400"></i> Configuração de Slots
-                    </h3>
-                    <p class="text-xs text-gray-400 mb-4">Defina quantas pessoas são necessárias por função para cada tipo de culto. Isso guiará o Motor Automático.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    {% if is_super or is_lider_master %}
-                    <form method="POST" action="{% url 'salvar_configuracao_slot' dep.id %}" class="space-y-3 mb-6 bg-gray-950/40 p-4 rounded-2xl border border-gray-800">
-                        {% csrf_token %}
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Cultos/Eventos</label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                                {% for id, nome in tipos_evento %}
-                                <label class="flex items-center gap-2 text-xs text-gray-300 bg-gray-900 p-2 rounded-lg border border-gray-700 cursor-pointer hover:border-blue-500 transition-colors leading-tight">
-                                    <input type="checkbox" name="tipo_evento" value="{{ id }}" class="rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-blue-500">
-                                    {{ nome }}
-                                </label>
-                                {% empty %}
-                                <div class="col-span-1 sm:col-span-2 text-center p-4 bg-gray-950/80 border border-red-500/30 rounded-xl mt-2">
-                                    <p class="text-xs text-red-400 font-bold mb-2">Nenhum evento/dia da semana configurado ainda no sistema global.</p>
-                                    <a href="{% url 'gerenciar_cultos' %}" class="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition-colors">
-                                        + Criar Cultos / Dias da Semana
-                                    </a>
+                    <!-- Liderança -->
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
+                            <h3 class="font-bold text-white mb-4 border-b border-gray-800 pb-2">Gestão de Liderança</h3>
+                            <div class="space-y-4 mb-4">
+                                <div class="bg-blue-900/20 border border-blue-500/20 p-4 rounded-xl">
+                                    <h4 class="font-bold text-blue-400 text-xs uppercase mb-2">Líderes Principais</h4>
+                                    <ul class="text-sm text-gray-200 space-y-2">
+                                        {% for lider in dep.lideres.all %}
+                                        <li class="flex justify-between items-center group">
+                                            <span class="font-medium flex items-center gap-2">
+                                                {% if lider.foto_perfil %}<img src="{{ lider.foto_perfil.url }}" class="w-6 h-6 rounded-full object-cover">{% endif %}
+                                                {{ lider.first_name }}
+                                            </span>
+                                            {% if is_super or is_lider_master %}
+                                            <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">{% csrf_token %}<input type="hidden" name="acao" value="rem_lider"><input type="hidden" name="membro_id" value="{{ lider.id }}"><button type="submit" class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x-circle" class="w-4 h-4"></i></button></form>
+                                            {% endif %}
+                                        </li>
+                                        {% empty %}<li class="text-gray-500 text-xs">Nenhum líder definido.</li>{% endfor %}
+                                    </ul>
                                 </div>
-                                {% endfor %}
+                                <div class="bg-indigo-900/20 border border-indigo-500/20 p-4 rounded-xl">
+                                    <h4 class="font-bold text-indigo-400 text-xs uppercase mb-2">Sub-Líderes</h4>
+                                    <ul class="text-sm text-gray-200 space-y-2">
+                                        {% for sub in dep.sub_lideres.all %}
+                                        <li class="flex justify-between items-center group">
+                                            <span class="font-medium flex items-center gap-2">
+                                                {% if sub.foto_perfil %}<img src="{{ sub.foto_perfil.url }}" class="w-6 h-6 rounded-full object-cover">{% endif %}
+                                                {{ sub.first_name }}
+                                            </span>
+                                            {% if is_super or is_lider_master %}
+                                            <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">{% csrf_token %}<input type="hidden" name="acao" value="rem_sub"><input type="hidden" name="membro_id" value="{{ sub.id }}"><button type="submit" class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x-circle" class="w-4 h-4"></i></button></form>
+                                            {% endif %}
+                                        </li>
+                                        {% empty %}<li class="text-gray-500 text-xs">Nenhum sub-líder.</li>{% endfor %}
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mt-4">Função Requerida</label>
-                            <select name="funcao_id" required class="w-full mt-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm outline-none">
-                                {% for funcao in dep.funcoes.all %}
-                                <option value="{{ funcao.id }}">{{ funcao.nome }}</option>
-                                {% empty %}
-                                <option value="">Crie uma função primeiro!</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase">Quantidade de Vagas para esta Função</label>
-                            <input type="number" name="quantidade" min="1" value="1" required class="w-full mt-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm outline-none">
-                        </div>
-                        <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm transition-all shadow-md mt-2">
-                            ADICIONAR PARA OS DIAS SELECIONADOS
-                        </button>
-                    </form>
-                    {% endif %}
 
-                    <div class="space-y-4">
-                        {% regroup config_slots by get_tipo_evento_display as agrupados_por_evento %}
-                        {% for grupo in agrupados_por_evento %}
-                        <div class="bg-gray-800/40 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
-                            <h4 class="text-xs font-bold text-blue-400 uppercase border-b border-gray-700 pb-2">{{ grupo.grouper }}</h4>
-                            <div class="grid grid-cols-1 gap-2">
-                                {% for config in grupo.list %}
-                                <div class="flex justify-between items-center bg-gray-900/80 p-2.5 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">
-                                    <span class="text-white text-sm font-bold flex items-center gap-2"><i data-lucide="user-check" class="w-4 h-4 text-green-400"></i> {{ config.funcao.nome }}</span>
+                            <div class="bg-purple-900/20 border border-purple-500/20 p-4 rounded-xl mt-4">
+                                <h4 class="font-bold text-purple-400 text-xs uppercase mb-2 flex justify-between items-center">
+                                    Resumo de Uniformes
+                                    <i data-lucide="shirt" class="w-4 h-4"></i>
+                                </h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-gray-300">
+                                    {% regroup membros by tamanho_camisa as tamanhos %}
+                                    {% for t in tamanhos %}
+                                        {% if t.grouper %}
+                                        <div class="bg-gray-900 p-2 rounded-lg border border-gray-700">
+                                            <span class="block text-xs text-gray-500 font-bold mb-1">TAM {{ t.grouper }}</span>
+                                            <span class="text-lg font-extrabold">{{ t.list|length }}</span>
+                                        </div>
+                                        {% endif %}
+                                    {% empty %}
+                                        <div class="col-span-full text-xs text-gray-500">Sem dados de camisetas</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            {% if is_super or is_lider_master %}
+                            <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}" class="space-y-3 pt-4 border-t border-gray-800">
+                                {% csrf_token %}
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Adicionar Liderança</label>
+                                    <select name="membro_id" required class="w-full px-3 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white text-sm outline-none">
+                                        <option value="">Selecionar Membro...</option>
+                                        {% for m in todos_membros %}
+                                        <option value="{{ m.id }}">{{ m.get_full_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="flex gap-2">
+                                    <select name="acao" class="flex-1 px-3 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white text-sm outline-none">
+                                        <option value="add_lider">Tornar Líder</option>
+                                        <option value="add_sub">Tornar Sub-Líder</option>
+                                    </select>
+                                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-500 transition-colors shadow-lg">Adicionar</button>
+                                </div>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Lista de Voluntários -->
+                    <div class="lg:col-span-2 space-y-4">
+                        {% if is_super or is_lider_master %}
+                        <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-4 rounded-2xl shadow-lg flex flex-col md:flex-row gap-4 items-center justify-between">
+                            <h4 class="text-white font-bold text-sm">Adicionar Membro ao Setor</h4>
+                            <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}" class="flex gap-2 w-full md:w-auto">
+                                {% csrf_token %}
+                                <input type="hidden" name="acao" value="add_membro">
+                                <select name="membro_id" required class="flex-1 md:w-64 px-3 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white text-sm outline-none">
+                                    <option value="">Buscar membro ativo global...</option>
+                                    {% for m in todos_membros %}
+                                    <option value="{{ m.id }}">{{ m.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500 transition-colors shadow-lg whitespace-nowrap"><i data-lucide="user-plus" class="w-4 h-4 inline-block mr-1"></i> Adicionar</button>
+                            </form>
+                        </div>
+                        {% endif %}
+
+                        <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-3xl shadow-lg overflow-hidden flex flex-col" style="max-height: 600px;">
+                            <div class="p-6 border-b border-gray-800 flex justify-between items-center shrink-0 bg-gray-900">
+                                <h3 class="font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="users" class="w-5 h-5 text-green-400"></i> Voluntários do Setor
+                                </h3>
+                                <span class="bg-green-900/40 text-green-400 px-3 py-1 rounded-lg text-xs font-bold border border-green-500/30">{{ membros.count }} ativos</span>
+                            </div>
+                            <ul class="divide-y divide-gray-800 overflow-y-auto flex-1">
+                                {% for m in membros %}
+                                <li class="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-800/50 transition-colors gap-4">
                                     <div class="flex items-center gap-3">
-                                        <span class="text-blue-300 font-bold text-xs bg-blue-900/40 px-2 py-1 rounded shadow-inner">{{ config.quantidade }} vaga(s)</span>
+                                        {% if m.foto_perfil %}
+                                        <img src="{{ m.foto_perfil.url }}" class="w-12 h-12 rounded-full object-cover border border-gray-700 shadow-sm">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 font-bold border border-gray-700 shadow-sm">{{ m.first_name|slice:":1" }}</div>
+                                        {% endif %}
+                                        <div>
+                                            <p class="font-bold text-white text-sm leading-tight">{{ m.get_full_name }}</p>
+                                            <div class="flex gap-2 mt-1">
+                                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md {% if m in dep.lideres.all %}bg-blue-900/50 text-blue-300 border border-blue-500/30{% elif m in dep.sub_lideres.all %}bg-indigo-900/50 text-indigo-300 border border-indigo-500/30{% else %}bg-gray-800 text-gray-400 border border-gray-700{% endif %}">
+                                                    {% if m in dep.lideres.all %}Líder Principal{% elif m in dep.sub_lideres.all %}Sub-Líder{% else %}Voluntário{% endif %}
+                                                </span>
+                                                <!-- Aqui pode entrar no futuro uma tag de ferias puxada via template tag -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <a href="{% url 'rh_dossie_membro' m.id %}" target="_blank" class="text-xs font-bold text-gray-400 hover:text-white px-3 py-1.5 bg-gray-800 rounded-lg border border-gray-700 transition-colors" title="Ver Dossiê">Perfil</a>
+
                                         {% if is_super or is_lider_master %}
-                                        <form method="POST" action="{% url 'remover_configuracao_slot' config.id %}">
+                                        <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">
                                             {% csrf_token %}
-                                            <button type="submit" class="text-gray-500 hover:text-red-400 transition-colors" title="Remover Regra"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                            <input type="hidden" name="acao" value="rem_membro">
+                                            <input type="hidden" name="membro_id" value="{{ m.id }}">
+                                            <button type="submit" class="text-red-500 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-lg border border-red-500/20 hover:border-red-500 transition-all text-xs font-bold flex items-center gap-1" title="Remover do Setor">
+                                                <i data-lucide="user-minus" class="w-3 h-3"></i> Remover
+                                            </button>
                                         </form>
                                         {% endif %}
                                     </div>
+                                </li>
+                                {% empty %}
+                                <li class="p-12 text-center text-gray-500 text-sm">
+                                    <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                                    Nenhum membro inscrito neste departamento ainda.
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Escalas -->
+            <div x-cloak x-show="activeTab === 'escalas'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+
+                <div class="bg-gray-900/80 backdrop-blur-xl border border-blue-500/30 p-6 md:p-8 rounded-3xl shadow-[0_0_20px_rgba(59,130,246,0.1)] relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                    <div class="max-w-3xl">
+                        <h3 class="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="calendar-cog" class="w-6 h-6 text-blue-400"></i> Motor de Escalas Automáticas (Slots)
+                        </h3>
+                        <p class="text-gray-400 mb-6 text-sm">Defina quantas pessoas são necessárias em cada função para cada tipo de culto. O Motor de Inteligência usará essas regras para gerar as escalas automaticamente (distribuindo peso de forma justa entre a equipe).</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                        {% if is_super or is_lider_master %}
+                        <div class="xl:col-span-1">
+                            <form method="POST" action="{% url 'salvar_configuracao_slot' dep.id %}" class="space-y-4 bg-gray-950/60 p-5 rounded-2xl border border-gray-800 shadow-inner">
+                                {% csrf_token %}
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">1. Selecione os Cultos</label>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2 mt-1 max-h-48 overflow-y-auto pr-2 scrollbar-thin">
+                                        {% for id, nome in tipos_evento %}
+                                        <label class="flex items-center gap-3 text-sm text-gray-300 bg-gray-900 p-3 rounded-xl border border-gray-700 cursor-pointer hover:border-blue-500 transition-colors">
+                                            <input type="checkbox" name="tipo_evento" value="{{ id }}" class="rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-blue-500 w-4 h-4">
+                                            {{ nome }}
+                                        </label>
+                                        {% empty %}
+                                        <div class="text-center p-4 bg-gray-900 border border-red-500/30 rounded-xl mt-2">
+                                            <p class="text-xs text-red-400 font-bold mb-2">Nenhum evento global configurado.</p>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase mt-4 mb-2">2. Função Requerida</label>
+                                    <select name="funcao_id" required class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-white text-sm outline-none focus:border-blue-500">
+                                        {% for funcao in dep.funcoes.all %}
+                                        <option value="{{ funcao.id }}">{{ funcao.nome }}</option>
+                                        {% empty %}
+                                        <option value="">Crie uma função na aba "Cargos" primeiro!</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">3. Quantidade de Vagas</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" name="quantidade" min="1" value="1" required class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-white text-sm outline-none focus:border-blue-500">
+                                        <span class="text-gray-500 text-sm font-bold">Pessoas</span>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex justify-center items-center gap-2">
+                                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Criar Regra de Slot
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+
+                        <div class="xl:col-span-2">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {% regroup config_slots by get_tipo_evento_display as agrupados_por_evento %}
+                                {% for grupo in agrupados_por_evento %}
+                                <div class="bg-gray-800/40 border border-gray-700 rounded-2xl p-5 flex flex-col gap-3 shadow-lg">
+                                    <h4 class="text-sm font-extrabold text-blue-400 uppercase tracking-wide border-b border-gray-700 pb-3 flex items-center gap-2">
+                                        <i data-lucide="calendar" class="w-4 h-4"></i> {{ grupo.grouper }}
+                                    </h4>
+                                    <div class="grid grid-cols-1 gap-2 mt-2">
+                                        {% for config in grupo.list %}
+                                        <div class="flex justify-between items-center bg-gray-900/80 p-3 rounded-xl border border-gray-700/50 hover:border-gray-500 transition-colors group">
+                                            <span class="text-white text-sm font-bold flex items-center gap-2">
+                                                <i data-lucide="briefcase" class="w-4 h-4 text-indigo-400"></i> {{ config.funcao.nome }}
+                                            </span>
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-blue-300 font-bold text-xs bg-blue-900/40 border border-blue-500/20 px-2.5 py-1 rounded-md">{{ config.quantidade }} vaga(s)</span>
+                                                {% if is_super or is_lider_master %}
+                                                <form method="POST" action="{% url 'remover_configuracao_slot' config.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="text-gray-500 hover:text-red-400 transition-colors opacity-50 group-hover:opacity-100 p-1" title="Remover Regra"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-span-1 md:col-span-2 text-center py-12 text-gray-500 bg-gray-900/50 rounded-3xl border border-gray-800 border-dashed">
+                                    <i data-lucide="calendar-plus" class="w-12 h-12 mx-auto mb-3 text-gray-600"></i>
+                                    <p class="text-sm font-bold text-gray-300">Nenhum slot configurado.</p>
+                                    <p class="text-xs mt-1">Crie as regras ao lado para que o gerador automático saiba quem escalar.</p>
                                 </div>
                                 {% endfor %}
                             </div>
                         </div>
-                        {% empty %}
-                        <div class="text-center py-6 text-gray-500 bg-gray-900/50 rounded-xl border border-gray-800 border-dashed">
-                            <i data-lucide="calendar-plus" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
-                            <p class="text-xs font-medium">Nenhum slot configurado ainda.</p>
-                            <p class="text-xs mt-1">Selecione os cultos acima e adicione as vagas necessárias.</p>
-                        </div>
-                        {% endfor %}
                     </div>
                 </div>
-
             </div>
 
-            <!-- Coluna Dir: Voluntários -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- Liderança -->
-                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg">
-                    <h3 class="font-bold text-white mb-4 border-b border-gray-800 pb-2">Gestão de Liderança</h3>
-                    <div class="space-y-4 mb-4">
-                        <div class="bg-blue-900/20 border border-blue-500/20 p-4 rounded-xl">
-                            <h4 class="font-bold text-blue-400 text-xs uppercase mb-2">Líderes</h4>
-                            <ul class="text-sm text-gray-200 space-y-2">
-                                {% for lider in dep.lideres.all %}
-                                <li class="flex justify-between items-center">
-                                    <span class="font-medium">{{ lider.first_name }}</span>
-                                    <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">{% csrf_token %}<input type="hidden" name="acao" value="rem_lider"><input type="hidden" name="membro_id" value="{{ lider.id }}"><button type="submit" class="text-red-400 hover:text-red-300"><i data-lucide="x-circle" class="w-4 h-4"></i></button></form>
-                                </li>
-                                {% empty %}<li class="text-gray-500 text-xs">Nenhum líder.</li>{% endfor %}
-                            </ul>
-                        </div>
-                        <div class="bg-indigo-900/20 border border-indigo-500/20 p-4 rounded-xl">
-                            <h4 class="font-bold text-indigo-400 text-xs uppercase mb-2">Sub-Líderes</h4>
-                            <ul class="text-sm text-gray-200 space-y-2">
-                                {% for sub in dep.sub_lideres.all %}
-                                <li class="flex justify-between items-center">
-                                    <span class="font-medium">{{ sub.first_name }}</span>
-                                    <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">{% csrf_token %}<input type="hidden" name="acao" value="rem_sub"><input type="hidden" name="membro_id" value="{{ sub.id }}"><button type="submit" class="text-red-400 hover:text-red-300"><i data-lucide="x-circle" class="w-4 h-4"></i></button></form>
-                                </li>
-                                {% empty %}<li class="text-gray-500 text-xs">Nenhum sub-líder.</li>{% endfor %}
-                            </ul>
-                        </div>
-                    </div>
+            <!-- TAB: Cargos -->
+            <div x-cloak x-show="activeTab === 'cargos'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
 
-                    {% if is_super or is_lider_master %}
-                    <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}" class="space-y-3 pt-4 border-t border-gray-800">
-                        {% csrf_token %}
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 md:p-8 rounded-3xl shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <div>
-                            <select name="membro_id" required class="w-full px-3 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white text-sm outline-none">
-                                <option value="">Selecionar Membro...</option>
-                                {% for m in todos_membros %}
-                                <option value="{{ m.id }}">{{ m.get_full_name }}</option>
-                                {% endfor %}
-                            </select>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i data-lucide="briefcase" class="w-6 h-6 text-indigo-400"></i> Funções e Cargos do Setor
+                            </h3>
+                            <p class="text-sm text-gray-400 mt-1">Defina quais posições existem na sua equipe (ex: Baterista, Operador de Câmera, Recepcionista).</p>
                         </div>
-                        <div class="flex gap-2">
-                            <select name="acao" class="flex-1 px-3 py-2 bg-gray-950/60 border border-gray-700/80 rounded-lg text-white text-sm outline-none">
-                                <option value="add_membro">Apenas Membro</option>
-                                <option value="add_lider">Tornar Líder</option>
-                                <option value="add_sub">Tornar Sub-Líder</option>
-                            </select>
-                            <button type="submit" class="px-4 py-2 bg-gray-800 text-white text-sm font-bold rounded-lg border border-gray-600 hover:bg-gray-700">Add</button>
-                        </div>
-                    </form>
-                    {% endif %}
-                </div>
-
-                <!-- Lista de Voluntários -->
-                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-3xl shadow-lg overflow-hidden flex flex-col" style="max-height: 500px;">
-                    <div class="p-6 border-b border-gray-800 flex justify-between items-center shrink-0">
-                        <h3 class="font-bold text-white flex items-center gap-2">
-                            <i data-lucide="users" class="w-5 h-5 text-green-400"></i> Voluntários
-                        </h3>
-                        <span class="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-bold border border-gray-700">{{ membros.count }}</span>
+                        {% if is_super or is_lider_master %}
+                        <form method="POST" action="{% url 'criar_funcao' dep.id %}" class="flex w-full md:w-auto gap-2">
+                            {% csrf_token %}
+                            <input type="text" name="nome" required placeholder="Nova Função..." class="flex-1 md:w-64 px-4 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:border-indigo-500 text-sm">
+                            <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition-colors shadow-lg whitespace-nowrap">
+                                + Criar
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
-                    <ul class="divide-y divide-gray-800 overflow-y-auto flex-1">
-                        {% for m in membros %}
-                        <li class="p-4 flex items-center justify-between hover:bg-gray-800/50 transition-colors">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for funcao in dep.funcoes.all %}
+                        <div class="p-5 border border-gray-700 bg-gray-800/40 rounded-2xl flex justify-between items-center group hover:border-gray-500 hover:bg-gray-800/60 transition-all shadow-md">
                             <div class="flex items-center gap-3">
-                                {% if m.foto_perfil %}
-                                <img src="{{ m.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover border border-gray-700">
-                                {% else %}
-                                <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 font-bold border border-gray-700">{{ m.first_name|slice:":1" }}</div>
-                                {% endif %}
+                                <div class="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center">
+                                    <i data-lucide="check-circle-2" class="w-5 h-5 text-green-500"></i>
+                                </div>
                                 <div>
-                                    <p class="font-bold text-white text-sm leading-tight">{{ m.get_full_name }}</p>
-                                    <p class="text-xs text-gray-500">{{ m.get_nivel_hierarquico_display }}</p>
+                                    <h4 class="font-bold text-white">{{ funcao.nome }}</h4>
+                                    <!-- Futuro: Habilidades requeridas -->
                                 </div>
                             </div>
                             {% if is_super or is_lider_master %}
-                            <form method="POST" action="{% url 'atribuir_lideranca' dep.id %}">
+                            <form method="POST" action="{% url 'excluir_funcao' funcao.id %}" onsubmit="return confirm('Deseja apagar esta função permanentemente?')">
                                 {% csrf_token %}
-                                <input type="hidden" name="acao" value="rem_membro">
-                                <input type="hidden" name="membro_id" value="{{ m.id }}">
-                                <button type="submit" class="text-red-500 hover:text-red-400 p-2" title="Remover do Setor"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                                <button type="submit" class="text-gray-500 hover:text-red-400 transition-colors p-2 bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100" title="Excluir Função">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
                             </form>
                             {% endif %}
-                        </li>
+                        </div>
                         {% empty %}
-                        <li class="p-8 text-center text-gray-500 text-sm">Nenhum membro inscrito.</li>
+                        <div class="col-span-full py-8 text-center text-gray-500 border border-gray-800 border-dashed rounded-2xl bg-gray-900/30">
+                            <p class="text-sm">Nenhum cargo cadastrado neste departamento.</p>
+                        </div>
                         {% endfor %}
-                    </ul>
+                    </div>
                 </div>
 
             </div>
+
+            <!-- TAB: Mural -->
+            <div x-cloak x-show="activeTab === 'mural'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 md:p-8 rounded-3xl shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i data-lucide="megaphone" class="w-6 h-6 text-yellow-500"></i> Mural de Avisos do Setor
+                            </h3>
+                            <p class="text-sm text-gray-400 mt-1">Veja os avisos ativos ou envie novas comunicações para a equipe.</p>
+                        </div>
+                        <a href="{% url 'criar_aviso' %}" class="px-5 py-2.5 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl text-sm transition-colors shadow-lg whitespace-nowrap flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Publicar Aviso
+                        </a>
+                    </div>
+
+                    <div class="space-y-4">
+                        {% for aviso in dep.avisos.all %}
+                        {% if aviso.status == 'ativo' %}
+                        <div class="bg-gray-800/40 border border-gray-700 rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-yellow-900/20 border border-yellow-500/30 flex items-center justify-center shrink-0">
+                                    <i data-lucide="bell" class="w-5 h-5 text-yellow-500"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white text-lg flex items-center gap-2">
+                                        {{ aviso.titulo }}
+                                        {% if aviso.fixado %}<span class="bg-red-900/50 text-red-300 border border-red-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Importante</span>{% endif %}
+                                    </h4>
+                                    <p class="text-sm text-gray-400 mt-1 line-clamp-2">{{ aviso.mensagem|striptags }}</p>
+                                    <p class="text-xs text-gray-500 mt-2"><i data-lucide="calendar" class="w-3 h-3 inline"></i> {{ aviso.data_postagem|date:"d/m/Y H:i" }} por {{ aviso.autor.first_name }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <div class="py-12 text-center text-gray-500 border border-gray-800 border-dashed rounded-2xl bg-gray-900/30">
+                            <i data-lucide="bell-off" class="w-10 h-10 mx-auto mb-3 text-gray-600"></i>
+                            <p class="text-sm font-medium text-gray-400">Nenhum aviso ativo no mural deste departamento.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Agenda Interna -->
+            <div x-cloak x-show="activeTab === 'agenda'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 md:p-8 rounded-3xl shadow-lg">
+                        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                            <i data-lucide="calendar-clock" class="w-6 h-6 text-blue-400"></i> Ensaios e Reuniões da Equipe
+                        </h3>
+                        <div class="space-y-4">
+                            {% for evento in dep.eventos_internos.all|dictsort:"data_inicio" %}
+                            <div class="bg-gray-800/40 border border-gray-700 rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between group">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-blue-900/20 border border-blue-500/30 flex flex-col items-center justify-center shrink-0">
+                                        <span class="text-xs font-bold text-blue-400 uppercase leading-none">{{ evento.data_inicio|date:"M" }}</span>
+                                        <span class="text-lg font-extrabold text-white leading-none mt-1">{{ evento.data_inicio|date:"d" }}</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-white text-lg flex items-center gap-2">
+                                            {{ evento.titulo }}
+                                        </h4>
+                                        <p class="text-sm text-gray-400 mt-1 line-clamp-2">{{ evento.descricao }}</p>
+                                        <div class="flex flex-wrap gap-3 mt-2 text-xs font-bold text-gray-500">
+                                            <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-blue-400"></i> {{ evento.data_inicio|time:"H:i" }}</span>
+                                            {% if evento.local %}
+                                            <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3 text-indigo-400"></i> {{ evento.local }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if is_super or is_lider_master %}
+                                <form method="POST" action="{% url 'excluir_evento_setor' evento.id %}" class="shrink-0" onsubmit="return confirm('Deseja cancelar/excluir este evento interno?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-gray-500 hover:text-red-400 bg-gray-900 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow border border-transparent hover:border-red-500/30">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="py-12 text-center text-gray-500 border border-gray-800 border-dashed rounded-2xl bg-gray-900/30">
+                                <i data-lucide="calendar-x" class="w-10 h-10 mx-auto mb-3 text-gray-600"></i>
+                                <p class="text-sm font-medium text-gray-400">Nenhum ensaio ou encontro interno agendado.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if is_super or is_lider_master %}
+                    <div class="lg:col-span-1 bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-3xl shadow-lg h-fit">
+                        <h3 class="font-bold text-white mb-4 border-b border-gray-800 pb-2">Agendar Novo Evento</h3>
+                        <form method="POST" action="{% url 'criar_evento_setor' dep.id %}" class="space-y-4">
+                            {% csrf_token %}
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Título do Encontro</label>
+                                <input type="text" name="titulo" required placeholder="Ex: Ensaio Geral" class="w-full px-3 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Data e Hora de Início</label>
+                                <input type="datetime-local" name="data_inicio" required class="w-full px-3 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Data e Hora do Fim (Opcional)</label>
+                                <input type="datetime-local" name="data_fim" class="w-full px-3 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Local (Opcional)</label>
+                                <input type="text" name="local" placeholder="Ex: Templo Principal" class="w-full px-3 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Instruções / Pauta</label>
+                                <textarea name="descricao" rows="2" class="w-full px-3 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white text-sm outline-none"></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]">Agendar</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB: Recrutamento -->
+            <div x-cloak x-show="activeTab === 'recrutamento'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 md:p-8 rounded-3xl shadow-lg">
+                        <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i data-lucide="user-plus" class="w-6 h-6 text-green-400"></i> Quadro de Vagas do Setor
+                            </h3>
+                        </div>
+                        <div class="space-y-4">
+                            {% for vaga in dep.vagas_abertas.all %}
+                            <div class="bg-gray-800/40 border border-gray-700 rounded-2xl p-5 shadow">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-white text-lg flex items-center gap-2">
+                                            {{ vaga.titulo }}
+                                            {% if vaga.ativa %}
+                                            <span class="bg-green-900/30 text-green-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border border-green-500/30">ABERTA</span>
+                                            {% else %}
+                                            <span class="bg-red-900/30 text-red-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border border-red-500/30">FECHADA</span>
+                                            {% endif %}
+                                        </h4>
+                                        <p class="text-sm text-gray-400 mt-2">{{ vaga.descricao }}</p>
+                                        <p class="text-xs text-gray-500 mt-3 font-bold"><i data-lucide="users" class="w-3 h-3 inline"></i> Procura-se {{ vaga.quantidade }} voluntário(s)</p>
+                                    </div>
+                                    {% if is_super or is_lider_master %}
+                                    <form method="POST" action="{% url 'excluir_vaga_setor' vaga.id %}" onsubmit="return confirm('Deseja excluir esta vaga?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-gray-500 hover:text-red-400 bg-gray-900 p-2 rounded-lg transition-all border border-gray-700 hover:border-red-500/30">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="py-10 text-center text-gray-500 border border-gray-800 border-dashed rounded-2xl bg-gray-900/30">
+                                <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-3 text-gray-600"></i>
+                                <p class="text-sm font-medium text-gray-400">Nenhuma vaga aberta. A equipe está completa!</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if is_super or is_lider_master %}
+                        <div class="mt-8 pt-6 border-t border-gray-800">
+                            <h4 class="font-bold text-white mb-4">Anunciar Nova Vaga</h4>
+                            <form method="POST" action="{% url 'criar_vaga_setor' dep.id %}" class="space-y-4 bg-gray-950/60 p-5 rounded-2xl border border-gray-800">
+                                {% csrf_token %}
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Título da Vaga</label>
+                                    <input type="text" name="titulo" required placeholder="Ex: Operador de Câmera" class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700/80 rounded-xl text-white text-sm outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Descrição e Requisitos</label>
+                                    <textarea name="descricao" rows="2" required placeholder="Ex: Precisa ter noções básicas de fotografia..." class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700/80 rounded-xl text-white text-sm outline-none"></textarea>
+                                </div>
+                                <div class="flex items-end gap-4">
+                                    <div class="flex-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Quantidade</label>
+                                        <input type="number" name="quantidade" value="1" min="1" class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700/80 rounded-xl text-white text-sm outline-none">
+                                    </div>
+                                    <button type="submit" class="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-all shadow-lg whitespace-nowrap">
+                                        <i data-lucide="plus" class="w-4 h-4 inline-block -mt-1"></i> Publicar Vaga
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if is_super or is_lider_master %}
+                    <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 md:p-8 rounded-3xl shadow-lg">
+                        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2 border-b border-gray-800 pb-4">
+                            <i data-lucide="inbox" class="w-6 h-6 text-purple-400"></i> Currículos Recebidos
+                        </h3>
+                        <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin">
+                            {% for vaga in dep.vagas_abertas.all %}
+                                {% for cand in vaga.candidaturas.all %}
+                                    {% if cand.status == 'pendente' %}
+                                    <div class="bg-gray-800/40 border border-purple-500/20 rounded-2xl p-4 shadow">
+                                        <div class="flex items-center gap-3 mb-3 border-b border-gray-700 pb-3">
+                                            {% if cand.membro.foto_perfil %}
+                                            <img src="{{ cand.membro.foto_perfil.url }}" class="w-10 h-10 rounded-full object-cover border border-gray-600">
+                                            {% else %}
+                                            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold text-gray-400 border border-gray-600">{{ cand.membro.first_name|slice:":1" }}</div>
+                                            {% endif %}
+                                            <div>
+                                                <h4 class="font-bold text-white text-sm">{{ cand.membro.get_full_name }}</h4>
+                                                <p class="text-xs text-purple-400 font-bold">Deseja a vaga: {{ vaga.titulo }}</p>
+                                            </div>
+                                        </div>
+                                        {% if cand.mensagem %}
+                                        <div class="bg-gray-900/80 p-3 rounded-lg border border-gray-700 mb-3 relative">
+                                            <i data-lucide="quote" class="w-4 h-4 text-gray-600 absolute top-2 right-2"></i>
+                                            <p class="text-sm text-gray-300 italic">"{{ cand.mensagem }}"</p>
+                                        </div>
+                                        {% endif %}
+                                        <div class="flex gap-2">
+                                            <a href="{% url 'avaliar_candidatura' cand.id 'aprovar' %}" class="flex-1 text-center py-2 bg-green-600/20 text-green-400 border border-green-500/30 rounded-lg text-xs font-bold hover:bg-green-600 hover:text-white transition-all">Aceitar no Setor</a>
+                                            <a href="{% url 'avaliar_candidatura' cand.id 'rejeitar' %}" class="flex-1 text-center py-2 bg-red-600/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white transition-all">Rejeitar</a>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if is_super or is_lider_master %}
+            <!-- TAB: Config -->
+            <div x-cloak x-show="activeTab === 'config'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 md:p-8 rounded-3xl shadow-lg">
+                        <h3 class="font-bold text-white mb-6 flex items-center gap-2 border-b border-gray-800 pb-4">
+                            <i data-lucide="settings" class="w-5 h-5 text-gray-400"></i> Propriedades do Departamento
+                        </h3>
+                        <form method="POST" action="{% url 'detalhes_departamento' dep.id %}" enctype="multipart/form-data" class="space-y-5">
+                            {% csrf_token %}
+                            <input type="hidden" name="acao" value="editar">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nome do Departamento</label>
+                                <input type="text" name="nome" value="{{ dep.nome }}" required class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-gray-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Categoria Organizacional</label>
+                                <select name="categoria" class="w-full px-4 py-3 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none focus:ring-2 focus:ring-gray-500 text-sm">
+                                    <option value="grupo" {% if dep.categoria == 'grupo' %}selected{% endif %}>Grupo</option>
+                                    <option value="setor" {% if dep.categoria == 'setor' %}selected{% endif %}>Setor</option>
+                                    <option value="ministerio" {% if dep.categoria == 'ministerio' %}selected{% endif %}>Ministério</option>
+                                    <option value="departamento" {% if dep.categoria == 'departamento' %}selected{% endif %}>Departamento</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Logo Oficial</label>
+                                <div class="flex items-center gap-4">
+                                    {% if dep.logo %}
+                                    <img src="{{ dep.logo.url }}" class="w-16 h-16 rounded-xl object-cover border border-gray-700">
+                                    {% endif %}
+                                    <input type="file" name="logo" accept="image/*" class="flex-1 px-4 py-2.5 bg-gray-950/60 border border-gray-700/80 rounded-xl text-white outline-none text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700 cursor-pointer transition-colors">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-3 mt-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg border border-gray-600">
+                                Salvar Alterações
+                            </button>
+                        </form>
+                    </div>
+
+                    {% if is_super and not dep.is_system %}
+                    <div class="bg-red-900/10 border border-red-500/20 p-6 md:p-8 rounded-3xl shadow-lg flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-extrabold text-red-500 mb-2 flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="w-6 h-6"></i> Danger Zone
+                            </h3>
+                            <p class="text-sm text-red-400/80 mb-6">As ações nesta área são irreversíveis. Apagar um departamento removerá todas as escalas, cargos e logs de avisos associados a ele. Tenha certeza absoluta.</p>
+                        </div>
+                        <form method="POST" action="{% url 'excluir_departamento' dep.id %}" onsubmit="return confirm('Deseja REALMENTE apagar o departamento {{ dep.nome }}? Isso apagará todas as configurações e não pode ser desfeito.')" class="bg-gray-900/50 p-6 rounded-2xl border border-red-500/30 text-center">
+                            {% csrf_token %}
+                            <p class="text-white font-bold mb-4">Código de segurança do Setor: <span class="bg-gray-950 px-2 py-1 rounded text-red-400 font-mono tracking-widest ml-1">{{ dep.id_unico_fixo }}</span></p>
+                            <button type="submit" class="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] w-full">
+                                EXCLUIR DEPARTAMENTO
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>

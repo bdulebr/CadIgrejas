@@ -171,3 +171,45 @@ class AcaoDisciplinar(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} - {self.membro.first_name}"
+
+
+# --- NOVAS FUNCIONALIDADES: RECRUTAMENTO E AGENDA ---
+
+class VagaSetor(models.Model):
+    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='vagas_abertas')
+    titulo = models.CharField(max_length=100)
+    descricao = models.TextField(help_text="Explique o que o voluntário vai fazer e os requisitos")
+    quantidade = models.PositiveIntegerField(default=1)
+    ativa = models.BooleanField(default=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Vaga: {self.titulo} - {self.departamento.nome}"
+
+class CandidaturaVaga(models.Model):
+    STATUS_CHOICES = (
+        ('pendente', 'Pendente'),
+        ('aprovado', 'Aprovado'),
+        ('rejeitado', 'Rejeitado'),
+    )
+    vaga = models.ForeignKey(VagaSetor, on_delete=models.CASCADE, related_name='candidaturas')
+    membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='minhas_candidaturas')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
+    mensagem = models.TextField(blank=True, help_text="Por que você quer participar deste ministério?")
+    data_candidatura = models.DateTimeField(auto_now_add=True)
+    data_resposta = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Candidatura de {self.membro.first_name} para {self.vaga.titulo}"
+
+class EventoInternoSetor(models.Model):
+    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='eventos_internos')
+    titulo = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True)
+    local = models.CharField(max_length=150, blank=True)
+    data_inicio = models.DateTimeField()
+    data_fim = models.DateTimeField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.titulo} - {self.departamento.nome}"

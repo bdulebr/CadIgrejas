@@ -51,4 +51,15 @@ urlpatterns = [
 
     # API
     path('api/membros/ai-autofill/', views.api_autofill_membro, name='api_autofill_membro'),
+
+    # Recrutamento e Vagas
+    path('departamento/<int:dep_id>/vaga/criar/', views.criar_vaga_setor, name='criar_vaga_setor'),
+    path('vagas/excluir/<int:vaga_id>/', views.excluir_vaga_setor, name='excluir_vaga_setor'),
+    path('vagas-abertas/', views.painel_vagas_publico, name='painel_vagas_publico'),
+    path('vagas/candidatar/<int:vaga_id>/', views.candidatar_vaga, name='candidatar_vaga'),
+    path('candidatura/avaliar/<int:candidatura_id>/<str:acao>/', views.avaliar_candidatura, name='avaliar_candidatura'),
+
+    # Agenda do Setor
+    path('departamento/<int:dep_id>/evento/criar/', views.criar_evento_setor, name='criar_evento_setor'),
+    path('evento/excluir/<int:evento_id>/', views.excluir_evento_setor, name='excluir_evento_setor'),
 ]

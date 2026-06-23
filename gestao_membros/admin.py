@@ -71,3 +71,23 @@ class AcaoDisciplinarAdmin(admin.ModelAdmin):
     list_display = ('membro', 'tipo', 'data_aplicacao', 'autor', 'enviado_email')
     list_filter = ('tipo', 'data_aplicacao', 'enviado_email')
     search_fields = ('membro__first_name', 'motivo', 'autor__first_name')
+
+from .models import VagaSetor, CandidaturaVaga, EventoInternoSetor
+
+@admin.register(VagaSetor)
+class VagaSetorAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'departamento', 'quantidade', 'ativa', 'data_criacao')
+    list_filter = ('ativa', 'departamento')
+    search_fields = ('titulo', 'departamento__nome')
+
+@admin.register(CandidaturaVaga)
+class CandidaturaVagaAdmin(admin.ModelAdmin):
+    list_display = ('vaga', 'membro', 'status', 'data_candidatura')
+    list_filter = ('status', 'vaga__departamento')
+    search_fields = ('membro__first_name', 'vaga__titulo')
+
+@admin.register(EventoInternoSetor)
+class EventoInternoSetorAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'departamento', 'data_inicio', 'local')
+    list_filter = ('departamento', 'data_inicio')
+    search_fields = ('titulo', 'departamento__nome')
