@@ -162,8 +162,65 @@ def gerenciar_dossie(user, acao: str, casal_id: int = None, pastor: str = None, 
 
     return "Ação inválida."
 
+
+def gerenciar_drive(user, acao: str, nome: str = None, pasta_id: int = None, arquivo_id: int = None, membro_alvo_id: int = None, nivel_permissao: str = 'leitor') -> str:
+    """
+    Ferramenta para gerenciar o PV Drive (Arquivos, Pastas e Compartilhamento).
+    :param user: Usuário logado.
+    :param acao: 'listar', 'criar_pasta', 'renomear_pasta', 'excluir_pasta', 'excluir_arquivo', 'compartilhar_pasta', 'mover_anexo'
+    :param nome: Nome para nova pasta ou novo nome para renomear.
+    :param pasta_id: ID da pasta (usado para listar, excluir, pai da nova pasta, ou destino do anexo).
+    :param arquivo_id: ID do ArquivoMidia a ser excluído ou movido.
+    :param membro_alvo_id: ID do membro para compartilhar.
+    :param nivel_permissao: 'leitor', 'editor' ou 'admin'.
+    """
+    from midia_lgpd.models import PastaVirtual, ArquivoMidia, PermissaoPVDrive
+
+    # Verifica permissão básica de acesso ao app midia_lgpd
+    if not user.has_perm('midia_lgpd.view_pastavirtual'):
+        return "Deus tá vendo! Você não tem autorização para acessar o PV Drive."
+
+    if acao == 'listar':
+        pastas = PastaVirtual.objects.filter(is_excluida=False)
+        # Filtro simples: Se for superuser vê tudo, senão só as públicas/pessoais/departamento dele (simplificado para IA)
+        res = [{"id": p.id, "nome": p.nome, "tipo": p.tipo_pasta} for p in pastas[:20]]
+        return f"Conteúdo do Drive (Pastas recentes): {json.dumps(res)}"
+
+    elif acao == 'criar_pasta':
+        if not nome: return "Preciso de um nome para criar a pasta."
+        nova = PastaVirtual.objects.create(nome=nome, criado_por=user, dono_membro=user, tipo_pasta='usuario', parent_id=pasta_id)
+        return f"Pasta '{nome}' criada com sucesso! ID: {nova.id}"
+
+    elif acao == 'renomear_pasta':
+        if not pasta_id or not nome: return "Falta pasta_id ou novo nome."
+        PastaVirtual.objects.filter(id=pasta_id).update(nome=nome)
+        return f"Pasta ID {pasta_id} renomeada para '{nome}'."
+
+    elif acao == 'excluir_pasta':
+        if not pasta_id: return "Falta pasta_id."
+        PastaVirtual.objects.filter(id=pasta_id).update(is_excluida=True, data_exclusao=timezone.now())
+        return f"Pasta ID {pasta_id} movida para a lixeira."
+
+    elif acao == 'excluir_arquivo':
+        if not arquivo_id: return "Falta arquivo_id."
+        ArquivoMidia.objects.filter(id=arquivo_id).update(is_excluido=True, data_exclusao=timezone.now())
+        return f"Arquivo ID {arquivo_id} excluído."
+
+    elif acao == 'compartilhar_pasta':
+        if not pasta_id or not membro_alvo_id: return "Falta pasta_id ou membro_alvo_id."
+        p = PermissaoPVDrive.objects.create(pasta_id=pasta_id, alvo_membro_id=membro_alvo_id, nivel=nivel_permissao, concedido_por=user)
+        return f"Pasta ID {pasta_id} compartilhada com Membro ID {membro_alvo_id} como {nivel_permissao}."
+
+    elif acao == 'mover_anexo':
+        if not arquivo_id or not pasta_id: return "Falta arquivo_id ou pasta_id para mover o anexo."
+        ArquivoMidia.objects.filter(id=arquivo_id).update(pasta_id=pasta_id)
+        return f"Anexo ID {arquivo_id} movido permanentemente para a Pasta ID {pasta_id} do PV Drive."
+
+    return "Ação do Drive não reconhecida."
+
 EVERSINHO_TOOLS_REGISTRY = [
     gerenciar_membros,
     gerenciar_escalas,
-    gerenciar_dossie
+    gerenciar_dossie,
+    gerenciar_drive
 ]

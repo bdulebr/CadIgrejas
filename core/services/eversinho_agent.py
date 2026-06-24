@@ -2,13 +2,14 @@ import os
 from google import genai
 from google.genai import types
 from django.conf import settings
-from .eversinho_tools import gerenciar_membros, gerenciar_escalas, gerenciar_dossie
+from .eversinho_tools import gerenciar_membros, gerenciar_escalas, gerenciar_dossie, gerenciar_drive
 from .eversinho_rag import load_eversinho_docs
 
-def ask_eversinho_agent(user_query: str, request_user) -> str:
+def ask_eversinho_agent(user_query: str, request_user, history: list = None) -> str:
     """
     Motor do Eversinho Agentic AI. Usa Google GenAI (Gemini) com Function Calling.
     O `request_user` é o usuário logado e será injetado nas chamadas de ferramentas.
+    `history` é a lista de mensagens anteriores do tipo types.Content.
     """
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
     if not gemini_key:
@@ -30,6 +31,9 @@ Exemplo: Se você for mostrar uma lista de membros, você pode usar:
 </div>
 Se não precisar formatar HTML, use Markdown normal.
 
+=== GESTÃO DE ARQUIVOS (PV DRIVE) ===
+Se o usuário lhe enviar uma mensagem dizendo que enviou um anexo (o sistema informará o ID do anexo), e pedir para guardar em uma pasta, use a ferramenta 'gerenciar_drive' com acao='mover_anexo' passando o arquivo_id e o pasta_id destino. Você pode usar acao='listar' primeiro para descobrir os IDs das pastas caso não saiba.
+
 === BASE DE CONHECIMENTO (RAG) ===
 {docs_context}
 ================================
@@ -37,6 +41,10 @@ Se não precisar formatar HTML, use Markdown normal.
 Se o usuário pedir para criar, listar ou modificar algo, SEMPRE tente usar uma ferramenta (Tool) se aplicável.
 Se a ferramenta retornar "Deus tá vendo! Você não tem autorização", repasse a negativa ao usuário com humor leve, lembrando que a segurança do sistema bloqueou a ação.
 """
+
+    if history:
+        hist_str = "\\n".join([f"{h['role'].upper()}: {h['text']}" for h in history])
+        system_prompt += f"\\n\\n=== HISTÓRICO DA CONVERSA NESTA SESSÃO ===\\n{hist_str}"
 
     client = genai.Client(api_key=gemini_key)
 
@@ -53,47 +61,59 @@ Se a ferramenta retornar "Deus tá vendo! Você não tem autorização", repasse
         """Gerencia dossiês confidenciais (casais). acao='listar' ou 'criar'."""
         return gerenciar_dossie(request_user, acao, casal_id, pastor, observacoes, nivel_crise, atendimento_para)
 
-    tools = [tool_gerenciar_membros, tool_gerenciar_escalas, tool_gerenciar_dossie]
+    def tool_gerenciar_drive(acao: str, nome: str = None, pasta_id: int = None, arquivo_id: int = None, membro_alvo_id: int = None, nivel_permissao: str = 'leitor') -> str:
+        """Gerencia o sistema de arquivos (PV Drive). acao='listar', 'criar_pasta', 'renomear_pasta', 'excluir_pasta', 'excluir_arquivo', 'compartilhar_pasta', 'mover_anexo'."""
+        return gerenciar_drive(request_user, acao, nome, pasta_id, arquivo_id, membro_alvo_id, nivel_permissao)
 
-    try:
-        chat = client.chats.create(
-            model="gemini-2.5-flash",
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                tools=tools,
-                temperature=0.7,
-            )
-        )
+    tools = [tool_gerenciar_membros, tool_gerenciar_escalas, tool_gerenciar_dossie, tool_gerenciar_drive]
 
-        # Primeiro loop de conversa
-        response = chat.send_message(user_query)
+    import time
+    max_retries = 3
 
-        # Verifica se o modelo decidiu usar uma ferramenta
-        if response.function_calls:
-            for function_call in response.function_calls:
-                fn_name = function_call.name
-                args = function_call.args
-
-                # Executa a função
-                result_str = ""
-                if fn_name == "tool_gerenciar_membros":
-                    result_str = tool_gerenciar_membros(**args)
-                elif fn_name == "tool_gerenciar_escalas":
-                    result_str = tool_gerenciar_escalas(**args)
-                elif fn_name == "tool_gerenciar_dossie":
-                    result_str = tool_gerenciar_dossie(**args)
-                else:
-                    result_str = f"Tool {fn_name} não implementada."
-
-                # Manda o resultado da função de volta pro LLM
-                response = chat.send_message(
-                    types.Part.from_function_response(
-                        name=fn_name,
-                        response={"result": result_str}
-                    )
+    for attempt in range(max_retries):
+        try:
+            chat = client.chats.create(
+                model="gemini-2.5-flash",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    tools=tools,
+                    temperature=0.7,
                 )
+            )
 
-        return response.text
+            # Primeiro loop de conversa
+            response = chat.send_message(user_query)
 
-    except Exception as e:
-        return f"Puxa, tive um pequeno curto-circuito ao pensar na resposta. Erro técnico: {str(e)}"
+            # Verifica se o modelo decidiu usar uma ferramenta
+            if response.function_calls:
+                for function_call in response.function_calls:
+                    fn_name = function_call.name
+                    args = function_call.args
+
+                    # Executa a função
+                    result_str = ""
+                    if fn_name == "tool_gerenciar_membros":
+                        result_str = tool_gerenciar_membros(**args)
+                    elif fn_name == "tool_gerenciar_escalas":
+                        result_str = tool_gerenciar_escalas(**args)
+                    elif fn_name == "tool_gerenciar_dossie":
+                        result_str = tool_gerenciar_dossie(**args)
+                    else:
+                        result_str = f"Tool {fn_name} não implementada."
+
+                    # Manda o resultado da função de volta pro LLM
+                    response = chat.send_message(
+                        types.Part.from_function_response(
+                            name=fn_name,
+                            response={"result": result_str}
+                        )
+                    )
+
+            return response.text
+
+        except Exception as e:
+            error_str = str(e)
+            if ("503" in error_str or "429" in error_str) and attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff (1s, 2s, 4s...)
+                continue
+            return f"Puxa, tive um pequeno curto-circuito ao pensar na resposta. Erro técnico: {error_str}"

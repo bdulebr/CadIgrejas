@@ -1527,29 +1527,46 @@ def sysadmin_deploy_producao(request):
 @login_required
 @csrf_exempt
 def eversinho_chat_api(request):
-    import time
     from core.services.eversinho_agent import ask_eversinho_agent
+    from midia_lgpd.models import ArquivoMidia
+
+    # Retorna o histórico visual do chat na carga inicial
+    if request.method == 'GET':
+        return HttpResponse(request.session.get('eversinho_ui_history', ''))
 
     if request.method == 'POST':
         user_msg = request.POST.get('mensagem', '').strip()
+        display_msg = user_msg
+
+        # Lidar com upload de arquivo (anexo) para o PV Drive
+        anexo = request.FILES.get('anexo')
+        if anexo:
+            arquivo_obj = ArquivoMidia.objects.create(
+                titulo=anexo.name,
+                arquivo=anexo,
+                enviado_por=request.user,
+                tamanho_bytes=anexo.size
+            )
+            user_msg += f"\n\n[SISTEMA: O usuário anexou um arquivo de ID {arquivo_obj.id} e nome '{arquivo_obj.titulo}'. Se for um pedido de salvar ou guardar, use a ferramenta 'gerenciar_drive' com acao='mover_anexo' (forneça o ID do arquivo e o ID da pasta destino).]"
+
         if not user_msg:
             return HttpResponse("Bolha de erro: mensagem vazia.")
 
-        # Call Agentic Logic injecting user permissions
-        resposta_ia = ask_eversinho_agent(user_msg, request.user)
+        history = request.session.get('eversinho_history', [])
 
-        # Process Markdown to HTML so links are clickable (Allows raw HTML for UI components)
+        # Call Agentic Logic injecting user permissions and history context
+        resposta_ia = ask_eversinho_agent(user_msg, request.user, history)
+
+        # Append to cognitive history
+        history.append({"role": "user", "text": user_msg})
+        history.append({"role": "model", "text": resposta_ia})
+        request.session['eversinho_history'] = history[-20:] # Keep last 20 messages
+
         import markdown
         resposta_html = markdown.markdown(resposta_ia, extensions=['extra', 'nl2br'])
 
-        # Return an HTML fragment with two bubbles: User bubble + AI bubble
-        # HTMX will append this to the chat window
-        html = f'''
-        <div class="flex justify-end mb-4 animate-fade-in-up">
-            <div class="bg-blue-600 text-white p-3 rounded-xl rounded-tr-none max-w-[80%] shadow-md">
-                <p class="text-sm">{user_msg}</p>
-            </div>
-        </div>
+        # Bolha da IA que será retornada para a tela
+        html_ia = f'''
         <div class="flex justify-start mb-4 animate-fade-in-up stagger-1">
             <div class="flex-shrink-0 mr-3">
                 <div class="w-8 h-8 rounded-full bg-blue-900 border border-blue-400 flex items-center justify-center overflow-hidden">
@@ -1561,5 +1578,20 @@ def eversinho_chat_api(request):
             </div>
         </div>
         '''
-        return HttpResponse(html)
+
+        # Bolha do Usuário para salvar no histórico visual (HTML persistido)
+        anexo_html = f"<p class='text-xs text-blue-200 mt-1 font-semibold'>📎 {anexo.name}</p>" if anexo else ""
+        html_user = f'''
+        <div class="flex justify-end mb-4">
+            <div class="bg-blue-600 text-white p-3 rounded-xl rounded-tr-none max-w-[80%] shadow-md">
+                <p class="text-sm">{display_msg}</p>
+                {anexo_html}
+            </div>
+        </div>
+        '''
+
+        ui_history = request.session.get('eversinho_ui_history', '')
+        request.session['eversinho_ui_history'] = ui_history + html_user + html_ia
+
+        return HttpResponse(html_ia)
     return HttpResponse("Método não permitido.")

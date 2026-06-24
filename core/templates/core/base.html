@@ -521,7 +521,7 @@
             </div>
 
             <!-- Corpo do Chat (Mensagens) -->
-            <div id="eversinho-chat-body" class="flex-grow p-4 overflow-y-auto flex flex-col space-y-4 bg-gray-900 custom-scrollbar">
+            <div id="eversinho-chat-body" class="flex-grow p-4 overflow-y-auto flex flex-col space-y-4 bg-gray-900 custom-scrollbar" hx-get="/api/eversinho/chat/" hx-trigger="load" hx-swap="beforeend">
                 <!-- Bolha de boas vindas -->
                 <div class="flex justify-start animate-fade-in-up">
                     <div class="bg-gray-800 text-gray-200 p-3 rounded-xl rounded-tl-none max-w-[85%] shadow-md border border-gray-700">
@@ -533,22 +533,64 @@
             <!-- Input do Chat -->
             <div class="p-3 border-t border-gray-800 bg-gray-900">
                 <form @submit.prevent="
-                    let btn = $el.querySelector('button');
-                    let input = $el.querySelector('input');
+                    let btn = $el.querySelector('button[type=submit]');
+                    let input = $el.querySelector('input[type=text]');
+                    let fileInput = $el.querySelector('input[type=file]');
                     let msg = input.value;
-                    if(!msg.trim()) return;
+                    let file = fileInput.files[0];
+                    if(!msg.trim() && !file) return;
+
                     input.disabled = true;
                     btn.disabled = true;
                     btn.innerHTML = `<i data-lucide='loader-2' class='w-4 h-4 animate-spin'></i>`;
 
+                    let body = document.getElementById('eversinho-chat-body');
+
+                    // Bolha Otimista do Usuário
+                    let fileName = file ? `<p class='text-xs text-blue-200 mt-1 font-semibold'>📎 ${file.name}</p>` : '';
+                    let userBubble = `
+                    <div class='flex justify-end mb-4 animate-fade-in-up'>
+                        <div class='bg-blue-600 text-white p-3 rounded-xl rounded-tr-none max-w-[80%] shadow-md'>
+                            <p class='text-sm'>${msg}</p>
+                            ${fileName}
+                        </div>
+                    </div>`;
+                    body.insertAdjacentHTML('beforeend', userBubble);
+
+                    // Indicador de Digitação
+                    let typingIndicator = `
+                    <div id='eversinho-typing' class='flex justify-start mb-4 animate-fade-in-up stagger-1'>
+                        <div class='flex-shrink-0 mr-3'>
+                            <div class='w-8 h-8 rounded-full bg-blue-900 border border-blue-400 flex items-center justify-center overflow-hidden'>
+                                <img src='/static/core/img/eversinho/normal.png' class='w-full h-full object-cover'>
+                            </div>
+                        </div>
+                        <div class='bg-gray-800 text-gray-200 p-3 rounded-xl rounded-tl-none shadow-md border border-gray-700 flex items-center space-x-1'>
+                            <div class='w-2 h-2 bg-gray-400 rounded-full animate-bounce'></div>
+                            <div class='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style='animation-delay: 0.1s'></div>
+                            <div class='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style='animation-delay: 0.2s'></div>
+                        </div>
+                    </div>`;
+                    body.insertAdjacentHTML('beforeend', typingIndicator);
+
+                    setTimeout(() => body.scrollTop = body.scrollHeight, 10);
+
+                    let formData = new FormData();
+                    formData.append('mensagem', msg);
+                    if(file) formData.append('anexo', file);
+
                     fetch('/api/eversinho/chat/', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'mensagem=' + encodeURIComponent(msg)
+                        body: formData
                     }).then(r => r.text()).then(html => {
-                        let body = document.getElementById('eversinho-chat-body');
+                        document.getElementById('eversinho-typing')?.remove();
                         body.insertAdjacentHTML('beforeend', html);
+
                         input.value = '';
+                        fileInput.value = '';
+                        document.getElementById('clip-icon').classList.remove('text-green-400');
+                        document.getElementById('clip-icon').classList.add('text-gray-400');
+
                         input.disabled = false;
                         btn.disabled = false;
                         btn.innerHTML = `<i data-lucide='send' class='w-4 h-4'></i>`;
@@ -556,12 +598,20 @@
                         if(window.htmx) htmx.process(body);
                         setTimeout(() => body.scrollTop = body.scrollHeight, 100);
                     }).catch(e => {
+                        document.getElementById('eversinho-typing')?.remove();
                         input.disabled = false;
                         btn.disabled = false;
                         btn.innerHTML = `<i data-lucide='send' class='w-4 h-4'></i>`;
                     });
-                " class="flex gap-2">
-                    <input type="text" name="mensagem" required autocomplete="off" placeholder="Digite sua dúvida aqui..." class="flex-grow bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                " class="flex items-center gap-2">
+
+                    <!-- Botão de Anexo -->
+                    <label class="cursor-pointer p-2 rounded-full hover:bg-gray-800 transition-colors" title="Anexar Arquivo">
+                        <i id="clip-icon" data-lucide="paperclip" class="w-5 h-5 text-gray-400"></i>
+                        <input type="file" name="anexo" class="hidden" onchange="document.getElementById('clip-icon').classList.replace('text-gray-400', 'text-green-400')">
+                    </label>
+
+                    <input type="text" name="mensagem" autocomplete="off" placeholder="Dúvida ou anexo..." class="flex-grow bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 shadow-md">
                         <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
