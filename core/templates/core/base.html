@@ -553,6 +553,7 @@
                         btn.disabled = false;
                         btn.innerHTML = `<i data-lucide='send' class='w-4 h-4'></i>`;
                         lucide.createIcons();
+                        if(window.htmx) htmx.process(body);
                         setTimeout(() => body.scrollTop = body.scrollHeight, 100);
                     }).catch(e => {
                         input.disabled = false;

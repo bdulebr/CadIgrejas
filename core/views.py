@@ -1528,19 +1528,19 @@ def sysadmin_deploy_producao(request):
 @csrf_exempt
 def eversinho_chat_api(request):
     import time
-    from core.services.eversinho_rag import ask_eversinho
+    from core.services.eversinho_agent import ask_eversinho_agent
 
     if request.method == 'POST':
         user_msg = request.POST.get('mensagem', '').strip()
         if not user_msg:
             return HttpResponse("Bolha de erro: mensagem vazia.")
 
-        # Call RAG logic
-        resposta_ia = ask_eversinho(user_msg)
+        # Call Agentic Logic injecting user permissions
+        resposta_ia = ask_eversinho_agent(user_msg, request.user)
 
-        # Process Markdown to HTML so links are clickable
+        # Process Markdown to HTML so links are clickable (Allows raw HTML for UI components)
         import markdown
-        resposta_html = markdown.markdown(resposta_ia)
+        resposta_html = markdown.markdown(resposta_ia, extensions=['extra', 'nl2br'])
 
         # Return an HTML fragment with two bubbles: User bubble + AI bubble
         # HTMX will append this to the chat window
