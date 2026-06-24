@@ -6,6 +6,10 @@
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
 ![Tailwind/CSS](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
 ![AI Integrações](https://img.shields.io/badge/AI-Groq%20%7C%20Gemini-orange?style=for-the-badge)
+![LIBRAS](https://img.shields.io/badge/🤟_LIBRAS-Surdos-0052cc?style=for-the-badge)
+![Leitor de Tela](https://img.shields.io/badge/🔊_Leitor_de_Tela-Cegos-0052cc?style=for-the-badge)
+![Alto Contraste](https://img.shields.io/badge/🌓_Alto_Contraste-Baixa_Visão-0052cc?style=for-the-badge)
+
 
 Este repositório contém o código-fonte da **Intranet Administrativa oficial** desenvolvida para a igreja Palavra de Vida Enseada (CadIgrejas). A plataforma foi construída em Python com o framework Django (ASGI/WSGI) para servir como um ecossistema ERP completo, autônomo e de alta segurança.
 
