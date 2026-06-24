@@ -67,53 +67,108 @@ Se a ferramenta retornar "Deus tá vendo! Você não tem autorização", repasse
 
     tools = [tool_gerenciar_membros, tool_gerenciar_escalas, tool_gerenciar_dossie, tool_gerenciar_drive]
 
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+
     import time
     max_retries = 3
 
+    # Define tools schema for OpenAI
+    tools_openai = [
+        {"type": "function", "function": {"name": "tool_gerenciar_membros", "description": "Gerencia membros e voluntários. Permite listar ou criar.", "parameters": {"type": "object", "properties": {"acao": {"type": "string"}, "nome": {"type": "string"}, "email": {"type": "string"}, "telefone": {"type": "string"}}, "required": ["acao"]}}},
+        {"type": "function", "function": {"name": "tool_gerenciar_escalas", "description": "Gerencia escalas. acao='listar' ou 'criar_escala_membro'.", "parameters": {"type": "object", "properties": {"acao": {"type": "string"}, "departamento_id": {"type": "integer"}, "mes_ano": {"type": "string"}, "membro_id": {"type": "integer"}, "data_escala": {"type": "string"}, "horario_inicio": {"type": "string"}, "horario_fim": {"type": "string"}, "tipo_evento": {"type": "string"}}, "required": ["acao"]}}},
+        {"type": "function", "function": {"name": "tool_gerenciar_dossie", "description": "Gerencia dossiês confidenciais (casais). acao='listar' ou 'criar'.", "parameters": {"type": "object", "properties": {"acao": {"type": "string"}, "casal_id": {"type": "integer"}, "pastor": {"type": "string"}, "observacoes": {"type": "string"}, "nivel_crise": {"type": "integer"}, "atendimento_para": {"type": "string"}}, "required": ["acao"]}}},
+        {"type": "function", "function": {"name": "tool_gerenciar_drive", "description": "Gerencia o sistema de arquivos (PV Drive). acao='listar', 'criar_pasta', 'renomear_pasta', 'excluir_pasta', 'excluir_arquivo', 'compartilhar_pasta', 'mover_anexo'.", "parameters": {"type": "object", "properties": {"acao": {"type": "string"}, "nome": {"type": "string"}, "pasta_id": {"type": "integer"}, "arquivo_id": {"type": "integer"}, "membro_alvo_id": {"type": "integer"}, "nivel_permissao": {"type": "string"}}, "required": ["acao"]}}}
+    ]
+
     for attempt in range(max_retries):
         try:
-            chat = client.chats.create(
-                model="gemini-2.5-flash",
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    tools=tools,
-                    temperature=0.7,
+            if openai_key and attempt == 0:
+                # Tentativa primária com OpenAI (conforme planejado originalmente)
+                from openai import OpenAI
+                import json
+                client_openai = OpenAI(api_key=openai_key)
+
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_query}
+                ]
+
+                completion = client_openai.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=messages,
+                    tools=tools_openai
                 )
-            )
 
-            # Primeiro loop de conversa
-            response = chat.send_message(user_query)
+                response_msg = completion.choices[0].message
 
-            # Verifica se o modelo decidiu usar uma ferramenta
-            if response.function_calls:
-                for function_call in response.function_calls:
-                    fn_name = function_call.name
-                    args = function_call.args
+                if response_msg.tool_calls:
+                    messages.append(response_msg)
+                    for tool_call in response_msg.tool_calls:
+                        fn_name = tool_call.function.name
+                        args = json.loads(tool_call.function.arguments)
 
-                    # Executa a função
-                    result_str = ""
-                    if fn_name == "tool_gerenciar_membros":
-                        result_str = tool_gerenciar_membros(**args)
-                    elif fn_name == "tool_gerenciar_escalas":
-                        result_str = tool_gerenciar_escalas(**args)
-                    elif fn_name == "tool_gerenciar_dossie":
-                        result_str = tool_gerenciar_dossie(**args)
-                    else:
-                        result_str = f"Tool {fn_name} não implementada."
+                        result_str = ""
+                        if fn_name == "tool_gerenciar_membros": result_str = tool_gerenciar_membros(**args)
+                        elif fn_name == "tool_gerenciar_escalas": result_str = tool_gerenciar_escalas(**args)
+                        elif fn_name == "tool_gerenciar_dossie": result_str = tool_gerenciar_dossie(**args)
+                        elif fn_name == "tool_gerenciar_drive": result_str = tool_gerenciar_drive(**args)
+                        else: result_str = f"Tool {fn_name} não implementada."
 
-                    # Manda o resultado da função de volta pro LLM
-                    response = chat.send_message(
-                        types.Part.from_function_response(
-                            name=fn_name,
-                            response={"result": result_str}
-                        )
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "name": fn_name,
+                            "content": result_str
+                        })
+
+                    second_response = client_openai.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=messages
                     )
+                    return second_response.choices[0].message.content
+                else:
+                    return response_msg.content
 
-            return response.text
+            else:
+                # Fallback para Gemini (ou se OpenAI falhou no attempt 0)
+                if not gemini_key:
+                    raise Exception("Sem chaves de API disponíveis.")
+
+                chat = client.chats.create(
+                    model="gemini-2.5-flash",
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        tools=tools,
+                        temperature=0.7,
+                    )
+                )
+
+                response = chat.send_message(user_query)
+
+                if response.function_calls:
+                    for function_call in response.function_calls:
+                        fn_name = function_call.name
+                        args = function_call.args
+
+                        result_str = ""
+                        if fn_name == "tool_gerenciar_membros": result_str = tool_gerenciar_membros(**args)
+                        elif fn_name == "tool_gerenciar_escalas": result_str = tool_gerenciar_escalas(**args)
+                        elif fn_name == "tool_gerenciar_dossie": result_str = tool_gerenciar_dossie(**args)
+                        elif fn_name == "tool_gerenciar_drive": result_str = tool_gerenciar_drive(**args)
+                        else: result_str = f"Tool {fn_name} não implementada."
+
+                        response = chat.send_message(
+                            types.Part.from_function_response(
+                                name=fn_name,
+                                response={"result": result_str}
+                            )
+                        )
+
+                return response.text
 
         except Exception as e:
             error_str = str(e)
-            if ("503" in error_str or "429" in error_str) and attempt < max_retries - 1:
-                time.sleep(2 ** attempt)  # Exponential backoff (1s, 2s, 4s...)
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
                 continue
             return f"Puxa, tive um pequeno curto-circuito ao pensar na resposta. Erro técnico: {error_str}"

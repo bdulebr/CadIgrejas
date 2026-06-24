@@ -489,10 +489,12 @@
     <div x-data="{
         chatOpen: false,
         sendQuickMsg(msg) {
-            let form = this.$el.querySelector('form');
+            let form = document.getElementById('eversinho-chat-form');
+            if(!form) form = this.$el.querySelector('form');
             let input = form.querySelector('input[type=text]');
+            let submitBtn = form.querySelector('button[type=submit]');
             input.value = msg;
-            form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
+            submitBtn.click();
         }
     }" class="fixed bottom-6 right-6 z-[99999]">
         <!-- Botão Principal -->
@@ -551,7 +553,7 @@
 
             <!-- Input do Chat -->
             <div class="p-3 border-t border-gray-800 bg-gray-900">
-                <form @submit.prevent="
+                <form id="eversinho-chat-form" @submit.prevent="
                     let btn = $el.querySelector('button[type=submit]');
                     let input = $el.querySelector('input[type=text]');
                     let fileInput = $el.querySelector('input[type=file]');
