@@ -614,6 +614,9 @@ def adicionar_membro(request):
         habilidades_ids = request.POST.getlist('habilidades')
         membro.habilidades.set(habilidades_ids)
 
+        funcoes_ids = request.POST.getlist('funcoes')
+        membro.funcoes_associadas.set(funcoes_ids)
+
         messages.success(request, 'Novo membro cadastrado com sucesso!')
         return redirect('painel_membros')
 
@@ -628,7 +631,9 @@ def adicionar_membro(request):
         'dias_semana': dias_semana,
         'dias_trabalho_list': [],
         'habilidades_membro': [],
-        'departamentos_membro': []
+        'departamentos_membro': [],
+        'funcoes_permitidas': [],
+        'funcoes_membro': []
     })
 
 @login_required
@@ -699,6 +704,9 @@ def editar_membro(request, membro_id):
         habilidades_ids = request.POST.getlist('habilidades')
         membro.habilidades.set(habilidades_ids)
 
+        funcoes_ids = request.POST.getlist('funcoes')
+        membro.funcoes_associadas.set(funcoes_ids)
+
         if 'foto_perfil' in request.FILES:
             membro.foto_perfil = request.FILES['foto_perfil']
 
@@ -716,6 +724,9 @@ def editar_membro(request, membro_id):
     todos_departamentos = Departamento.objects.all()
     todas_habilidades = Habilidade.objects.all()
 
+    deps_membro = membro.departamentos_ativos.all() | membro.departamentos_liderados.all() | membro.departamentos_subliderados.all()
+    funcoes_permitidas = Funcao.objects.filter(departamento__in=deps_membro).select_related('departamento').order_by('departamento__nome', 'nome')
+
     return render(request, 'gestao_membros/form_membro.html', {
         'acao': 'Editar',
         'membro': membro,
@@ -724,7 +735,9 @@ def editar_membro(request, membro_id):
         'dias_semana': dias_semana,
         'dias_trabalho_list': dias_trabalho_list,
         'habilidades_membro': membro.habilidades.all(),
-        'departamentos_membro': membro.departamentos_ativos.all()
+        'departamentos_membro': membro.departamentos_ativos.all(),
+        'funcoes_permitidas': funcoes_permitidas,
+        'funcoes_membro': membro.funcoes_associadas.all()
     })
 
 @login_required

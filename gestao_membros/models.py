@@ -84,6 +84,7 @@ class Funcao(models.Model):
     nome = models.CharField(max_length=100)
     descricao = models.CharField(max_length=200, blank=True)
     requisitos = models.ManyToManyField(Habilidade, blank=True)
+    membros = models.ManyToManyField(Membro, related_name='funcoes_associadas', blank=True)
 
     def __str__(self):
         return f"{self.nome} - {self.departamento.nome}"

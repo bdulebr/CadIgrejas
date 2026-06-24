@@ -153,6 +153,7 @@ def gerar_escala_inteligente_groq(departamento_nome, mes, ano, membros, eventos,
     3. BALANCEAMENTO: Distribua a carga. Não aloque a mesma pessoa muitas vezes se houver outros disponíveis.
     4. Limite máximo geral: {regras.get('limite_mensal', 4)} vezes no mês por pessoa.
     5. Ninguém pode estar em dois lugares no mesmo dia/turno.
+    6. O membro DEVE ter o ID da função ('funcao_id') listado em seu array 'funcoes_ids'. Se o membro não tiver a função associada, NÃO O ALOQUE para aquela vaga.
 
     MEMBROS ELEGÍVEIS (IDs, Nomes, Habilidades, Indisponibilidades):
     {json.dumps(membros, ensure_ascii=False)}

@@ -16,7 +16,7 @@ from django.contrib import messages
 from .models import LogAuditoria, ConfiguracaoSistema
 import json
 import psutil
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
 from .models import Membro
@@ -311,6 +311,9 @@ def editar_perfil(request):
         habilidades_ids = request.POST.getlist('habilidades')
         user.habilidades.set(habilidades_ids)
 
+        funcoes_ids = request.POST.getlist('funcoes')
+        user.funcoes_associadas.set(funcoes_ids)
+
         if 'foto_perfil' in request.FILES:
             user.foto_perfil = request.FILES['foto_perfil']
 
@@ -318,6 +321,7 @@ def editar_perfil(request):
         nova_senha = request.POST.get('nova_senha')
         if nova_senha:
             user.set_password(nova_senha)
+            update_session_auth_hash(request, user)
 
         user.save()
         messages.success(request, 'Perfil atualizado com sucesso!')
@@ -328,12 +332,19 @@ def editar_perfil(request):
     habilidades_membro = request.user.habilidades.all()
     todos_membros = Membro.objects.filter(is_active=True).exclude(id=request.user.id).order_by('first_name')
 
+    from gestao_membros.models import Funcao
+    deps_usuario = request.user.departamentos_ativos.all() | request.user.departamentos_liderados.all() | request.user.departamentos_subliderados.all()
+    funcoes_permitidas = Funcao.objects.filter(departamento__in=deps_usuario).select_related('departamento').order_by('departamento__nome', 'nome')
+    funcoes_membro = request.user.funcoes_associadas.all()
+
     return render(request, 'core/pages/perfil.html', {
         'todas_habilidades': todas_habilidades,
         'dias_semana': dias_semana,
         'dias_trabalho_list': dias_trabalho_list,
         'habilidades_membro': habilidades_membro,
-        'todos_membros': todos_membros
+        'todos_membros': todos_membros,
+        'funcoes_permitidas': funcoes_permitidas,
+        'funcoes_membro': funcoes_membro
     })
 
 def logout_view(request):
@@ -1080,6 +1091,8 @@ import datetime
 import json
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from core.models import Membro

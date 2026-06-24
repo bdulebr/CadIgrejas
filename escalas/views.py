@@ -592,6 +592,7 @@ def gerar_escala_automatica(request):
                 'id': m.id,
                 'nome': f"{m.first_name} {m.last_name} ({m.apelido})" if m.apelido else f"{m.first_name} {m.last_name}",
                 'habilidades_ids': list(m.habilidades.values_list('id', flat=True)),
+                'funcoes_ids': list(m.funcoes_associadas.filter(departamento=comp.departamento).values_list('id', flat=True)),
                 'datas_indisponiveis': datas_indisp
             })
 
@@ -752,13 +753,13 @@ def gerar_escala_automatica_fallback(request):
                 configs_evento = configuracoes.filter(tipo_evento=evento)
 
                 for config in configs_evento:
-                    # Se a função não tiver requisitos (habilidades configuradas), ignoramos para não alocar pessoas erradas
-                    if not config.funcao.requisitos.exists():
+                    # Filtra membros que estao associados a esta função
+                    membros_funcao = membros_elegiveis.filter(funcoes_associadas=config.funcao).distinct()
+
+                    if not membros_funcao.exists():
                         continue
 
                     for _ in range(config.quantidade):
-                        # Filtra membros que tem a habilidade exigida
-                        membros_funcao = membros_elegiveis.filter(habilidades__in=config.funcao.requisitos.all()).distinct()
 
                         membros_disponiveis = []
                         for m in membros_funcao:
