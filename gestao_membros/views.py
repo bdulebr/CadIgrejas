@@ -17,7 +17,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.mail import send_mail
 
-from .models import Departamento, Habilidade, Funcao, ConfiguracaoSlotEscala, AvisoMural, AvisoAnexo
+from .models import Departamento, Funcao, ConfiguracaoSlotEscala, AvisoMural, AvisoAnexo
 from core.models import Membro
 import csv, openpyxl, datetime
 
@@ -245,15 +245,6 @@ def evoluir_membro(request, membro_id):
     messages.success(request, 'Membro evoluído para Líder.')
     return redirect('painel_lider')
 
-
-@login_required
-def criar_habilidade(request, dep_id):
-    dep = get_object_or_404(Departamento, id=dep_id)
-    if request.method == 'POST' and is_lider(request.user):
-        nome = request.POST.get('nome')
-        Habilidade.objects.create(departamento=dep, nome=nome)
-        messages.success(request, 'Habilidade criada.')
-    return redirect('detalhes_departamento', dep_id=dep.id)
 
 @login_required
 def criar_funcao(request, dep_id):
@@ -611,9 +602,6 @@ def adicionar_membro(request):
         departamentos_ids = request.POST.getlist('departamentos')
         membro.departamentos_ativos.set(departamentos_ids)
 
-        habilidades_ids = request.POST.getlist('habilidades')
-        membro.habilidades.set(habilidades_ids)
-
         funcoes_ids = request.POST.getlist('funcoes')
         membro.funcoes_associadas.set(funcoes_ids)
 
@@ -622,15 +610,12 @@ def adicionar_membro(request):
 
     dias_semana = [(str(i), nome) for i, nome in enumerate(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'])]
     todos_departamentos = Departamento.objects.all()
-    todas_habilidades = Habilidade.objects.all()
 
     return render(request, 'gestao_membros/form_membro.html', {
         'acao': 'Novo',
         'todos_departamentos': todos_departamentos,
-        'todas_habilidades': todas_habilidades,
         'dias_semana': dias_semana,
         'dias_trabalho_list': [],
-        'habilidades_membro': [],
         'departamentos_membro': [],
         'funcoes_permitidas': [],
         'funcoes_membro': []
@@ -701,9 +686,6 @@ def editar_membro(request, membro_id):
 
         membro.filhos = request.POST.get('filhos', '')
 
-        habilidades_ids = request.POST.getlist('habilidades')
-        membro.habilidades.set(habilidades_ids)
-
         funcoes_ids = request.POST.getlist('funcoes')
         membro.funcoes_associadas.set(funcoes_ids)
 
@@ -722,7 +704,6 @@ def editar_membro(request, membro_id):
     dias_semana = [(str(i), nome) for i, nome in enumerate(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'])]
     dias_trabalho_list = membro.dias_trabalho.split(',') if membro.dias_trabalho else []
     todos_departamentos = Departamento.objects.all()
-    todas_habilidades = Habilidade.objects.all()
 
     deps_membro = membro.departamentos_ativos.all() | membro.departamentos_liderados.all() | membro.departamentos_subliderados.all()
     funcoes_permitidas = Funcao.objects.filter(departamento__in=deps_membro).select_related('departamento').order_by('departamento__nome', 'nome')
@@ -731,10 +712,8 @@ def editar_membro(request, membro_id):
         'acao': 'Editar',
         'membro': membro,
         'todos_departamentos': todos_departamentos,
-        'todas_habilidades': todas_habilidades,
         'dias_semana': dias_semana,
         'dias_trabalho_list': dias_trabalho_list,
-        'habilidades_membro': membro.habilidades.all(),
         'departamentos_membro': membro.departamentos_ativos.all(),
         'funcoes_permitidas': funcoes_permitidas,
         'funcoes_membro': membro.funcoes_associadas.all()

@@ -52,7 +52,6 @@ class Membro(AbstractUser):
     data_casamento = models.DateField(null=True, blank=True)
     conjuge = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     filhos = models.TextField(blank=True, help_text="Nomes dos filhos separados por vírgula")
-    habilidades = models.ManyToManyField('gestao_membros.Habilidade', blank=True, related_name='membros')
 
     # Endereço
     cep = models.CharField(max_length=10, null=True, blank=True)

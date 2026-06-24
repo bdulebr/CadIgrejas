@@ -12,12 +12,11 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
-from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse, FileResponse, HttpResponseForbidden
 from .models import Escala, CompetenciaEscala, CultoEvento
-from gestao_membros.models import Departamento, Indisponibilidade, Funcao
+from gestao_membros.models import Departamento, Funcao, ConfiguracaoSlotEscala, Indisponibilidade
 from core.models import Membro, ConfiguracaoSistema
 from datetime import datetime, date, timedelta
 from django.utils import timezone
@@ -591,7 +590,6 @@ def gerar_escala_automatica(request):
             membros_data.append({
                 'id': m.id,
                 'nome': f"{m.first_name} {m.last_name} ({m.apelido})" if m.apelido else f"{m.first_name} {m.last_name}",
-                'habilidades_ids': list(m.habilidades.values_list('id', flat=True)),
                 'funcoes_ids': list(m.funcoes_associadas.filter(departamento=comp.departamento).values_list('id', flat=True)),
                 'datas_indisponiveis': datas_indisp
             })
@@ -615,8 +613,7 @@ def gerar_escala_automatica(request):
                             'horario_inicio': ev.horario_inicio.strftime('%H:%M'),
                             'horario_fim': ev.horario_fim.strftime('%H:%M'),
                             'funcao_id': config.funcao.id,
-                            'funcao_nome': config.funcao.nome,
-                            'requisitos_habilidades': list(config.funcao.requisitos.values_list('id', flat=True))
+                            'funcao_nome': config.funcao.nome
                         })
 
         if not eventos_data:
@@ -833,7 +830,7 @@ def gerar_escala_automatica_fallback(request):
                             )
                             slots_criados += 1
 
-        messages.success(request, f'Motor Automático finalizado! {slots_criados} voluntários alocados inteligentemente. Funções sem requisitos não foram preenchidas.')
+        messages.success(request, f'Motor Automático finalizado! {slots_criados} voluntários alocados inteligentemente. Funções sem voluntários compatíveis não foram preenchidas.')
         return redirect('editor_escala_manual', comp_id=comp.id)
 
     return redirect('painel_escalas')

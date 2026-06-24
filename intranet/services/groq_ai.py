@@ -148,14 +148,14 @@ def gerar_escala_inteligente_groq(departamento_nome, mes, ano, membros, eventos,
     Sua missão é gerar a escala do mês de {mes}/{ano} para o departamento '{departamento_nome}'.
 
     REGRAS DO MOTOR:
-    1. Respeite estritamente os REQUISITOS (habilidades) de cada Função.
+    1. Respeite estritamente as restrições e o contexto de cada Função.
     2. Não aloque membros que estejam indisponíveis nas datas informadas.
     3. BALANCEAMENTO: Distribua a carga. Não aloque a mesma pessoa muitas vezes se houver outros disponíveis.
     4. Limite máximo geral: {regras.get('limite_mensal', 4)} vezes no mês por pessoa.
     5. Ninguém pode estar em dois lugares no mesmo dia/turno.
     6. O membro DEVE ter o ID da função ('funcao_id') listado em seu array 'funcoes_ids'. Se o membro não tiver a função associada, NÃO O ALOQUE para aquela vaga.
 
-    MEMBROS ELEGÍVEIS (IDs, Nomes, Habilidades, Indisponibilidades):
+    MEMBROS ELEGÍVEIS (IDs, Nomes, Indisponibilidades):
     {json.dumps(membros, ensure_ascii=False)}
 
     EVENTOS DO MÊS E SLOTS NECESSÁRIOS:

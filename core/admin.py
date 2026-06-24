@@ -24,9 +24,9 @@ class MembroAdmin(UserAdmin):
             'apelido', 'cpf', 'rg', 'telefone', 'foto_perfil', 'data_nascimento', 'data_casamento',
             'conjuge', 'filhos', 'sexo', 'estado_civil', 'profissao', 'escolaridade'
         )}),
-        ('Acesso e Status', {
+        ('Permissões e Vínculos', {
             'fields': (
-                'habilidades', 'nivel_hierarquico', 'status_conta'
+                'nivel_hierarquico', 'status_conta'
             )
         }),
         ('Endereço', {'fields': (

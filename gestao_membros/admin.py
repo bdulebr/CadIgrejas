@@ -9,7 +9,7 @@
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
 from django.contrib import admin
-from .models import Habilidade, Departamento, Funcao, Indisponibilidade, AvisoMural, AvisoAnexo, ConfiguracaoSlotEscala
+from .models import Departamento, Funcao, Indisponibilidade, AvisoMural, AvisoAnexo, ConfiguracaoSlotEscala
 
 @admin.register(ConfiguracaoSlotEscala)
 class ConfiguracaoSlotEscalaAdmin(admin.ModelAdmin):
@@ -22,12 +22,6 @@ class DepartamentoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'categoria', 'id_unico_fixo')
     list_filter = ('categoria',)
     search_fields = ('nome', 'id_unico_fixo')
-
-@admin.register(Habilidade)
-class HabilidadeAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'descricao', 'departamento')
-    list_filter = ('departamento',)
-    search_fields = ('nome',)
 
 @admin.register(Funcao)
 class FuncaoAdmin(admin.ModelAdmin):

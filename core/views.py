@@ -20,7 +20,6 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
 from .models import Membro
-from gestao_membros.models import Habilidade
 from axes.models import AccessAttempt
 from axes.utils import reset
 from django.conf import settings
@@ -252,8 +251,6 @@ def dashboard_view(request):
 # ==========================================
 @login_required
 def editar_perfil(request):
-    todas_habilidades = Habilidade.objects.select_related('departamento').order_by('departamento__nome', 'nome')
-
     if request.method == 'POST':
         user = request.user
 
@@ -308,9 +305,6 @@ def editar_perfil(request):
         user.alergias = request.POST.get('alergias', user.alergias)
         user.contato_emergencia = request.POST.get('contato_emergencia', user.contato_emergencia)
 
-        habilidades_ids = request.POST.getlist('habilidades')
-        user.habilidades.set(habilidades_ids)
-
         funcoes_ids = request.POST.getlist('funcoes')
         user.funcoes_associadas.set(funcoes_ids)
 
@@ -329,7 +323,6 @@ def editar_perfil(request):
 
     dias_semana = [(str(i), nome) for i, nome in enumerate(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'])]
     dias_trabalho_list = request.user.dias_trabalho.split(',') if request.user.dias_trabalho else []
-    habilidades_membro = request.user.habilidades.all()
     todos_membros = Membro.objects.filter(is_active=True).exclude(id=request.user.id).order_by('first_name')
 
     from gestao_membros.models import Funcao
@@ -338,10 +331,8 @@ def editar_perfil(request):
     funcoes_membro = request.user.funcoes_associadas.all()
 
     return render(request, 'core/pages/perfil.html', {
-        'todas_habilidades': todas_habilidades,
         'dias_semana': dias_semana,
         'dias_trabalho_list': dias_trabalho_list,
-        'habilidades_membro': habilidades_membro,
         'todos_membros': todos_membros,
         'funcoes_permitidas': funcoes_permitidas,
         'funcoes_membro': funcoes_membro
