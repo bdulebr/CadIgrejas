@@ -483,6 +483,59 @@ def excluir_pasta(request, pasta_id):
 
 @login_required
 @requer_permissao('midia', 'ver')
+def renomear_arquivo(request, arquivo_id):
+    arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
+
+    if request.method == 'POST':
+        novo_nome = request.POST.get('titulo')
+        if novo_nome:
+            arquivo.titulo = novo_nome
+            arquivo.save()
+
+            # GDrive rename (opcional)
+            service = get_drive_service()
+            if service and arquivo.gdrive_file_id:
+                try:
+                    service.files().update(fileId=arquivo.gdrive_file_id, body={'name': novo_nome}, supportsAllDrives=True).execute()
+                except Exception as e:
+                    print(f"GDrive file rename erro: {e}")
+
+            messages.success(request, 'Arquivo renomeado com sucesso.')
+
+    if arquivo.pasta:
+        if arquivo.pasta.departamento:
+            return redirect('pv_drive_pasta', alvo_id=arquivo.pasta.departamento.id, pasta_id=arquivo.pasta.id)
+        else:
+            return redirect('pv_drive_pessoal_pasta', pasta_id=arquivo.pasta.id)
+    return redirect('pv_drive_home')
+
+@login_required
+@requer_permissao('midia', 'ver')
+def excluir_arquivo(request, arquivo_id):
+    arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
+
+    if request.method == 'POST':
+        # GDrive delete (opcional)
+        service = get_drive_service()
+        if service and arquivo.gdrive_file_id:
+            try:
+                service.files().update(fileId=arquivo.gdrive_file_id, body={'trashed': True}, supportsAllDrives=True).execute()
+            except Exception as e:
+                print(f"GDrive file delete erro: {e}")
+
+        arquivo.is_excluido = True
+        arquivo.save()
+        messages.success(request, 'Arquivo movido para a lixeira.')
+
+    if arquivo.pasta:
+        if arquivo.pasta.departamento:
+            return redirect('pv_drive_pasta', alvo_id=arquivo.pasta.departamento.id, pasta_id=arquivo.pasta.id)
+        else:
+            return redirect('pv_drive_pessoal_pasta', pasta_id=arquivo.pasta.id)
+    return redirect('pv_drive_home')
+
+@login_required
+@requer_permissao('midia', 'ver')
 def upload_drive(request):
     if request.method == 'POST':
         modo_atual = request.POST.get('modo_atual')
@@ -586,8 +639,11 @@ def check_arquivo_acesso(request, arquivo):
 
     return False
 
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+
 @login_required
 @requer_permissao('midia', 'ver')
+@xframe_options_sameorigin
 def visualizar_arquivo(request, arquivo_id):
     arquivo = get_object_or_404(ArquivoMidia, id=arquivo_id, is_excluido=False)
 
