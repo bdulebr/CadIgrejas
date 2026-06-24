@@ -331,6 +331,24 @@ document.addEventListener('alpine:init', () => {
             profissao: '{{ membro.profissao|default:""|escapejs }}',
             escolaridade: '{{ membro.escolaridade|default:""|escapejs }}'
         },
+        init() {
+            this.$nextTick(() => {
+                const form = this.$el.closest('form');
+                if (form) {
+                    form.addEventListener('invalid', (e) => {
+                        const invalidEl = e.target;
+                        const tabDiv = invalidEl.closest('[x-show]');
+                        if (tabDiv) {
+                            const xshow = tabDiv.getAttribute('x-show');
+                            if (xshow.includes('pessoais')) this.activeTab = 'pessoais';
+                            else if (xshow.includes('familia')) this.activeTab = 'familia';
+                            else if (xshow.includes('eclesiastico')) this.activeTab = 'eclesiastico';
+                            else if (xshow.includes('disponibilidade')) this.activeTab = 'disponibilidade';
+                        }
+                    }, true);
+                }
+            });
+        },
         async preencherComIA() {
             if (!this.textoIA) return;
             this.loadingIA = true;
