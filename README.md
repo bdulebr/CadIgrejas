@@ -105,15 +105,48 @@ O módulo mais blindado do sistema.
 
 ## 🛠️ Stack Tecnológico e Ferramentas
 
-O CadIgrejas foi construído sobre uma arquitetura Full-Stack moderna focada em performance bruta e manutenibilidade a longo prazo:
+O CadIgrejas foi construído sobre uma arquitetura Full-Stack moderna focada em performance bruta e escalabilidade a longo prazo:
 
-- **Backend:** Python 3.12+ acoplado com o ecossistema super-seguro do **Django 5.x**.
-- **Banco de Dados:** SQLite3 (Otimizado via WAL mode e caching extremo para leituras) / PostgreSQL em produção de larga escala.
-- **Frontend Engine:** HTML5 purista gerenciado pelos templates nativos do Django.
-- **Estilização e UI/UX:** **Tailwind CSS v3** operando em modo JIT (Just-In-Time) com tokens customizados de cores e *Glassmorphism* (Backdrop Blur, Dark Modes). Ícones vectoriais via *Lucide Icons*.
-- **Interatividade Assíncrona:** **HTMX** substitui as pesadas SPAs baseadas em React/Vue, permitindo requests AJAX instantâneos em modais e transições sem recarregar a página, aliado ao **Alpine.js** para comportamentos declarativos frontend.
-- **Processamento de PDFs:** `WeasyPrint` debaixo dos panos com fallbacks nativos baseados em canvas do lado do cliente para alta segurança de renderização.
-- **Infraestrutura / Deploy:** Contêinerização completa via **Docker** e `docker-compose`, operando sob um servidor Web **Nginx** reverso com *Gunicorn* atuando em multiprocessamento. Deploy CI/CD engatilhado para ambiente em nuvem.
+- **Backend & Core:** Python 3.12+ acoplado com o ecossistema super-seguro do **Django 5.x**.
+- **Banco de Dados:** Embora o desenvolvimento inicial ocorra em ambiente **Windows**, o sistema final roda de forma nativa e isolada em servidores **Linux**. Em produção, o SQLite dá lugar à versão mais recente do **PostgreSQL**, garantindo durabilidade e paralelismo sob alta carga.
+- **Cache e Background Jobs:** Integração profunda com **Redis** para gerenciamento de cache de altíssima velocidade, sessões seguras e processamento de filas em segundo plano (como envio de e-mails e inteligência artificial).
+- **Frontend Engine:** HTML5 purista com **Tailwind CSS v3** em modo JIT, *Glassmorphism* e Dark Modes nativos. Interatividade fluida e assíncrona gerenciada por **HTMX** e **Alpine.js**, eliminando o peso de uma SPA tradicional.
+- **Processamento de PDFs:** `WeasyPrint` integrado nativamente para relatórios complexos, etiquetas de QRCode e certificados.
+
+---
+
+## 💻 Instalação e Deploy (Ambiente de Produção Linux)
+
+O sistema foi arquitetado para subir de forma autônoma e orquestrada. Para provisionar o sistema em um servidor Linux (VPS Ubuntu/Debian), o local correto de instalação é clonar o projeto e orquestrar tudo via Docker na raiz do projeto. Siga os passos:
+
+1. **Clone o repositório e acesse a raiz:**
+   ```bash
+   git clone https://github.com/bdulebr/CadIgrejas.git
+   cd CadIgrejas
+   ```
+
+2. **Configure as Variáveis de Ambiente de Produção:**
+   Copie o arquivo base e insira suas credenciais definitivas (Senhas do PostgreSQL, chaves da IA, token de E-mail/WhatsApp).
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+
+3. **Suba o Ecossistema Docker:**
+   O arquivo de orquestração irá baixar, compilar e amarrar os contêineres do Django (via Gunicorn), Nginx Reversos, PostgreSQL e Redis automaticamente.
+   ```bash
+   docker-compose up -d --build
+   ```
+
+4. **Migrações e Configuração Inicial:**
+   Por fim, crie as tabelas no PostgreSQL e colete os arquivos estáticos:
+   ```bash
+   docker-compose exec web python manage.py migrate
+   docker-compose exec web python manage.py collectstatic --noinput
+   docker-compose exec web python manage.py createsuperuser
+   ```
+
+Tudo pronto! O Nginx já está interceptando o tráfego e seu ERP de igreja está operando a todo vapor em ambiente corporativo.
 
 ---
 
