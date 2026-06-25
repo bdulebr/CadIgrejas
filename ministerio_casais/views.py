@@ -136,6 +136,7 @@ def cadastrar_casal(request):
         email_2 = request.POST.get('email_2')
         telefone_1 = request.POST.get('telefone_1')
         telefone_2 = request.POST.get('telefone_2')
+        endereco = request.POST.get('endereco')
 
         casal = Casal(
             nome_conjuge_1=nome_conjuge_1,
@@ -144,7 +145,8 @@ def cadastrar_casal(request):
             email_1=email_1,
             email_2=email_2,
             telefone_1=telefone_1,
-            telefone_2=telefone_2
+            telefone_2=telefone_2,
+            endereco=endereco
         )
 
         if request.FILES.get('foto_casal'):
@@ -405,6 +407,7 @@ def editar_casal(request, casal_id):
         casal.email_2 = request.POST.get('email_2')
         casal.telefone_1 = request.POST.get('telefone_1')
         casal.telefone_2 = request.POST.get('telefone_2')
+        casal.endereco = request.POST.get('endereco')
 
         if request.FILES.get('foto_casal'):
             casal.foto_casal = request.FILES.get('foto_casal')

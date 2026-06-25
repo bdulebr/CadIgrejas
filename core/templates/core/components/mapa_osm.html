@@ -1,0 +1,115 @@
+<!--
+* PROJETO: Palavra de Vida Enseada - Intranet
+* COMPONENTE: mapa_osm.html
+* DESCRIÇÃO: Componente de mapa dinâmico via Nominatim + Leaflet (Sem API Keys)
+* USO: {# include 'core/components/mapa_osm.html' with endereco_texto=objeto.endereco #}
+-->
+<div x-data="mapaOSM('{{ endereco_texto|default:''|escapejs }}')"
+     class="w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+     x-init="initMap()">
+
+    <!-- Cabeçalho do Card -->
+    <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Localização</h3>
+        </div>
+        <!-- Status de Carregamento -->
+        <span x-show="loading" class="text-xs text-gray-500 dark:text-gray-400 animate-pulse">Buscando coordenadas...</span>
+    </div>
+
+    <!-- Container do Mapa -->
+    <div class="relative w-full h-64 bg-gray-100 dark:bg-gray-900 z-0">
+
+        <!-- Estado: Endereço Vazio -->
+        <div x-show="!enderecoOriginal" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 p-4 text-center z-10 bg-gray-100 dark:bg-gray-900">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <p class="text-sm font-medium">Nenhum endereço cadastrado</p>
+        </div>
+
+        <!-- Estado: Endereço Não Encontrado -->
+        <div x-show="error && enderecoOriginal" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 p-4 text-center z-10 bg-gray-100 dark:bg-gray-900">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2 opacity-50 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p class="text-sm font-medium">Não foi possível encontrar este endereço no mapa.</p>
+            <p class="text-xs mt-1 text-gray-400" x-text="enderecoOriginal"></p>
+        </div>
+
+        <!-- Div Real do Mapa Leaflet -->
+        <div x-ref="mapContainer" class="w-full h-full z-0" :class="{'opacity-0': !mapLoaded}"></div>
+
+    </div>
+</div>
+
+<!-- Load Leaflet (Só carrega os assets se a página usar o mapa) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        // Prevent re-registering if loaded via HTMX multiple times
+        if (Alpine.data('mapaOSM')) return;
+
+        Alpine.data('mapaOSM', (enderecoTexto) => ({
+            enderecoOriginal: enderecoTexto ? enderecoTexto.trim() : '',
+            loading: false,
+            error: false,
+            mapLoaded: false,
+            map: null,
+
+            async initMap() {
+                if (!this.enderecoOriginal) return;
+
+                this.loading = true;
+
+                try {
+                    // API Nominatim (Atraso de 500ms para respeitar fair-use e carregar Leaflet)
+                    await new Promise(r => setTimeout(r, 500));
+
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.enderecoOriginal)}&format=json&limit=1`, {
+                        headers: {
+                            'Accept-Language': 'pt-BR,pt;q=0.9',
+                            'User-Agent': 'CadIgrejas_Intranet_PV/1.0 (dev@pvenseada.org)'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        const displayName = data[0].display_name;
+
+                        // Inicializa o Mapa
+                        this.map = L.map(this.$refs.mapContainer).setView([lat, lon], 16);
+
+                        // Camada de Azulejos do OSM
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '© OpenStreetMap'
+                        }).addTo(this.map);
+
+                        // Adiciona o Pino
+                        const marker = L.marker([lat, lon]).addTo(this.map);
+                        marker.bindPopup(`<b>Localização</b><br>${displayName}`).openPopup();
+
+                        this.mapLoaded = true;
+                    } else {
+                        this.error = true;
+                    }
+                } catch (e) {
+                    console.error("Erro ao buscar coordenadas OSM:", e);
+                    this.error = true;
+                } finally {
+                    this.loading = false;
+                }
+            }
+        }));
+    });
+</script>
