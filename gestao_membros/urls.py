@@ -21,6 +21,8 @@ urlpatterns = [
 
     path('departamentos/<int:dep_id>/funcoes/criar/', views.criar_funcao, name='criar_funcao'),
     path('departamento/funcao/excluir/<int:funcao_id>/', views.excluir_funcao, name='excluir_funcao'),
+    path('departamento/funcao/<int:funcao_id>/vincular/', views.vincular_membro_funcao, name='vincular_membro_funcao'),
+    path('departamento/funcao/<int:funcao_id>/desvincular/<int:membro_id>/', views.desvincular_membro_funcao, name='desvincular_membro_funcao'),
     path('avisos/', views.painel_avisos, name='painel_avisos'),
     path('avisos/criar/', views.criar_aviso, name='criar_aviso'),
     path('avisos/editar/<int:aviso_id>/', views.editar_aviso, name='editar_aviso'),

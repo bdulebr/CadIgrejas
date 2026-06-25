@@ -268,6 +268,26 @@ def excluir_funcao(request, funcao_id):
     return redirect('detalhes_departamento', dep_id=dep_id)
 
 @login_required
+def vincular_membro_funcao(request, funcao_id):
+    funcao = get_object_or_404(Funcao, id=funcao_id)
+    if request.method == 'POST' and (is_super_admin(request.user) or is_lider(request.user)):
+        membro_id = request.POST.get('membro_id')
+        if membro_id:
+            membro = get_object_or_404(Membro, id=membro_id)
+            funcao.membros.add(membro)
+            messages.success(request, f'{membro.first_name} vinculado(a) à função {funcao.nome}.')
+    return redirect('detalhes_departamento', dep_id=funcao.departamento.id)
+
+@login_required
+def desvincular_membro_funcao(request, funcao_id, membro_id):
+    funcao = get_object_or_404(Funcao, id=funcao_id)
+    if request.method == 'POST' and (is_super_admin(request.user) or is_lider(request.user)):
+        membro = get_object_or_404(Membro, id=membro_id)
+        funcao.membros.remove(membro)
+        messages.success(request, f'{membro.first_name} desvinculado(a) da função {funcao.nome}.')
+    return redirect('detalhes_departamento', dep_id=funcao.departamento.id)
+
+@login_required
 def painel_avisos(request):
     avisos = AvisoMural.objects.all().order_by('-data_postagem')
     return render(request, 'gestao_membros/painel_avisos.html', {'avisos': avisos})
@@ -677,6 +697,10 @@ def editar_membro(request, membro_id):
 
         foto_perfil = request.FILES.get('foto_perfil')
         if foto_perfil: membro.foto_perfil = foto_perfil
+
+        membro.tamanho_camisa = request.POST.get('tamanho_camisa', membro.tamanho_camisa)
+        membro.tamanho_calca = request.POST.get('tamanho_calca', membro.tamanho_calca)
+        membro.tamanho_calcado = request.POST.get('tamanho_calcado', membro.tamanho_calcado)
 
         conjuge_id = request.POST.get('conjuge_id')
         if conjuge_id:

@@ -408,24 +408,68 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {% for funcao in dep.funcoes.all %}
-                        <div class="p-5 border border-gray-700 bg-gray-800/40 rounded-2xl flex justify-between items-center group hover:border-gray-500 hover:bg-gray-800/60 transition-all shadow-md">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center">
-                                    <i data-lucide="check-circle-2" class="w-5 h-5 text-green-500"></i>
+                        <div class="p-5 border border-gray-700 bg-gray-800/40 rounded-2xl flex flex-col gap-4 group hover:border-gray-500 hover:bg-gray-800/60 transition-all shadow-md">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center">
+                                        <i data-lucide="check-circle-2" class="w-5 h-5 text-green-500"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-white">{{ funcao.nome }}</h4>
+                                        <p class="text-xs text-gray-400">{{ funcao.membros.count }} membro(s)</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 class="font-bold text-white">{{ funcao.nome }}</h4>
-
-                                </div>
+                                {% if is_super or is_lider_master %}
+                                <form method="POST" action="{% url 'excluir_funcao' funcao.id %}" onsubmit="return confirm('Deseja apagar esta função permanentemente?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-gray-500 hover:text-red-400 transition-colors p-2 bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100" title="Excluir Função">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
                             </div>
-                            {% if is_super or is_lider_master %}
-                            <form method="POST" action="{% url 'excluir_funcao' funcao.id %}" onsubmit="return confirm('Deseja apagar esta função permanentemente?')">
-                                {% csrf_token %}
-                                <button type="submit" class="text-gray-500 hover:text-red-400 transition-colors p-2 bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100" title="Excluir Função">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </form>
-                            {% endif %}
+
+                            <div class="border-t border-gray-700/50 pt-3 space-y-3">
+                                <!-- Membros Vinculados -->
+                                <ul class="space-y-2">
+                                    {% for m in funcao.membros.all %}
+                                    <li class="flex justify-between items-center bg-gray-900/50 p-2 rounded-lg border border-gray-700/30">
+                                        <span class="text-xs text-gray-300 flex items-center gap-2">
+                                            {% if m.foto_perfil %}<img src="{{ m.foto_perfil.url }}" class="w-5 h-5 rounded-full object-cover">{% endif %}
+                                            {{ m.first_name }} {{ m.last_name }}
+                                        </span>
+                                        {% if is_super or is_lider_master %}
+                                        <form method="POST" action="{% url 'desvincular_membro_funcao' funcao.id m.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-gray-500 hover:text-red-400 p-1" title="Desvincular Membro">
+                                                <i data-lucide="x" class="w-3 h-3"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-xs text-gray-500 text-center">Nenhum membro vinculado.</li>
+                                    {% endfor %}
+                                </ul>
+
+                                <!-- Formulário de Adição -->
+                                {% if is_super or is_lider_master %}
+                                <form method="POST" action="{% url 'vincular_membro_funcao' funcao.id %}" class="flex gap-2 pt-2">
+                                    {% csrf_token %}
+                                    <select name="membro_id" required class="flex-1 px-2 py-1.5 bg-gray-950 border border-gray-700 rounded-lg text-white text-xs outline-none">
+                                        <option value="">+ Vincular Membro</option>
+                                        {% for membro in todos_membros %}
+                                        {% if membro not in funcao.membros.all %}
+                                        <option value="{{ membro.id }}">{{ membro.get_full_name }}</option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition-colors">
+                                        OK
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </div>
                         {% empty %}
                         <div class="col-span-full py-8 text-center text-gray-500 border border-gray-800 border-dashed rounded-2xl bg-gray-900/30">

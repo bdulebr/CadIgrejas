@@ -70,6 +70,8 @@ class Membro(AbstractUser):
     # Extras
     redes_sociais = models.CharField(max_length=200, null=True, blank=True, help_text="Ex: @instagram")
     tamanho_camisa = models.CharField(max_length=10, choices=(('PP', 'PP'), ('P', 'P'), ('M', 'M'), ('G', 'G'), ('GG', 'GG'), ('XG', 'XG'), ('XXG', 'XXG')), null=True, blank=True)
+    tamanho_calca = models.CharField(max_length=10, null=True, blank=True, help_text="Ex: 36, 38, 40, P, M, G")
+    tamanho_calcado = models.CharField(max_length=10, null=True, blank=True, help_text="Ex: 38, 40, 42")
     alergias = models.TextField(blank=True, help_text="Alergias ou restrições alimentares/médicas")
     contato_emergencia = models.CharField(max_length=100, null=True, blank=True, help_text="Nome e telefone para emergências")
 
