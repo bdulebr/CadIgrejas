@@ -251,12 +251,9 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Mapa OSM -->
-        {% if casal.endereco %}
         <div class="lg:col-span-3">
             {% include 'core/components/mapa_osm.html' with endereco_texto=casal.endereco %}
         </div>
-        {% endif %}
 
         <!-- Timeline de Aconselhamento -->
         <div class="lg:col-span-2 space-y-6">
