@@ -52,8 +52,8 @@ def requer_permissao(modulo_slug, acao='ver'):
 
             # 3. Verifica Permissão Herdada do Departamento
             user_depts = request.user.departamentos_ativos.all() | \
-                         request.user.departamentos_liderados.all() | \
-                         request.user.departamentos_subliderados.all()
+                request.user.departamentos_liderados.all() | \
+                request.user.departamentos_subliderados.all()
 
             perms_dept = PermissaoDepartamento.objects.filter(
                 q_expiracao,

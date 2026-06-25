@@ -8,6 +8,11 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.utils import timezone
+from intranet.services.whatsapp_service import enviar_whatsapp_template
+from intranet.services.gmail_service import enviar_email_html
+from core.models import EmailLog
+from .models import AulaTurma, PresencaAula
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -132,7 +137,7 @@ def remover_professor(request, vinculo_id):
         vinculo = ProfessorTurma.objects.get(id=vinculo_id)
     except ProfessorTurma.DoesNotExist:
         messages.error(request, f'O vínculo de professor com ID {vinculo_id} não foi encontrado ou já foi removido.')
-        return redirect('dashboard') # Redireciona para um painel geral se o vínculo não existir
+        return redirect('dashboard')  # Redireciona para um painel geral se o vínculo não existir
 
     curso_id = vinculo.turma.curso.id
     if request.method == 'POST':
@@ -183,14 +188,14 @@ def mural_professor_turma(request, turma_id):
 
 @login_required
 def matricular_aluno_mural(request, turma_id):
-    from django.contrib import messages # Garante que messages está importado
-    from django.shortcuts import redirect # Garante que redirect está importado
-    from django.contrib.auth.hashers import make_password # Garante que make_password está importado, usado no bloco original
+    from django.contrib import messages  # Garante que messages está importado
+    from django.shortcuts import redirect  # Garante que redirect está importado
+    from django.contrib.auth.hashers import make_password  # Garante que make_password está importado, usado no bloco original
     try:
         turma = TurmaCurso.objects.get(id=turma_id)
     except TurmaCurso.DoesNotExist:
         messages.error(request, f'A turma com ID {turma_id} não foi encontrada.')
-        return redirect('dashboard') # Redireciona para um painel geral se a turma não existir
+        return redirect('dashboard')  # Redireciona para um painel geral se a turma não existir
 
     if request.method == 'POST':
         casal_id = request.POST.get('casal_id')
@@ -199,7 +204,7 @@ def matricular_aluno_mural(request, turma_id):
                 casal = Casal.objects.get(id=casal_id)
             except Casal.DoesNotExist:
                 messages.error(request, f'O casal com ID {casal_id} não foi encontrado.')
-                return redirect('mural_professor_turma', turma_id=turma.id) # Redireciona de volta para o mural da turma válida
+                return redirect('mural_professor_turma', turma_id=turma.id)  # Redireciona de volta para o mural da turma válida
 
             if not MatriculaCursoCasal.objects.filter(turma=turma, casal=casal).exists():
                 MatriculaCursoCasal.objects.create(turma=turma, casal=casal)
@@ -262,11 +267,6 @@ def gerar_link_magico(request, matricula_id):
         messages.success(request, 'Link mágico gerado com sucesso.')
     return redirect('mural_professor_turma', turma_id=matricula.turma.id)
 
-from django.utils import timezone
-from .models import AulaTurma, PresencaAula
-from core.models import EmailLog
-from intranet.services.gmail_service import enviar_email_html
-from intranet.services.whatsapp_service import enviar_whatsapp_template
 
 @login_required
 def diario_classe_turma(request, turma_id):
@@ -362,7 +362,8 @@ def _enviar_alerta_falta(request, presenca):
 
 def _verificar_reprovacoes_turma(turma):
     total_aulas_realizadas = turma.aulas.filter(realizada=True).count()
-    if total_aulas_realizadas == 0: return
+    if total_aulas_realizadas == 0:
+        return
 
     for matricula in turma.matriculas.filter(status_matricula='Ativa'):
         faltas_injustificadas = matricula.historico_presenca.filter(presente=False, justificada=False).count()
@@ -433,8 +434,10 @@ def enviar_email_acesso(request, matricula_id):
     from intranet.services.whatsapp_service import enviar_whatsapp_template
 
     destinatarios = []
-    if casal.email_conjuge_1: destinatarios.append(casal.email_conjuge_1)
-    if casal.email_conjuge_2: destinatarios.append(casal.email_conjuge_2)
+    if casal.email_conjuge_1:
+        destinatarios.append(casal.email_conjuge_1)
+    if casal.email_conjuge_2:
+        destinatarios.append(casal.email_conjuge_2)
 
     try:
         # Tenta enviar para ambos separadamente ou para o principal se quisermos.
@@ -451,8 +454,10 @@ def enviar_email_acesso(request, matricula_id):
             )
         t1 = casal.telefone_1
         t2 = casal.telefone_2
-        if t1: enviar_whatsapp_template(t1, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
-        if t2 and t2 != t1: enviar_whatsapp_template(t2, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
+        if t1:
+            enviar_whatsapp_template(t1, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
+        if t2 and t2 != t1:
+            enviar_whatsapp_template(t2, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
         messages.success(request, f'E-mail com Link Mágico enviado para {", ".join(destinatarios)}!')
     except Exception as e:
         messages.error(request, f'Erro ao enviar e-mail: {str(e)}')

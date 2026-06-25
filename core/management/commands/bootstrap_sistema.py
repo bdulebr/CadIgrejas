@@ -63,7 +63,8 @@ class Command(BaseCommand):
         lost_and_found_dir = os.path.join(media_root, 'lost_and_found')
 
         for arquivo in arquivos_raiz:
-            if arquivo in ['.gitignore', 'README.md']: continue
+            if arquivo in ['.gitignore', 'README.md']:
+                continue
 
             achou_dono = False
             for model, field_name, upload_to in file_fields:

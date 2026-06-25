@@ -128,7 +128,8 @@ class Command(BaseCommand):
             obj_id = acao.get("id")
             updates = acao.get("update", {})
 
-            if not updates: continue
+            if not updates:
+                continue
 
             obj = None
             if modelo == "ItemAlmoxarifado":

@@ -24,6 +24,7 @@ class RequestMiddleware:
     Isso permite que os models saibam quem é o usuário e qual é o IP sem precisarem
     receber o request explicitamente em cada view.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -92,6 +93,8 @@ class AIAutoEngineerMiddleware:
     este middleware intercepta o crash e engatilha o Motor de IA Autônoma
     no background para caçar e corrigir o erro imediatamente.
     """
+
+
 """
 * PROJETO: Palavra de Vida Enseada - Intranet
 * ARQUIVO: core/middleware.py
@@ -102,10 +105,6 @@ class AIAutoEngineerMiddleware:
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
-import threading
-from django.shortcuts import render, redirect
-from django.urls import reverse
-from core.models import ConfiguracaoSistema
 
 _thread_locals = threading.local()
 
@@ -118,7 +117,8 @@ def _registrar_invasao(request):
         config = ConfiguracaoSistema.objects.get(id=1)
         if config.alerta_invasao_ativo:
             ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'Desconhecido'))
-            if ',' in ip: ip = ip.split(',')[0]
+            if ',' in ip:
+                ip = ip.split(',')[0]
             membro = request.user if request.user.is_authenticated else None
             alerta = AlertaInvasao.objects.create(
                 membro=membro,
@@ -138,6 +138,7 @@ class RequestMiddleware:
     Isso permite que os models saibam quem é o usuário e qual é o IP sem precisarem
     receber o request explicitamente em cada view.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -206,6 +207,7 @@ class AIAutoEngineerMiddleware:
     este middleware intercepta o crash e engatilha o Motor de IA Autônoma
     no background para caçar e corrigir o erro imediatamente.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -268,7 +270,7 @@ class AIAutoEngineerMiddleware:
             novo_log = AIEngineerLog.objects.create(
                 erro_analisado=str(exception),
                 status='PENDENTE',
-                detalhes=erro_str[:2000] # Limita tamanho no banco
+                detalhes=erro_str[:2000]  # Limita tamanho no banco
             )
             log_id = novo_log.id
             logger.error(f"AI Watchdog inseriu novo erro na fila do AI Daemon: {str(exception)}")

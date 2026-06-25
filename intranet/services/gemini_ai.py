@@ -8,6 +8,7 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+import openpyxl
 import os
 import json
 import tempfile
@@ -241,7 +242,6 @@ def analisar_escala_gemini(file_obj, departamentos_list, membros_list):
             except:
                 pass
 
-import openpyxl
 
 def analisar_planilha_importacao(file_obj, categorias=None):
     """
@@ -520,8 +520,10 @@ def extrair_dados_membro_texto(texto_livre):
             contents=prompt
         )
         text = response.text.strip()
-        if text.startswith("```json"): text = text[7:]
-        if text.endswith("```"): text = text[:-3]
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.endswith("```"):
+            text = text[:-3]
         return json.loads(text.strip())
     except Exception as e:
         print(f"Erro no AI Autofill de Membros: {{e}}")

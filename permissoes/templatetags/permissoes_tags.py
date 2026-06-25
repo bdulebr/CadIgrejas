@@ -8,6 +8,9 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.db.models import Q
+from permissoes.models import PermissaoMembro, PermissaoPerfil, PermissaoDepartamento
+from django.utils import timezone
 from django import template
 
 register = template.Library()
@@ -16,9 +19,6 @@ register = template.Library()
 def get_item(dictionary, key):
     return dictionary.get(key)
 
-from django.db.models import Q
-from django.utils import timezone
-from permissoes.models import PermissaoMembro, PermissaoPerfil, PermissaoDepartamento
 
 @register.filter
 def has_menu_perm(user, modulo_slug):

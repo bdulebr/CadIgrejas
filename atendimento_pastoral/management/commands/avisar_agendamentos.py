@@ -63,7 +63,7 @@ class Command(BaseCommand):
         # Gera Log Global
         if sucessos > 0:
             LogAuditoria.objects.create(
-                usuario_acao=None, # Sistema
+                usuario_acao=None,  # Sistema
                 acao_realizada="CRON_EMAIL_GABINETE",
                 tabela_afetada="AgendamentoPastoral",
                 diferenca_json={"msg": f"{sucessos} emails de lembrete enviados com sucesso."}

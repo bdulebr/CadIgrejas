@@ -8,6 +8,9 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.conf import settings
+from django.db.models.signals import post_migrate
+from intranet.services.google_drive import get_drive_service
 import json
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
@@ -111,7 +114,6 @@ def auditoria_post_delete(sender, instance, **kwargs):
     except Exception as e:
         print(f"Erro silencioso no LogAuditoria (post_delete): {e}")
 
-from django.db.models.signals import post_migrate
 
 @receiver(post_migrate)
 def injetar_templates_padrao(sender, **kwargs):
@@ -119,17 +121,16 @@ def injetar_templates_padrao(sender, **kwargs):
 
         # Relatório Almoxarifado
 
-            print("Template 'relatorio_almoxarifado' injetado com sucesso no DB.")
+        print("Template 'relatorio_almoxarifado' injetado com sucesso no DB.")
 
 # =========================================================
 # CRIAÇÃO AUTOMÁTICA DE PASTAS NO PV DRIVE PARA NOVOS MEMBROS/DEPTOS
 # =========================================================
 
-from django.conf import settings
-from intranet.services.google_drive import get_drive_service
 
 def create_gdrive_folder_sync(service, name, parent_id):
-    if not service or not parent_id: return None
+    if not service or not parent_id:
+        return None
     try:
         folder = service.files().create(
             body={'name': name, 'mimeType': 'application/vnd.google-apps.folder', 'parents': [parent_id]},

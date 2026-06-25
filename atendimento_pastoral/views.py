@@ -48,10 +48,13 @@ def dashboard_agenda(request):
 
         events = []
         for ag in agendamentos:
-            color = "#3b82f6" # Azul (Agendado)
-            if ag.status == "Realizado": color = "#10b981" # Verde
-            elif ag.status == "Cancelado": color = "#ef4444" # Vermelho
-            elif ag.status == "Faltou": color = "#f59e0b" # Laranja
+            color = "#3b82f6"  # Azul (Agendado)
+            if ag.status == "Realizado":
+                color = "#10b981"  # Verde
+            elif ag.status == "Cancelado":
+                color = "#ef4444"  # Vermelho
+            elif ag.status == "Faltou":
+                color = "#f59e0b"  # Laranja
 
             events.append({
                 'id': ag.id,
@@ -59,7 +62,7 @@ def dashboard_agenda(request):
                 'start': f"{ag.data_agendamento.isoformat()}T{ag.hora_inicio.isoformat()}",
                 'end': f"{ag.data_agendamento.isoformat()}T{ag.hora_fim.isoformat()}",
                 'color': color,
-                'url': f"/gabinete-pastoral/pessoa/{ag.pessoa.id}/", # Link para o prontuário
+                'url': f"/gabinete-pastoral/pessoa/{ag.pessoa.id}/",  # Link para o prontuário
                 'extendedProps': {
                     'local': ag.local,
                     'status': ag.status,
@@ -133,7 +136,7 @@ def prontuario_pessoa(request, pessoa_id):
     sessoes_permitidas = []
     for s in todas_sessoes:
         if s.is_restrito and s.pastor != request.user:
-            continue # Pula
+            continue  # Pula
         else:
             sessoes_permitidas.append(s)
 

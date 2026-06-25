@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
         sys_config = ConfiguracaoSistema.objects.first()
         from django.conf import settings
-        base_url = getattr(settings, 'SITE_URL', 'http://localhost:8000') # Substituir pela env de produção depois
+        base_url = getattr(settings, 'BASE_URL', 'https://intranet.pvenseda.org')
 
         if sys_config and sys_config.igreja_logo:
             logo_url = base_url + sys_config.igreja_logo.url
@@ -67,8 +67,10 @@ class Command(BaseCommand):
                     from intranet.services.whatsapp_service import enviar_whatsapp_template
                     t1 = casal.telefone_1
                     t2 = casal.telefone_2
-                    if t1: enviar_whatsapp_template(t1, 'casais_lembrete_curso.txt', {'casal': casal, 'curso': turma.curso})
-                    if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_lembrete_curso.txt', {'casal': casal, 'curso': turma.curso})
+                    if t1:
+                        enviar_whatsapp_template(t1, 'casais_lembrete_curso.txt', {'casal': casal, 'curso': turma.curso})
+                    if t2 and t2 != t1:
+                        enviar_whatsapp_template(t2, 'casais_lembrete_curso.txt', {'casal': casal, 'curso': turma.curso})
                     emails_enviados += len(destinatarios)
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f'Erro ao enviar para {casal}: {e}'))

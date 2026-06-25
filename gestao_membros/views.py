@@ -8,6 +8,17 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.http import JsonResponse
+import string
+from intranet.services.gmail_service import enviar_email_html
+from intranet.services.gemini_ai import extrair_dados_membro_texto
+from django.views.decorators.csrf import csrf_exempt
+from intranet.services.pdf_service import gerar_pdf
+from django.template import Context, Template
+import json
+from .models import AvaliacaoMembro, Ocorrencia, AcaoDisciplinar
+import random
+from intranet.services.whatsapp_service import enviar_whatsapp_template
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
@@ -19,7 +30,9 @@ from django.core.mail import send_mail
 
 from .models import Departamento, Funcao, ConfiguracaoSlotEscala, AvisoMural, AvisoAnexo
 from core.models import Membro
-import csv, openpyxl, datetime
+import csv
+import openpyxl
+import datetime
 
 def is_super_admin(user):
     return user.nivel_hierarquico == 'super_admin'
@@ -30,8 +43,6 @@ def is_lider(user):
 def is_sysadmin_ou_lider_global(user):
     return user.nivel_hierarquico in ['super_admin', 'lider_global']
 
-from intranet.services.gmail_service import enviar_email_html
-from intranet.services.whatsapp_service import enviar_whatsapp_template
 
 @login_required
 @requer_permissao('membros', 'editar')
@@ -165,7 +176,7 @@ def painel_lider(request):
                 departamento_alocado=departamento_ativo,
                 data_escala__gte=hoje - timedelta(days=30),
                 data_escala__lt=hoje,
-                status='confirmado' # Significa que não fez check-in
+                status='confirmado'  # Significa que não fez check-in
             ).values('membro_escalado').distinct()
             analytics['alertas_faltas'] = faltosos.count()
 
@@ -177,18 +188,16 @@ def painel_lider(request):
         'membros_pendentes': membros_pendentes,
         'departamento_ativo': departamento_ativo,
         'membros_aprovados': membros_aprovados,
-        'indisponiveis': indisponibilidades, # The template expects `indisponiveis`
+        'indisponiveis': indisponibilidades,  # The template expects `indisponiveis`
         'escalas_rascunho': escalas_rascunho,
-        'proximos_cultos': proximos_cultos, # Passed to the template
-        'avisos': avisos, # Passed to the template
+        'proximos_cultos': proximos_cultos,  # Passed to the template
+        'avisos': avisos,  # Passed to the template
         'aniversariantes': aniversariantes,
         'vagas': vagas,
         'ensaios': ensaios,
         'analytics': analytics
     })
 
-import string
-import random
 
 @login_required
 @requer_permissao('membros', 'editar')
@@ -577,7 +586,8 @@ def adicionar_membro(request):
 
         # Senha padrão
         nova_senha = request.POST.get('nova_senha', '123456789')
-        if not nova_senha: nova_senha = '123456789'
+        if not nova_senha:
+            nova_senha = '123456789'
         membro.set_password(nova_senha)
 
         # Trata campos sensíveis
@@ -589,8 +599,6 @@ def adicionar_membro(request):
 
         tel_val = request.POST.get('telefone', '').strip()
         membro.telefone = tel_val if tel_val else None
-
-
 
         data_nascimento = request.POST.get('data_nascimento')
         membro.data_nascimento = data_nascimento if data_nascimento else None
@@ -606,7 +614,8 @@ def adicionar_membro(request):
         membro.dias_folga = request.POST.get('dias_folga', '')
 
         foto_perfil = request.FILES.get('foto_perfil')
-        if foto_perfil: membro.foto_perfil = foto_perfil
+        if foto_perfil:
+            membro.foto_perfil = foto_perfil
 
         conjuge_id = request.POST.get('conjuge_id')
         if conjuge_id:
@@ -681,7 +690,6 @@ def editar_membro(request, membro_id):
         tel_val = request.POST.get('telefone', '').strip()
         membro.telefone = tel_val if tel_val else None
 
-
         data_nascimento = request.POST.get('data_nascimento')
         membro.data_nascimento = data_nascimento if data_nascimento else None
 
@@ -696,7 +704,8 @@ def editar_membro(request, membro_id):
         membro.dias_folga = request.POST.get('dias_folga', '')
 
         foto_perfil = request.FILES.get('foto_perfil')
-        if foto_perfil: membro.foto_perfil = foto_perfil
+        if foto_perfil:
+            membro.foto_perfil = foto_perfil
 
         membro.tamanho_camisa = request.POST.get('tamanho_camisa', membro.tamanho_camisa)
         membro.tamanho_calca = request.POST.get('tamanho_calca', membro.tamanho_calca)
@@ -819,13 +828,10 @@ def remover_configuracao_slot(request, config_id):
 
     return redirect('detalhes_departamento', dep_id=dep_id)
 
+
 # ==============================================================================
 # MÓDULO DE RECURSOS HUMANOS (RH LIDERANÇA)
 # ==============================================================================
-from .models import AvaliacaoMembro, Ocorrencia, AcaoDisciplinar
-import json
-from django.template import Context, Template
-from intranet.services.pdf_service import gerar_pdf
 
 @login_required
 def rh_painel(request):
@@ -1020,9 +1026,6 @@ def rh_gerar_pdf_disciplina(request, acao_id):
         response['Content-Disposition'] = f'inline; filename="Disciplina_{acao.membro.first_name}_{acao.tipo}.pdf"'
         return response
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from intranet.services.gemini_ai import extrair_dados_membro_texto
 
 @login_required
 @csrf_exempt

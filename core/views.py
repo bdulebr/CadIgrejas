@@ -9,6 +9,31 @@
 * - 25/05/2026 13:50: Criação inicial
 """
 
+from django.core.management import call_command
+from django.core.paginator import Paginator
+from django.db.models import Q
+from .models import LinkRapido
+from django.http import JsonResponse
+from midia_lgpd.models import TermoLGPD, AssinaturaLGPD
+from gestao_membros.models import Departamento
+import threading
+from django.urls import reverse
+from django.http import HttpResponseRedirect
+from django.views.decorators.http import require_POST
+from .models import NotificacaoGlobal
+from core.services.pdf_auditoria import gerar_laudo_pericial_pdf
+from core.utils_forensics import registrar_log_forense
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
+from django.contrib.auth.views import PasswordResetView
+from core.models import Membro
+from django.shortcuts import render
+from django.http import HttpResponseForbidden
+from django.contrib.auth import update_session_auth_hash
+from django.db.models import Count, Q
+from core.models import AIEngineerLog
+from django.core.cache import cache
+import random
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, HttpResponseForbidden
@@ -79,7 +104,6 @@ def login_view(request):
         'departamentos_publicos': departamentos_publicos
     })
 
-from gestao_membros.models import Departamento
 
 def register_view(request):
     if request.method == 'POST':
@@ -103,12 +127,12 @@ def register_view(request):
             membro = Membro.objects.create_user(
                 username=email,
                 email=email,
-                password='senha_padrao_mudar', # Será alterada após aprovação
+                password='senha_padrao_mudar',  # Será alterada após aprovação
                 first_name=first_name,
                 last_name=last_name,
                 telefone=telefone,
                 status_conta='pendente',
-                is_active=False, # Aguardando aprovação
+                is_active=False,  # Aguardando aprovação
                 nivel_hierarquico='membro_voluntario'
             )
 
@@ -123,12 +147,6 @@ def register_view(request):
 
     return redirect('login')
 
-from midia_lgpd.models import TermoLGPD, AssinaturaLGPD
-
-from gestao_membros.models import AvisoMural
-
-import random
-from django.core.cache import cache
 
 def gerar_insight_ia(user):
     cache_key = f"insight_ia_{user.id}"
@@ -166,8 +184,6 @@ def gerar_insight_ia(user):
 
     return insight_data
 
-from django.http import JsonResponse
-from core.models import AIEngineerLog
 
 def eversinho_status_api(request, log_id):
     try:
@@ -270,10 +286,12 @@ def editar_perfil(request):
         user.escolaridade = request.POST.get('escolaridade', user.escolaridade)
 
         data_nascimento = request.POST.get('data_nascimento')
-        if data_nascimento: user.data_nascimento = data_nascimento
+        if data_nascimento:
+            user.data_nascimento = data_nascimento
 
         data_casamento = request.POST.get('data_casamento')
-        if data_casamento: user.data_casamento = data_casamento
+        if data_casamento:
+            user.data_casamento = data_casamento
 
         conjuge_id = request.POST.get('conjuge_id')
         if conjuge_id:
@@ -294,9 +312,11 @@ def editar_perfil(request):
 
         # Eclesiástico
         dbatismo = request.POST.get('data_batismo')
-        if dbatismo: user.data_batismo = dbatismo
+        if dbatismo:
+            user.data_batismo = dbatismo
         dmembro = request.POST.get('membro_desde')
-        if dmembro: user.membro_desde = dmembro
+        if dmembro:
+            user.membro_desde = dmembro
         user.igreja_anterior = request.POST.get('igreja_anterior', user.igreja_anterior)
 
         # Extras
@@ -420,7 +440,7 @@ def sysadmin_dashboard(request):
     links_rapidos = LinkRapido.objects.all()
 
     # Email Logs
-    email_logs = EmailLog.objects.all()[:50] # Pega os 50 mais recentes
+    email_logs = EmailLog.objects.all()[:50]  # Pega os 50 mais recentes
 
     # Backups do DB
     from core.models import DatabaseBackup
@@ -564,8 +584,10 @@ def sysadmin_reenviar_falhas(request):
         erros = 0
         for log in falhas:
             suc, _ = reenviar_email_falho(log.id)
-            if suc: sucessos += 1
-            else: erros += 1
+            if suc:
+                sucessos += 1
+            else:
+                erros += 1
 
         messages.success(request, f"Reenvio em lote concluído: {sucessos} enviados, {erros} ainda com falha.")
     return redirect('sysadmin_dashboard')
@@ -628,8 +650,10 @@ def sysadmin_reenviar_whatsapp_falhas(request):
         erros = 0
         for log in falhas:
             suc, _ = reenviar_whatsapp_falho(log.id)
-            if suc: sucessos += 1
-            else: erros += 1
+            if suc:
+                sucessos += 1
+            else:
+                erros += 1
 
         messages.success(request, f"Reenvio de WhatsApp em lote concluído: {sucessos} enviados, {erros} ainda com falha.")
     return redirect('sysadmin_dashboard')
@@ -731,7 +755,7 @@ def sysadmin_salvar_env(request):
         for key in ['BASE_URL', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASSWORD', 'GROQ_API_KEY']:
             val = request.POST.get(key)
             if val is not None:
-                if val == "********": # Máscara intocada na UI, não atualiza
+                if val == "********":  # Máscara intocada na UI, não atualiza
                     continue
                 env_vars[key] = val
 
@@ -796,7 +820,6 @@ def sysadmin_salvar_alertas_invasao(request):
         messages.success(request, "Configurações de Alertas de Segurança atualizadas!")
     return redirect('sysadmin_dashboard')
 
-from .models import LinkRapido
 
 @login_required
 @requer_permissao('sysadmin', 'editar')
@@ -987,8 +1010,8 @@ def forcar_troca_senha(request):
 
     return render(request, 'core/pages/forcar_troca_senha.html')
 
+
 # PWA (Progressive Web App)
-from django.http import JsonResponse
 
 def pwa_manifest(request):
     config = ConfiguracaoSistema.objects.first()
@@ -1073,21 +1096,6 @@ self.addEventListener('fetch', event => {
     """
     return HttpResponse(sw_code, content_type='application/javascript')
 
-from django.db.models import Q
-
-
-from django.db.models import Count, Q
-from django.utils import timezone
-import datetime
-import json
-from django.contrib.auth.decorators import login_required
-from permissoes.decorators import requer_permissao
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.http import HttpResponseForbidden
-from django.shortcuts import render
-from core.models import Membro
-
 
 @login_required
 def pesquisa_global_api(request):
@@ -1168,18 +1176,6 @@ def pesquisa_global_api(request):
     return render(request, 'core/partials/search_results.html', {'resultados': resultados})
 
 
-
-
-from django.http import JsonResponse
-
-
-
-
-
-from django.contrib.auth.views import PasswordResetView
-from django.urls import reverse_lazy
-from django.shortcuts import redirect, render
-
 class CustomPasswordResetView(PasswordResetView):
     template_name = 'registration/password_reset_form.html'
     email_template_name = 'registration/password_reset_email.html'
@@ -1217,10 +1213,6 @@ class CustomPasswordResetView(PasswordResetView):
 def password_reset_blocked(request):
     return render(request, 'registration/password_reset_blocked.html')
 
-from django.core.paginator import Paginator
-from django.db.models import Q
-from core.utils_forensics import registrar_log_forense
-from core.services.pdf_auditoria import gerar_laudo_pericial_pdf
 
 @login_required
 @requer_permissao('sysadmin', 'editar')
@@ -1297,10 +1289,6 @@ def sysadmin_ux_tracker(request):
 
     return JsonResponse({'status': 'ignored'})
 
-
-from .models import NotificacaoGlobal
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 
 @login_required
 @require_POST
@@ -1415,10 +1403,6 @@ def sysadmin_restaurar_backup(request, backup_id):
 
     return redirect('sysadmin_dashboard')
 
-from django.core.management import call_command
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-import threading
 
 @login_required
 def sysadmin_rodar_spider(request):
@@ -1564,7 +1548,7 @@ def eversinho_chat_api(request):
         # Append to cognitive history
         history.append({"role": "user", "text": user_msg})
         history.append({"role": "model", "text": resposta_ia})
-        request.session['eversinho_history'] = history[-20:] # Keep last 20 messages
+        request.session['eversinho_history'] = history[-20:]  # Keep last 20 messages
 
         import markdown
         resposta_html = markdown.markdown(resposta_ia, extensions=['extra', 'nl2br'])

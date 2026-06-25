@@ -97,7 +97,7 @@ def gerar_pdf_contrato(documento_gerado):
         fontSize=16,
         textColor=colors.HexColor("#111827"),
         spaceAfter=20,
-        alignment=1 # Center
+        alignment=1  # Center
     )
 
     text_style = ParagraphStyle(
@@ -108,7 +108,7 @@ def gerar_pdf_contrato(documento_gerado):
         textColor=colors.HexColor("#374151"),
         leading=16,
         spaceAfter=12,
-        alignment=4 # Justify
+        alignment=4  # Justify
     )
 
     elements.append(Paragraph(documento_gerado.template.titulo, title_style))

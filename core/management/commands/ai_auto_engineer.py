@@ -74,7 +74,7 @@ class Command(BaseCommand):
                 self.stderr.write("Log não encontrado.")
                 return
             alvo_erro = log_registro.detalhes
-            erros_antes = 1 # O erro atual conta como 1
+            erros_antes = 1  # O erro atual conta como 1
         else:
             # Acionado manualmente pelo painel SysAdmin
             self.stdout.write("[1/5] Executando Auditoria Completa do Spider...")
@@ -144,7 +144,7 @@ class Command(BaseCommand):
                         start = max(0, linha - 30)
                         end = min(len(linhas_arq), linha + 30)
                         trecho = "".join(linhas_arq[start:end])
-                        arquivos_contexto += f"\n\n--- TRECHO DO ARQUIVO {rel_path} (linhas {start+1} a {end}) ---\n{trecho}\n"
+                        arquivos_contexto += f"\n\n--- TRECHO DO ARQUIVO {rel_path} (linhas {start + 1} a {end}) ---\n{trecho}\n"
                 except Exception:
                     pass
 
@@ -160,7 +160,8 @@ class Command(BaseCommand):
             recentes = arquivos_hist[:5]
 
             for arq in recentes:
-                if arq.endswith('LESSONS.md'): continue
+                if arq.endswith('LESSONS.md'):
+                    continue
                 with open(arq, 'r', encoding='utf-8') as f:
                     historico_cerebro += f"\n\n--- HISTÓRICO DE ERRO: {os.path.basename(arq)} ---\n{f.read()}\n"
         except Exception as e:

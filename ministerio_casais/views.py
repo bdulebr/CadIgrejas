@@ -8,6 +8,8 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.db.models import Sum, F
+from .models import PagamentoCursoCasal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
@@ -22,11 +24,9 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 
-
 @login_required
 @requer_permissao('casais', 'ver')
 def dashboard_casais(request):
-
 
     casais = Casal.objects.filter(arquivado=False).order_by('-data_cadastro')
     total_casais = casais.count()
@@ -71,8 +71,10 @@ def matricular_casal(request, casal_id):
         from intranet.services.gmail_service import enviar_email_html
         from intranet.services.whatsapp_service import enviar_whatsapp_template
         emails_destino = []
-        if casal.email_1: emails_destino.append(casal.email_1)
-        if casal.email_2: emails_destino.append(casal.email_2)
+        if casal.email_1:
+            emails_destino.append(casal.email_1)
+        if casal.email_2:
+            emails_destino.append(casal.email_2)
 
         if emails_destino:
             assunto = f"Você foi matriculado no curso: {turma.curso.nome}!"
@@ -85,8 +87,10 @@ def matricular_casal(request, casal_id):
                         # WhatsApp para casal (ambos telefones se disponíveis)
                         t1 = ctx.get('casal').telefone_1
                         t2 = ctx.get('casal').telefone_2
-                        if t1: enviar_whatsapp_template(t1, 'casais_matricula_curso.txt', ctx)
-                        if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_matricula_curso.txt', ctx)
+                        if t1:
+                            enviar_whatsapp_template(t1, 'casais_matricula_curso.txt', ctx)
+                        if t2 and t2 != t1:
+                            enviar_whatsapp_template(t2, 'casais_matricula_curso.txt', ctx)
                     except Exception as err:
                         print(f"Erro ao enviar email matricula: {err}")
 
@@ -107,7 +111,6 @@ def matricular_casal(request, casal_id):
 @requer_permissao('casais', 'ver')
 def perfil_casal(request, casal_id):
 
-
     casal = get_object_or_404(Casal, id=casal_id)
     historico = casal.historicos_aconselhamento.all().order_by('-data_sessao')
     matriculas = casal.matriculas_cursos.all()
@@ -125,7 +128,6 @@ def perfil_casal(request, casal_id):
 @login_required
 @requer_permissao('casais', 'ver')
 def cadastrar_casal(request):
-
 
     if request.method == 'POST':
         nome_conjuge_1 = request.POST.get('nome_conjuge_1')
@@ -169,7 +171,6 @@ def cadastrar_casal(request):
 @requer_permissao('casais', 'ver')
 def exportar_relatorio_individual_casais(request, casal_id):
 
-
     casal = get_object_or_404(Casal, id=casal_id)
     historico = casal.historicos_aconselhamento.all().order_by('-data_sessao')
     matriculas = casal.matriculas_cursos.all().order_by('-data_matricula')
@@ -202,7 +203,6 @@ def exportar_relatorio_individual_casais(request, casal_id):
 @requer_permissao('casais', 'ver')
 def upload_certificado(request, matricula_id):
 
-
     matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
     if request.method == 'POST' and request.FILES.get('certificado_arquivo'):
         matricula.certificado_arquivo = request.FILES.get('certificado_arquivo')
@@ -213,8 +213,10 @@ def upload_certificado(request, matricula_id):
         # Enviar e-mail de certificado para o casal
         casal = matricula.casal
         destinatarios = []
-        if casal.email_1: destinatarios.append(casal.email_1)
-        if casal.email_2: destinatarios.append(casal.email_2)
+        if casal.email_1:
+            destinatarios.append(casal.email_1)
+        if casal.email_2:
+            destinatarios.append(casal.email_2)
 
         if destinatarios:
             try:
@@ -255,7 +257,6 @@ def upload_certificado(request, matricula_id):
 @login_required
 @requer_permissao('casais', 'ver')
 def painel_pastoral_casais(request):
-
 
     # Busca casais por status para o Kanban (ignorando arquivados)
     casais_namorados = Casal.objects.filter(status_relacionamento='Namorados', arquivado=False).order_by('-data_cadastro')
@@ -352,7 +353,6 @@ def adicionar_curso(request):
     return redirect('cursos_casais')
 
 
-
 @login_required
 @requer_permissao('casais', 'ver')
 def aprovar_matricula(request, matricula_id):
@@ -368,8 +368,10 @@ def aprovar_matricula(request, matricula_id):
     from intranet.services.whatsapp_service import enviar_whatsapp_template
     casal = matricula.casal
     emails_destino = []
-    if casal.email_1: emails_destino.append(casal.email_1)
-    if casal.email_2: emails_destino.append(casal.email_2)
+    if casal.email_1:
+        emails_destino.append(casal.email_1)
+    if casal.email_2:
+        emails_destino.append(casal.email_2)
 
     if emails_destino:
         assunto = f"Parabéns! Curso Concluído: {matricula.turma.curso.nome}"
@@ -381,8 +383,10 @@ def aprovar_matricula(request, matricula_id):
                     enviar_email_html(e, ass, 'ministerio_casais/email_curso_concluido.html', ctx)
                     t1 = ctx.get('casal').telefone_1
                     t2 = ctx.get('casal').telefone_2
-                    if t1: enviar_whatsapp_template(t1, 'casais_curso_concluido.txt', ctx)
-                    if t2 and t2 != t1: enviar_whatsapp_template(t2, 'casais_curso_concluido.txt', ctx)
+                    if t1:
+                        enviar_whatsapp_template(t1, 'casais_curso_concluido.txt', ctx)
+                    if t2 and t2 != t1:
+                        enviar_whatsapp_template(t2, 'casais_curso_concluido.txt', ctx)
                 except Exception as err:
                     print(f"Erro ao enviar email de conclusão: {err}")
 
@@ -423,7 +427,6 @@ def editar_casal(request, casal_id):
 @login_required
 @requer_permissao('casais', 'ver')
 def relatorio_geral_casais(request):
-
 
     casais = Casal.objects.all().order_by('-data_cadastro')
 
@@ -542,13 +545,10 @@ def desfazer_aprovacao_matricula(request, matricula_id):
         messages.success(request, 'Aprovação desfeita com sucesso.')
     return redirect('perfil_casal', casal_id=matricula.casal.id)
 
-from django.db.models import Sum, F
-from .models import PagamentoCursoCasal
 
 @login_required
 @requer_permissao('casais', 'ver')
 def gestao_financeira_cursos(request):
-
 
     cursos = CursoCasal.objects.all().prefetch_related('turmas__matriculas', 'turmas__matriculas__casal')
 
@@ -584,7 +584,6 @@ def gestao_financeira_cursos(request):
 @requer_permissao('casais', 'ver')
 def registrar_pagamento_curso(request, matricula_id):
 
-
     if request.method == 'POST':
         matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
         valor = request.POST.get('valor_pago')
@@ -608,7 +607,7 @@ def registrar_pagamento_curso(request, matricula_id):
                 if matricula.valor_pago >= curso_valor:
                     matricula.status_pagamento = 'Pago'
                 elif matricula.valor_pago > 0:
-                    matricula.status_pagamento = 'Pendente' # parcial
+                    matricula.status_pagamento = 'Pendente'  # parcial
 
                 matricula.save()
 
@@ -621,7 +620,6 @@ def registrar_pagamento_curso(request, matricula_id):
 @login_required
 @requer_permissao('casais', 'ver')
 def disparar_cobranca_curso(request, matricula_id):
-
 
     if request.method == 'POST':
         matricula = get_object_or_404(MatriculaCursoCasal, id=matricula_id)
@@ -636,8 +634,10 @@ def disparar_cobranca_curso(request, matricula_id):
 
             casal = matricula.casal
             emails_destino = []
-            if casal.email_1: emails_destino.append(casal.email_1)
-            if casal.email_2: emails_destino.append(casal.email_2)
+            if casal.email_1:
+                emails_destino.append(casal.email_1)
+            if casal.email_2:
+                emails_destino.append(casal.email_2)
 
             if emails_destino and matricula.turma:
                 assunto = f"Lembrete de Pagamento: Curso {matricula.turma.curso.nome}"
@@ -661,7 +661,6 @@ def disparar_cobranca_curso(request, matricula_id):
 @login_required
 @requer_permissao('casais', 'ver')
 def pdf_relatorio_financeiro_cursos(request):
-
 
     cursos = CursoCasal.objects.all().prefetch_related('turmas__matriculas', 'turmas__matriculas__casal')
 

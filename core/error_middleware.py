@@ -19,6 +19,7 @@ class JsonErrorLoggerMiddleware:
     Middleware Zero-Trust que intercepta falhas (Exceptions/500) e as registra
     em um arquivo JSON Estruturado (JSONL) para auditoria e correções cirúrgicas.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
         self.log_file = os.path.join(settings.BASE_DIR, 'logs', 'erros_criticos.jsonl')

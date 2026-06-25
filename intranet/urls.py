@@ -24,15 +24,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import path, include
+from django.contrib import admin
 from django.views.generic.base import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
-
 from django.views.generic import TemplateView
-
 from core.views import pwa_manifest, pwa_service_worker
+from django.views.static import serve
+from django.urls import re_path
+
 
 urlpatterns = [
     path('favicon.ico', RedirectView.as_view(url='/static/img/logo.jpg', permanent=True)),
@@ -52,8 +53,6 @@ urlpatterns = [
     path('manifest.json', pwa_manifest, name='manifest.json'),
 ]
 
-from django.urls import re_path
-from django.views.static import serve
 
 # Em ambiente Intranet, servimos a mdia via Django mesmo em modo Produo (Waitress).
 # Para redes fechadas, a performance do WSGI lendo discos locais SSD  mais que suficiente.

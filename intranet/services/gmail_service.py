@@ -37,7 +37,7 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
             status='falha',
             erro_mensagem="Envios globais pausados pelo Sysadmin."
         )
-        return True # Retorna True para não quebrar a lógica das rotinas
+        return True  # Retorna True para não quebrar a lógica das rotinas
 
     try:
         from core.models import ConfiguracaoSistema
@@ -113,7 +113,8 @@ def enviar_email_html(destinatario, assunto, template_name, context, anexos=None
     except Exception as e:
         print(f"[FALHA E-MAIL REAL] Você configurou a Senha de Aplicativo no settings.py? Erro: {str(e)}")
         str_destinatario = destinatario if isinstance(destinatario, list) else destinatario
-        if isinstance(str_destinatario, list): str_destinatario = ", ".join(str_destinatario)[:254]
+        if isinstance(str_destinatario, list):
+            str_destinatario = ", ".join(str_destinatario)[:254]
         # Tentamos salvar o html_content, se ele não falhou antes de gerá-lo
         try:
             corpo = html_content

@@ -108,11 +108,16 @@ Se a ferramenta retornar "Deus tá vendo! Você não tem autorização", repasse
                         args = json.loads(tool_call.function.arguments)
 
                         result_str = ""
-                        if fn_name == "tool_gerenciar_membros": result_str = tool_gerenciar_membros(**args)
-                        elif fn_name == "tool_gerenciar_escalas": result_str = tool_gerenciar_escalas(**args)
-                        elif fn_name == "tool_gerenciar_dossie": result_str = tool_gerenciar_dossie(**args)
-                        elif fn_name == "tool_gerenciar_drive": result_str = tool_gerenciar_drive(**args)
-                        else: result_str = f"Tool {fn_name} não implementada."
+                        if fn_name == "tool_gerenciar_membros":
+                            result_str = tool_gerenciar_membros(**args)
+                        elif fn_name == "tool_gerenciar_escalas":
+                            result_str = tool_gerenciar_escalas(**args)
+                        elif fn_name == "tool_gerenciar_dossie":
+                            result_str = tool_gerenciar_dossie(**args)
+                        elif fn_name == "tool_gerenciar_drive":
+                            result_str = tool_gerenciar_drive(**args)
+                        else:
+                            result_str = f"Tool {fn_name} não implementada."
 
                         messages.append({
                             "role": "tool",
@@ -151,11 +156,16 @@ Se a ferramenta retornar "Deus tá vendo! Você não tem autorização", repasse
                         args = function_call.args
 
                         result_str = ""
-                        if fn_name == "tool_gerenciar_membros": result_str = tool_gerenciar_membros(**args)
-                        elif fn_name == "tool_gerenciar_escalas": result_str = tool_gerenciar_escalas(**args)
-                        elif fn_name == "tool_gerenciar_dossie": result_str = tool_gerenciar_dossie(**args)
-                        elif fn_name == "tool_gerenciar_drive": result_str = tool_gerenciar_drive(**args)
-                        else: result_str = f"Tool {fn_name} não implementada."
+                        if fn_name == "tool_gerenciar_membros":
+                            result_str = tool_gerenciar_membros(**args)
+                        elif fn_name == "tool_gerenciar_escalas":
+                            result_str = tool_gerenciar_escalas(**args)
+                        elif fn_name == "tool_gerenciar_dossie":
+                            result_str = tool_gerenciar_dossie(**args)
+                        elif fn_name == "tool_gerenciar_drive":
+                            result_str = tool_gerenciar_drive(**args)
+                        else:
+                            result_str = f"Tool {fn_name} não implementada."
 
                         response = chat.send_message(
                             types.Part.from_function_response(

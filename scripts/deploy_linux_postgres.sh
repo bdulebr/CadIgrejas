@@ -24,11 +24,13 @@ PROJECT_DIR=$(pwd) # Presume que você está rodando o script de dentro da pasta
 
 echo "🔄 Passo 1: Atualizando repositórios e instalando dependências do SO..."
 apt-get update -y
-apt-get install -y postgresql postgresql-contrib python3-dev libpq-dev python3-venv python3-pip
+apt-get install -y postgresql postgresql-contrib python3-dev libpq-dev python3-venv python3-pip redis-server
 
-echo "🐘 Passo 2: Iniciando e Habilitando o Serviço do PostgreSQL..."
+echo "🐘 Passo 2: Iniciando e Habilitando o Serviço do PostgreSQL e Redis..."
 systemctl start postgresql
 systemctl enable postgresql
+systemctl start redis-server
+systemctl enable redis-server
 
 echo "🔐 Passo 3: Criando Banco de Dados PostgreSQL e Usuário..."
 # Roda comandos psql como o usuário 'postgres' nativo do sistema
@@ -46,8 +48,8 @@ fi
 source venv/bin/activate
 pip install --upgrade pip
 
-# Instala os conectores de PostgreSQL e Gunicorn que são essenciais para Linux
-pip install psycopg2-binary gunicorn
+# Instala os conectores de PostgreSQL e Daphne que são essenciais para Linux
+pip install psycopg2-binary daphne
 # Instala o resto dos requerimentos do projeto
 pip install -r requirements.txt
 
@@ -82,19 +84,19 @@ if not Membro.objects.filter(username='marcos@pvenseada.org').exists():
 echo "⚙️ Passo 8: Coletando Arquivos Estáticos..."
 python manage.py collectstatic --noinput
 
-echo "🔥 Passo 9: Criando o Serviço de Inicialização Contínua (Gunicorn Daemon)..."
+echo "🔥 Passo 9: Criando o Serviço de Inicialização Contínua (Daphne Daemon para WebSockets)..."
 SERVICE_FILE="/etc/systemd/system/intranet.service"
 
 cat > $SERVICE_FILE <<EOF
 [Unit]
-Description=Gunicorn daemon para a Intranet PV Enseada
+Description=Daphne daemon para a Intranet PV Enseada (Suporte a WebSockets e HTMX)
 After=network.target
 
 [Service]
 User=root
 Group=www-data
 WorkingDirectory=$PROJECT_DIR
-ExecStart=$PROJECT_DIR/venv/bin/gunicorn --access-logfile - --workers 3 --bind 0.0.0.0:80 intranet.wsgi:application
+ExecStart=$PROJECT_DIR/venv/bin/daphne -b 0.0.0.0 -p 80 intranet.asgi:application
 
 [Install]
 WantedBy=multi-user.target

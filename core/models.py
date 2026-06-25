@@ -117,7 +117,7 @@ class DiaIndisponivel(models.DateField):
 
 class LogAuditoria(models.Model):
     usuario_acao = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)
-    acao_realizada = models.CharField(max_length=50) # Criar, Editar, Deletar, UX_Intent
+    acao_realizada = models.CharField(max_length=50)  # Criar, Editar, Deletar, UX_Intent
     tabela_afetada = models.CharField(max_length=100)
 
     # Rastreio Avançado
@@ -155,6 +155,7 @@ class LogAuditoria(models.Model):
                 # Fetch GeoIP inline
                 if self.ip_origem and self.ip_origem not in ['127.0.0.1', 'localhost']:
                     import threading
+
                     def fetch_geoip_async(ip):
                         import requests
                         try:
@@ -382,14 +383,12 @@ class AIEngineerLog(models.Model):
     data_execucao = models.DateTimeField(auto_now_add=True)
     erro_analisado = models.TextField()
     arquivo_modificado = models.CharField(max_length=255, null=True, blank=True)
-    status = models.CharField(max_length=50) # 'SUCESSO', 'ROLLBACK', 'ERRO'
+    status = models.CharField(max_length=50)  # 'SUCESSO', 'ROLLBACK', 'ERRO'
     detalhes = models.TextField()
 
     def __str__(self):
         return f"AI Engineer #{self.id} - {self.status} em {self.data_execucao.strftime('%d/%m/%Y %H:%M')}"
 
-
-import hashlib
 
 class LogImutavel(models.Model):
     membro = models.ForeignKey(Membro, on_delete=models.SET_NULL, null=True)

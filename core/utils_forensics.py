@@ -48,7 +48,7 @@ def registrar_log_forense(request, acao, tabela, diff_json, usuario=None):
                     cidade = f"{data.get('city', '')} - {data.get('region', '')} / {data.get('countryCode', '')}"
                     isp = data.get('isp', '')[:145]
         except Exception:
-            pass # Failsafe: continua a gravar o log mesmo sem net
+            pass  # Failsafe: continua a gravar o log mesmo sem net
 
     LogAuditoria.objects.create(
         usuario_acao=usuario_acao,

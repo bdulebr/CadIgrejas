@@ -461,7 +461,7 @@ class Command(BaseCommand):
             start_time = time.time()
             try:
                 response = client.get(path)
-                exec_time = round((time.time() - start_time) * 1000) # tempo em ms
+                exec_time = round((time.time() - start_time) * 1000)  # tempo em ms
 
                 status = response.status_code
                 status_desc = STATUS_CODES_INFO.get(status, "Status Desconhecido")

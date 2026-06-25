@@ -8,6 +8,7 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from .models import CultoEvento
 from django.contrib import admin
 from .models import Escala, CompetenciaEscala
 
@@ -23,7 +24,6 @@ class EscalaAdmin(admin.ModelAdmin):
     list_filter = ('status', 'departamento_alocado', 'data_escala', 'tipo_evento')
     search_fields = ('membro_escalado__first_name', 'departamento_alocado__nome')
 
-from .models import CultoEvento
 
 @admin.register(CultoEvento)
 class CultoEventoAdmin(admin.ModelAdmin):

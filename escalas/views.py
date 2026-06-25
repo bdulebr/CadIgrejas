@@ -8,6 +8,8 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.views.decorators.http import require_POST
+import json
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -835,8 +837,6 @@ def gerar_escala_automatica_fallback(request):
 
     return redirect('painel_escalas')
 
-from django.views.decorators.http import require_POST
-import json
 
 @login_required
 @requer_permissao('escalas', 'editar')

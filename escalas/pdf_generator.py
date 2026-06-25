@@ -113,7 +113,7 @@ def gerar_pdf_competencia(competencia_id):
     buffer.close()
 
     # 6. Salvar no model
-    nome_arquivo = f"escala_{competencia.departamento.id}_{competencia.mes_ano.replace('/','_')}.pdf"
+    nome_arquivo = f"escala_{competencia.departamento.id}_{competencia.mes_ano.replace('/', '_')}.pdf"
     competencia.pdf_gerado.save(nome_arquivo, ContentFile(pdf_value), save=True)
 
     return True

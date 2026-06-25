@@ -10,7 +10,7 @@
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import LogImutavel, AIEngineerLog, Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker, LinkRapido, NotificacaoGlobal, EmailLog, DatabaseBackup, SpiderTestLog
+from .models import LogImutavel, AIEngineerLog, Membro, LogAuditoria, ConfiguracaoSistema, NoticiaTicker, LinkRapido, NotificacaoGlobal, EmailLog, DatabaseBackup, SpiderTestLog, AlertaInvasao, LogWhatsApp
 
 @admin.register(Membro)
 class MembroAdmin(UserAdmin):
@@ -103,3 +103,13 @@ class AIEngineerLogAdmin(admin.ModelAdmin):
 @admin.register(LogImutavel)
 class LogImutavelAdmin(admin.ModelAdmin):
     pass
+
+@admin.register(AlertaInvasao)
+class AlertaInvasaoAdmin(admin.ModelAdmin):
+    list_display = ('ip', 'membro', 'caminho_url', 'data_hora', 'resolvido')
+    search_fields = ('ip',)
+
+@admin.register(LogWhatsApp)
+class LogWhatsAppAdmin(admin.ModelAdmin):
+    list_display = ('destinatario_numero', 'status', 'data_envio')
+    search_fields = ('destinatario_numero',)

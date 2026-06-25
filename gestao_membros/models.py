@@ -98,6 +98,7 @@ class AvisoMural(models.Model):
     fixado = models.BooleanField(default=False)
     data_expiracao = models.DateTimeField(null=True, blank=True)
     link_externo = models.URLField(max_length=500, blank=True, null=True)
+
     @property
     def status(self):
         if not self.data_expiracao:
@@ -126,7 +127,7 @@ class AvisoAnexo(models.Model):
 class AvaliacaoMembro(models.Model):
     membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='avaliacoes_recebidas')
     avaliador = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='avaliacoes_feitas')
-    nota = models.IntegerField(choices=[(1,'1'), (2,'2'), (3,'3'), (4,'4'), (5,'5')])
+    nota = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')])
     comentarios = models.TextField()
     data = models.DateTimeField(auto_now_add=True)
     enviado_ao_membro = models.BooleanField(default=False)

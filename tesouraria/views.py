@@ -8,6 +8,15 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+import json
+from django.utils.dateparse import parse_date
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+import openpyxl
+from django.http import HttpResponse
+import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
@@ -91,7 +100,7 @@ def novo_lancamento(request):
             lancamento = form.save(commit=False)
             lancamento.responsavel = request.user
             lancamento.save()
-            form.save_m2m() # Salvar tags
+            form.save_m2m()  # Salvar tags
 
             # Salvar infinitos anexos
             for f in files:
@@ -141,17 +150,9 @@ def cancelar_lancamento(request, pk):
         return redirect('tesouraria:lista_lancamentos')
     return redirect('tesouraria:detalhe_lancamento', pk=pk)
 
+
 # Views de Exportação
-import csv
-from django.http import HttpResponse
 
-
-import openpyxl
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from django.utils.dateparse import parse_date
 
 @login_required
 @requer_permissao('tesouraria', 'ver')
@@ -266,7 +267,7 @@ def exportar_relatorio(request):
         doc.build(elements)
         return response
 
-    else: # default CSV
+    else:  # default CSV
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="tesouraria_{datetime.date.today()}.csv"'
 
@@ -405,7 +406,7 @@ def gerar_e_revisar_planilha_sede(request):
             for l in lancamentos:
                 if l.anexos and hasattr(l.anexos, 'path') and os.path.exists(l.anexos.path):
                     extensao = os.path.splitext(l.anexos.path)[1]
-                    nome_seguro = "".join([c for c in l.descricao if c.isalpha() or c.isdigit() or c==' ']).rstrip().replace(' ', '_')
+                    nome_seguro = "".join([c for c in l.descricao if c.isalpha() or c.isdigit() or c == ' ']).rstrip().replace(' ', '_')
                     nome_arquivo = f"anexos/{l.data_vencimento.strftime('%d-%m-%Y')}_ID{l.id}_{nome_seguro[:20]}{extensao}"
                     zip_file.write(l.anexos.path, nome_arquivo)
 
@@ -490,7 +491,6 @@ def download_template_importacao(request):
     wb.save(response)
     return response
 
-import json
 
 @login_required
 @requer_permissao('tesouraria', 'ver')
@@ -566,7 +566,7 @@ def confirmar_importacao(request):
                 parcela_atual=item.get('parcela_atual') or 1,
                 observacoes=item.get('observacoes', ''),
                 responsavel=request.user,
-                status='pago' # Lote assume pago, pode ser ajustado
+                status='pago'  # Lote assume pago, pode ser ajustado
             )
             count += 1
 

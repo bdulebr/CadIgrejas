@@ -180,7 +180,7 @@ def gerar_escala_inteligente_groq(departamento_nome, mes, ano, membros, eventos,
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
-        temperature=0.2 # Baixa temperatura para lógica precisa
+        temperature=0.2  # Baixa temperatura para lógica precisa
     )
 
     texto_json = response.choices[0].message.content

@@ -8,6 +8,8 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from .models import VagaSetor, CandidaturaVaga, EventoInternoSetor, AnotacaoRH
+from .models import AvaliacaoMembro, Ocorrencia, AcaoDisciplinar
 from django.contrib import admin
 from .models import Departamento, Funcao, Indisponibilidade, AvisoMural, AvisoAnexo, ConfiguracaoSlotEscala
 
@@ -46,7 +48,6 @@ class AvisoAnexoAdmin(admin.ModelAdmin):
     list_display = ('aviso', 'nome_original', 'arquivo')
     search_fields = ('aviso__titulo', 'nome_original')
 
-from .models import AvaliacaoMembro, Ocorrencia, AcaoDisciplinar
 
 @admin.register(AvaliacaoMembro)
 class AvaliacaoMembroAdmin(admin.ModelAdmin):
@@ -66,7 +67,6 @@ class AcaoDisciplinarAdmin(admin.ModelAdmin):
     list_filter = ('tipo', 'data_aplicacao', 'enviado_email')
     search_fields = ('membro__first_name', 'motivo', 'autor__first_name')
 
-from .models import VagaSetor, CandidaturaVaga, EventoInternoSetor, AnotacaoRH
 
 @admin.register(VagaSetor)
 class VagaSetorAdmin(admin.ModelAdmin):

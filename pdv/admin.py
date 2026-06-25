@@ -37,6 +37,7 @@ class VendaAdmin(admin.ModelAdmin):
     list_filter = ('status', 'forma_pagamento', 'data_venda')
     inlines = [ItemVendaInline]
 
+
 admin.site.register(MovimentoCaixa)
 admin.site.register(ConfiguracaoPDV)
 

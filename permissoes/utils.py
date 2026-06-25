@@ -47,8 +47,8 @@ def obter_escopo_acesso(membro, modulo_slug):
 
     # 3. Permissões de Departamento
     user_depts = membro.departamentos_ativos.all() | \
-                 membro.departamentos_liderados.all() | \
-                 membro.departamentos_subliderados.all()
+        membro.departamentos_liderados.all() | \
+        membro.departamentos_subliderados.all()
 
     perms_dept = PermissaoDepartamento.objects.filter(
         q_expiracao,

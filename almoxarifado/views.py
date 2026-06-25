@@ -8,6 +8,13 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+import qrcode
+import json
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, HttpResponseForbidden
+from io import BytesIO
+import base64
+from .models import CategoriaItem, SubcategoriaItem
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -311,7 +318,7 @@ def cadastrar_item_almoxarifado(request):
         if foto:
             item.foto_item = foto
 
-        item.save() # Gera ID Unico
+        item.save()  # Gera ID Unico
 
         # Integracao PV Drive
         depto_almo, _ = Departamento.objects.get_or_create(nome='Almoxarifado')
@@ -363,11 +370,6 @@ def cadastrar_item_almoxarifado(request):
         'condicao_choices': condicao_choices
     })
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from permissoes.decorators import requer_permissao
-from .models import CategoriaItem, SubcategoriaItem
 
 @login_required
 @requer_permissao('almoxarifado', 'ver')
@@ -478,9 +480,6 @@ def editar_item_almoxarifado(request, item_id):
         'condicao_choices': condicao_choices
     })
 
-import qrcode
-import base64
-from io import BytesIO
 
 @login_required
 @requer_permissao('almoxarifado', 'ver')
@@ -595,12 +594,10 @@ def baixar_qr_generico(request, tipo):
     response['Content-Disposition'] = f'attachment; filename="QR_Geral_{tipo.capitalize()}.png"'
     return response
 
+
 # ==========================================
 # API DE AUTO-SERVIÇO (CARRINHO E APROVAÇÕES)
 # ==========================================
-from django.http import JsonResponse, HttpResponseForbidden
-from django.views.decorators.csrf import csrf_exempt
-import json
 
 def api_buscar_item(request, item_id):
     try:
@@ -621,10 +618,10 @@ def finalizar_carrinho(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            tipo_acao = data.get('tipo_acao') # 'retirada' ou 'devolucao'
+            tipo_acao = data.get('tipo_acao')  # 'retirada' ou 'devolucao'
             nome_usuario = data.get('nome')
             email_usuario = data.get('email')
-            itens = data.get('itens', []) # [{'id_unico': '...', 'quantidade': 1}, ...]
+            itens = data.get('itens', [])  # [{'id_unico': '...', 'quantidade': 1}, ...]
 
             if not itens:
                 return JsonResponse({'sucesso': False, 'mensagem': 'Carrinho vazio'}, status=400)

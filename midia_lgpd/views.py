@@ -9,6 +9,26 @@
 * - 25/05/2026 14:15: Criação inicial das views
 """
 
+from intranet.services.groq_ai import analisar_documento_para_roteamento
+from .models import PermissaoPVDrive
+import zipfile
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+from intranet.services.google_drive import get_drive_service
+from xhtml2pdf import pisa
+import urllib.parse
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.db.models import Q
+from .models import RegistroAceiteLGPD
+from core.models import Membro, NotificacaoGlobal
+from thefuzz import process
+from django.utils.dateparse import parse_datetime
+import io
+import mimetypes
+from django.http import HttpResponse
+from googleapiclient.http import MediaIoBaseUpload
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -129,7 +149,6 @@ def ler_assinar_termo(request):
         'ja_assinou': ja_assinou
     })
 
-import json
 
 @login_required
 @requer_permissao('midia', 'ver')
@@ -184,7 +203,7 @@ def solicitar_esquecimento(request):
     if request.method == 'POST':
         # Enviar e-mail para o DPO/Admin
         enviar_email_html(
-            destinatario=settings.DEFAULT_FROM_EMAIL, # E-mail do DPO
+            destinatario=settings.DEFAULT_FROM_EMAIL,  # E-mail do DPO
             assunto="LGPD: Solicitação de Esquecimento de Dados",
             template_name="generico.html",
             context={
@@ -244,9 +263,6 @@ def upload_arquivo(request):
             messages.error(request, 'Nenhum arquivo anexado.')
 
     return redirect('painel_midia')
-
-
-
 
 
 @login_required
@@ -317,7 +333,7 @@ def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
     else:
         # Se for a pasta Compartilhados Comigo, a lógica muda (Mostra os shortcuts ou permissoes)
         if pasta_atual.tipo_pasta == 'compartilhados':
-            pastas = PastaVirtual.objects.none() # Atalhos de pastas poderiam ser mostrados aqui, mas por agora arquivos:
+            pastas = PastaVirtual.objects.none()  # Atalhos de pastas poderiam ser mostrados aqui, mas por agora arquivos:
             from django.db.models import Q
             hoje = timezone.now()
             # Buscar arquivos onde eu tenho Permissao
@@ -364,10 +380,6 @@ def pv_drive(request, modo='pessoal', alvo_id=None, pasta_id=None):
         'search_query': q,
     })
 
-from intranet.services.google_drive import get_drive_service
-from googleapiclient.http import MediaIoBaseUpload
-from django.http import HttpResponse
-import mimetypes
 
 @login_required
 @requer_permissao('midia', 'ver')
@@ -603,11 +615,14 @@ def upload_drive(request):
 @login_required
 def check_arquivo_acesso(request, arquivo):
     user = request.user
-    if is_super_admin(user): return True
-    if arquivo.dono_membro == user: return True
+    if is_super_admin(user):
+        return True
+    if arquivo.dono_membro == user:
+        return True
 
     deptos_usuario = (user.departamentos_liderados.all() | user.departamentos_subliderados.all()).distinct()
-    if arquivo.departamento in deptos_usuario: return True
+    if arquivo.departamento in deptos_usuario:
+        return True
 
     hoje = timezone.now()
     from django.db.models import Q
@@ -622,7 +637,7 @@ def check_arquivo_acesso(request, arquivo):
                 if request.session.get(f'acesso_liberado_{p.id}'):
                     return p
                 else:
-                    return p.id # Precisa de senha
+                    return p.id  # Precisa de senha
             return p
 
     p_pasta = arquivo.pasta
@@ -639,7 +654,6 @@ def check_arquivo_acesso(request, arquivo):
 
     return False
 
-from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 @login_required
 @requer_permissao('midia', 'ver')
@@ -725,9 +739,6 @@ def baixar_arquivo(request, arquivo_id):
         messages.error(request, f"Erro ao baixar arquivo: {e}")
         return redirect('pv_drive_home')
 
-import zipfile
-import io
-from django.http import HttpResponse
 
 @login_required
 @requer_permissao('midia', 'ver')
@@ -787,14 +798,12 @@ def restaurar_arquivo(request, arquivo_id):
         messages.success(request, 'Arquivo restaurado.')
     return redirect('pv_drive_lixeira')
 
-from .models import PermissaoPVDrive
-from django.utils.dateparse import parse_datetime
 
 @login_required
 @requer_permissao('midia', 'ver')
 def processar_compartilhamento(request):
     if request.method == 'POST':
-        item_tipo = request.POST.get('item_tipo') # 'pasta' ou 'arquivo'
+        item_tipo = request.POST.get('item_tipo')  # 'pasta' ou 'arquivo'
         item_id = request.POST.get('item_id')
         tipo_alvo = request.POST.get('tipo_alvo')
         alvo_id = request.POST.get('alvo_id')
@@ -939,10 +948,6 @@ def acesso_protegido_senha(request, permissao_id):
         'permissao': permissao
     })
 
-from intranet.services.groq_ai import analisar_documento_para_roteamento
-from thefuzz import process
-from core.models import Membro, NotificacaoGlobal
-import mimetypes
 
 @login_required
 @requer_permissao('midia', 'ver')
@@ -1007,7 +1012,7 @@ def upload_inteligente_ocr(request):
                 arquivo.seek(0)
 
                 file_metadata = {
-                    'name': arquivo.name, # Mantem o nome original como pedido pelo usuario
+                    'name': arquivo.name,  # Mantem o nome original como pedido pelo usuario
                     'parents': [pasta_destino.gdrive_folder_id]
                 }
                 mime_type, _ = mimetypes.guess_type(arquivo.name)
@@ -1085,16 +1090,6 @@ def cancelar_compartilhamento(request, permissao_id):
 # ==========================================
 # NOVAS VIEWS LGPD V2 (COMPLIANCE E TERMOS)
 # ==========================================
-from .models import RegistroAceiteLGPD
-from django.db.models import Q
-from django.urls import reverse
-from django.utils import timezone
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.http import HttpResponse, JsonResponse
-import urllib.parse
-import io
-from xhtml2pdf import pisa
 
 @login_required
 @requer_permissao('midia', 'ver')
@@ -1190,7 +1185,7 @@ def termo_publico_view(request, token):
 def processar_aceite_lgpd(request, token):
     registro = get_object_or_404(RegistroAceiteLGPD, token_acesso=token)
     if request.method == 'POST':
-        acao = request.POST.get('acao') # 'aceito' ou 'recusado'
+        acao = request.POST.get('acao')  # 'aceito' ou 'recusado'
 
         registro.status = acao
         registro.data_resposta = timezone.now()

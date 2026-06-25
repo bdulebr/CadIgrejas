@@ -8,6 +8,10 @@
 * LOG DE ALTERAÇÕES:
 * - 18/06/2026 13:20: Auditoria e padronização global (Goal)
 """
+from django.contrib.auth.decorators import login_required
+from io import BytesIO
+import qrcode
+from django.http import HttpResponse
 import json
 import math
 from datetime import date
@@ -25,7 +29,7 @@ IGREJA_LNG = -46.23635
 RAIO_PERMITIDO_METROS = 100  # Raio de 100 metros de tolerância para o GPS
 
 def calcular_distancia_haversine(lat1, lon1, lat2, lon2):
-    R = 6371000 # Raio da terra em metros
+    R = 6371000  # Raio da terra em metros
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
     delta_phi = math.radians(lat2 - lat1)
@@ -38,7 +42,8 @@ def calcular_distancia_haversine(lat1, lon1, lat2, lon2):
     return R * c
 
 def apenas_numeros(texto):
-    if not texto: return ""
+    if not texto:
+        return ""
     return ''.join(filter(str.isdigit, texto))
 
 def checkin_page(request):
@@ -138,7 +143,7 @@ def api_processar_checkin(request):
         # D. Confirmar o Check-in e Disparar Notificação/Email
         escala_alvo = escalas_hoje.first()
         if escala_alvo.checkin_realizado:
-             return JsonResponse({'status': 'error', 'message': 'Você já realizou o check-in hoje!'})
+            return JsonResponse({'status': 'error', 'message': 'Você já realizou o check-in hoje!'})
 
         escala_alvo.checkin_realizado = True
         escala_alvo.data_hora_checkin = timezone.now()
@@ -182,10 +187,6 @@ def api_processar_checkin(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'Erro interno: {str(e)}'})
 
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
-import qrcode
-from io import BytesIO
 
 @login_required
 def baixar_qrcode_checkin(request):
@@ -202,7 +203,7 @@ def baixar_qrcode_checkin(request):
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=4)
     qr.add_data(url_base)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="#1E3A8A", back_color="white") # Azul Escuro
+    img = qr.make_image(fill_color="#1E3A8A", back_color="white")  # Azul Escuro
 
     buffer = BytesIO()
     img.save(buffer, format="PNG")

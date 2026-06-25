@@ -54,7 +54,7 @@ class Produto(models.Model):
     estoque_minimo = models.IntegerField(default=5)
 
     # Fiscal data for NFC-e readiness and Reforma Fiscal 2026
-    ncm = models.CharField(max_length=20, default="00000000") # Obrigatório
+    ncm = models.CharField(max_length=20, default="00000000")  # Obrigatório
     cest = models.CharField(max_length=20, blank=True, null=True)
     cfop = models.CharField(max_length=10, blank=True, null=True)
     icms_cst = models.CharField(max_length=5, blank=True, null=True)

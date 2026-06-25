@@ -24,7 +24,7 @@ def migrar():
     print("Snapshot criado com sucesso.")
     print("\n--- ATENÇÃO ---")
     print("Agora você deve mudar o seu arquivo .env para apontar para o PostgreSQL:")
-    print("DATABASE_URL=postgres://erp_admin:PVE@MasterDB2026!@localhost:5432/intranet_pve")
+    print("DATABASE_URL=postgres://SEU_USER:SUA_SENHA@localhost:5432/intranet_pve (ou @db:5432 se for Docker)")
     print("\nApós fazer a mudança no .env, pressione ENTER para continuar a injeção de dados no PostgreSQL...")
     input()
 

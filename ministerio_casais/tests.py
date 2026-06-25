@@ -44,4 +44,4 @@ class CasalMapIntegrationTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Rua Teste de Mapa, 123')
-        self.assertContains(response, 'mapa_osm') # AlpineJS x-data map integration test
+        self.assertContains(response, 'mapa_osm')  # AlpineJS x-data map integration test

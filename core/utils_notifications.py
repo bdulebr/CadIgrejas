@@ -67,7 +67,7 @@ def disparar_alerta_invasao_403(alerta_id):
 
         nome = alerta.membro.get_full_name() if alerta.membro else "Visitante Anônimo"
         email_membro = alerta.membro.email if alerta.membro else "N/A"
-        telefone = alerta.membro.telefone_celular if alerta.membro else "N/A"
+        telefone = alerta.membro.telefone if alerta.membro else "N/A"
         departamentos = ", ".join([d.nome for d in alerta.membro.departamentos.all()]) if alerta.membro else "N/A"
 
         contexto = {

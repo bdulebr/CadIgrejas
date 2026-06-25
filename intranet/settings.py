@@ -20,9 +20,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import dj_database_url
 import environ
 from pathlib import Path
-import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -158,8 +158,8 @@ CHANNEL_LAYERS = {
 }
 
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 209715200 # 200MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 209715200 # 200MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 209715200  # 200MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 209715200  # 200MB
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
 # Default primary key field type

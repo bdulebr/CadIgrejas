@@ -41,23 +41,23 @@ def criar_evento_escala(escala):
 
     # Exemplo de Payload para o Google Calendar
     evento = {
-      'summary': f'Escala: {escala.membro_escalado.first_name} - {escala.departamento_alocado.nome}',
-      'description': f'Escala de voluntariado gerada pela Intranet PV Enseada.',
-      'start': {
-        'dateTime': f"{escala.data_escala}T{escala.horario_inicio}-03:00",
-        'timeZone': 'America/Sao_Paulo',
-      },
-      'end': {
-        'dateTime': f"{escala.data_escala}T{escala.horario_fim}-03:00",
-        'timeZone': 'America/Sao_Paulo',
-      },
-      'reminders': {
-        'useDefault': False,
-        'overrides': [
-          {'method': 'email', 'minutes': 24 * 60},
-          {'method': 'popup', 'minutes': 60},
-        ],
-      },
+        'summary': f'Escala: {escala.membro_escalado.first_name} - {escala.departamento_alocado.nome}',
+        'description': f'Escala de voluntariado gerada pela Intranet PV Enseada.',
+        'start': {
+            'dateTime': f"{escala.data_escala}T{escala.horario_inicio}-03:00",
+            'timeZone': 'America/Sao_Paulo',
+        },
+        'end': {
+            'dateTime': f"{escala.data_escala}T{escala.horario_fim}-03:00",
+            'timeZone': 'America/Sao_Paulo',
+        },
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+                {'method': 'email', 'minutes': 24 * 60},
+                {'method': 'popup', 'minutes': 60},
+            ],
+        },
     }
 
     try:

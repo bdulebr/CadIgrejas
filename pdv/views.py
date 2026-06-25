@@ -8,6 +8,8 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.template.loader import get_template
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
@@ -265,7 +267,7 @@ def importar_xml_fornecedor(request):
                         defaults={
                             'nome': nome,
                             'preco_custo': valor_unitario,
-                            'preco_venda': valor_unitario * 1.5, # Sugestao automatica 50% margem
+                            'preco_venda': valor_unitario * 1.5,  # Sugestao automatica 50% margem
                             'estoque_atual': 0,
                             'categoria': cat_default,
                             'ncm': ncm,
@@ -273,7 +275,7 @@ def importar_xml_fornecedor(request):
                         }
                     )
                     produto.estoque_atual += int(quantidade)
-                    produto.preco_custo = valor_unitario # Atualiza preco de custo
+                    produto.preco_custo = valor_unitario  # Atualiza preco de custo
                     produto.save()
                     produtos_importados += 1
 
@@ -381,8 +383,8 @@ def novo_produto(request):
 
 @login_required
 def editar_produto(request, produto_id):
-    from django.contrib import messages # Importar messages
-    from django.shortcuts import redirect # Importar redirect
+    from django.contrib import messages  # Importar messages
+    from django.shortcuts import redirect  # Importar redirect
     try:
         produto = Produto.objects.get(id=produto_id)
     except Produto.DoesNotExist:
@@ -512,7 +514,7 @@ def api_atualizar_reserva(request, reserva_id):
         try:
             reserva = Venda.objects.get(id=reserva_id, tipo_venda='reserva')
             data = json.loads(request.body)
-            acao = data.get('acao') # 'pagar' ou 'entregar' ou 'pagar_entregar'
+            acao = data.get('acao')  # 'pagar' ou 'entregar' ou 'pagar_entregar'
 
             if 'pagar' in acao and reserva.status_pagamento == 'pendente':
                 reserva.status_pagamento = 'pago'
@@ -541,9 +543,7 @@ def relatorio_fiados(request):
     total_fiado = sum(v.total for v in fiados)
     return render(request, 'pdv/relatorio_fiados.html', {'fiados': fiados, 'total_fiado': total_fiado})
 
-from django.template.loader import get_template
-from django.http import HttpResponse
-from datetime import datetime
+
 try:
     from xhtml2pdf import pisa
 except ImportError:
@@ -575,12 +575,14 @@ def relatorios_painel(request):
         try:
             data_inicio = datetime.fromisoformat(data_inicio_str)
             data_fim = datetime.fromisoformat(data_fim_str)
-            if timezone.is_naive(data_inicio): data_inicio = timezone.make_aware(data_inicio)
-            if timezone.is_naive(data_fim): data_fim = timezone.make_aware(data_fim)
+            if timezone.is_naive(data_inicio):
+                data_inicio = timezone.make_aware(data_inicio)
+            if timezone.is_naive(data_fim):
+                data_fim = timezone.make_aware(data_fim)
             vendas = vendas.filter(data_venda__range=(data_inicio, data_fim))
             fiados = fiados.filter(data_venda__range=(data_inicio, data_fim))
         except ValueError:
-            pass # Invalid format fallback
+            pass  # Invalid format fallback
 
     vendas = vendas.order_by('-data_venda')
     fiados = fiados.order_by('-data_venda')
@@ -628,8 +630,10 @@ def exportar_financeiro_pdf(request):
         try:
             data_inicio = datetime.fromisoformat(data_inicio_str)
             data_fim = datetime.fromisoformat(data_fim_str)
-            if timezone.is_naive(data_inicio): data_inicio = timezone.make_aware(data_inicio)
-            if timezone.is_naive(data_fim): data_fim = timezone.make_aware(data_fim)
+            if timezone.is_naive(data_inicio):
+                data_inicio = timezone.make_aware(data_inicio)
+            if timezone.is_naive(data_fim):
+                data_fim = timezone.make_aware(data_fim)
             vendas = vendas.filter(data_venda__range=(data_inicio, data_fim))
             fiados = fiados.filter(data_venda__range=(data_inicio, data_fim))
             periodo_texto = "De {} até {}".format(data_inicio.strftime("%d/%m/%Y %H:%M"), data_fim.strftime("%d/%m/%Y %H:%M"))

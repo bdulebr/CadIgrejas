@@ -19,7 +19,8 @@ def processar_pos_carrinho_background(movimentacoes_ids):
     from django.conf import settings
 
     movs = MovimentacaoAlmoxarifado.objects.filter(id__in=movimentacoes_ids)
-    if not movs.exists(): return
+    if not movs.exists():
+        return
 
     # Notificar Líderes
     from .views import get_lideres_almoxarifado

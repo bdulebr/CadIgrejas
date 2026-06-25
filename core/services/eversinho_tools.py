@@ -187,36 +187,43 @@ def gerenciar_drive(user, acao: str, nome: str = None, pasta_id: int = None, arq
         return f"Conteúdo do Drive (Pastas recentes): {json.dumps(res)}"
 
     elif acao == 'criar_pasta':
-        if not nome: return "Preciso de um nome para criar a pasta."
+        if not nome:
+            return "Preciso de um nome para criar a pasta."
         nova = PastaVirtual.objects.create(nome=nome, criado_por=user, dono_membro=user, tipo_pasta='usuario', parent_id=pasta_id)
         return f"Pasta '{nome}' criada com sucesso! ID: {nova.id}"
 
     elif acao == 'renomear_pasta':
-        if not pasta_id or not nome: return "Falta pasta_id ou novo nome."
+        if not pasta_id or not nome:
+            return "Falta pasta_id ou novo nome."
         PastaVirtual.objects.filter(id=pasta_id).update(nome=nome)
         return f"Pasta ID {pasta_id} renomeada para '{nome}'."
 
     elif acao == 'excluir_pasta':
-        if not pasta_id: return "Falta pasta_id."
+        if not pasta_id:
+            return "Falta pasta_id."
         PastaVirtual.objects.filter(id=pasta_id).update(is_excluida=True, data_exclusao=timezone.now())
         return f"Pasta ID {pasta_id} movida para a lixeira."
 
     elif acao == 'excluir_arquivo':
-        if not arquivo_id: return "Falta arquivo_id."
+        if not arquivo_id:
+            return "Falta arquivo_id."
         ArquivoMidia.objects.filter(id=arquivo_id).update(is_excluido=True, data_exclusao=timezone.now())
         return f"Arquivo ID {arquivo_id} excluído."
 
     elif acao == 'compartilhar_pasta':
-        if not pasta_id or not membro_alvo_id: return "Falta pasta_id ou membro_alvo_id."
+        if not pasta_id or not membro_alvo_id:
+            return "Falta pasta_id ou membro_alvo_id."
         p = PermissaoPVDrive.objects.create(pasta_id=pasta_id, alvo_membro_id=membro_alvo_id, nivel=nivel_permissao, concedido_por=user)
         return f"Pasta ID {pasta_id} compartilhada com Membro ID {membro_alvo_id} como {nivel_permissao}."
 
     elif acao == 'mover_anexo':
-        if not arquivo_id or not pasta_id: return "Falta arquivo_id ou pasta_id para mover o anexo."
+        if not arquivo_id or not pasta_id:
+            return "Falta arquivo_id ou pasta_id para mover o anexo."
         ArquivoMidia.objects.filter(id=arquivo_id).update(pasta_id=pasta_id)
         return f"Anexo ID {arquivo_id} movido permanentemente para a Pasta ID {pasta_id} do PV Drive."
 
     return "Ação do Drive não reconhecida."
+
 
 EVERSINHO_TOOLS_REGISTRY = [
     gerenciar_membros,

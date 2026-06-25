@@ -8,6 +8,7 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -113,7 +114,7 @@ class TurmaCurso(models.Model):
     def __str__(self):
         return f"{self.curso.nome} - {self.nome_turma}"
 
-from django.conf import settings
+
 class ProfessorTurma(models.Model):
     turma = models.ForeignKey(TurmaCurso, on_delete=models.CASCADE, related_name='professores')
     professor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='turmas_lecionadas')

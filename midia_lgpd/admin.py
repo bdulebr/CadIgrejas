@@ -8,8 +8,15 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from .models import PastaVirtual, CompartilhamentoPasta, PermissaoPVDrive
 from django.contrib import admin
-from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia
+from .models import TermoLGPD, AssinaturaLGPD, ArquivoMidia, RegistroAceiteLGPD
+
+@admin.register(RegistroAceiteLGPD)
+class RegistroAceiteLGPDAdmin(admin.ModelAdmin):
+    list_display = ('nome_completo', 'cpf', 'status', 'data_solicitacao')
+    list_filter = ('status',)
+    search_fields = ('nome_completo', 'cpf', 'ip_registro')
 
 @admin.register(TermoLGPD)
 class TermoLGPDAdmin(admin.ModelAdmin):
@@ -29,7 +36,6 @@ class ArquivoMidiaAdmin(admin.ModelAdmin):
     list_filter = ('departamento', 'data_envio', 'is_publico_para_membros')
     search_fields = ('titulo', 'enviado_por__first_name')
 
-from .models import PastaVirtual, CompartilhamentoPasta, PermissaoPVDrive
 
 @admin.register(PastaVirtual)
 class PastaVirtualAdmin(admin.ModelAdmin):
