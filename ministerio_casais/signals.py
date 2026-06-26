@@ -58,3 +58,35 @@ def casal_post_save(sender, instance, created, **kwargs):
         base_url = getattr(settings, 'BASE_URL', 'http://127.0.0.1:8000')
         # Roda em thread para não travar o frontend
         threading.Thread(target=enviar_email_casal_background, args=(instance.id, base_url)).start()
+
+from .models import MatriculaCursoCasal, AulaTurma, PresencaAula
+
+@receiver(post_save, sender=MatriculaCursoCasal)
+def matricula_post_save(sender, instance, created, **kwargs):
+    """
+    Quando um casal é matriculado em uma turma, gera presenças vazias para
+    todas as aulas que já existem na turma (para que o professor possa dar falta/presença).
+    """
+    if created and instance.turma:
+        aulas_existentes = instance.turma.aulas.all()
+        presencas_to_create = []
+        for aula in aulas_existentes:
+            if not PresencaAula.objects.filter(aula=aula, matricula=instance).exists():
+                presencas_to_create.append(PresencaAula(aula=aula, matricula=instance, presente=True))
+        if presencas_to_create:
+            PresencaAula.objects.bulk_create(presencas_to_create)
+
+@receiver(post_save, sender=AulaTurma)
+def aula_post_save(sender, instance, created, **kwargs):
+    """
+    Quando uma aula é criada (via Admin ou AI), gera presenças para
+    todos os casais já matriculados na turma.
+    """
+    if created and instance.turma:
+        matriculas_ativas = instance.turma.matriculas.filter(status_matricula='Ativa')
+        presencas_to_create = []
+        for matricula in matriculas_ativas:
+            if not PresencaAula.objects.filter(aula=instance, matricula=matricula).exists():
+                presencas_to_create.append(PresencaAula(aula=instance, matricula=matricula, presente=True))
+        if presencas_to_create:
+            PresencaAula.objects.bulk_create(presencas_to_create)
