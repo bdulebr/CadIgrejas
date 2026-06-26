@@ -422,7 +422,11 @@ def enviar_email_acesso(request, matricula_id):
         matricula.save()
 
     casal = matricula.casal
-    if not casal.email_conjuge_1 and not casal.email_conjuge_2:
+    # Acessa os e-mails e telefones
+    email_conjuge_1_obj = casal.email_1
+    email_conjuge_2_obj = casal.email_2
+
+    if not email_conjuge_1_obj and not email_conjuge_2_obj:
         messages.error(request, 'Este casal não possui nenhum e-mail cadastrado!')
         return redirect('mural_professor_turma', turma_id=turma_id)
 
@@ -433,10 +437,10 @@ def enviar_email_acesso(request, matricula_id):
     from intranet.services.whatsapp_service import enviar_whatsapp_template
 
     destinatarios = []
-    if casal.email_conjuge_1:
-        destinatarios.append(casal.email_conjuge_1)
-    if casal.email_conjuge_2:
-        destinatarios.append(casal.email_conjuge_2)
+    if email_conjuge_1_obj:
+        destinatarios.append(email_conjuge_1_obj)
+    if email_conjuge_2_obj:
+        destinatarios.append(email_conjuge_2_obj)
 
     try:
         # Tenta enviar para ambos separadamente ou para o principal se quisermos.
