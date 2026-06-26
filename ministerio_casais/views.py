@@ -32,7 +32,7 @@ def dashboard_casais(request):
     total_casais = casais.count()
 
     trinta_dias_atras = timezone.now() - timezone.timedelta(days=30)
-    alertas_vermelhos = HistoricoAconselhamentoCasal.objects.filter(nivel_crise__gte=4, data_sessao__gte=trinta_dias_atras, casal__arquivado=False).values('casal').distinct().count()
+    alertas_vermelhos = Casal.objects.filter(nivel_crise_atual__gte=4, arquivado=False).count()
 
     mes_atual = timezone.now().month
     bodas_mes = casais.filter(data_aniversario_casamento__month=mes_atual).count()
@@ -431,6 +431,13 @@ def editar_casal(request, casal_id):
         casal.telefone_1 = request.POST.get('telefone_1')
         casal.telefone_2 = request.POST.get('telefone_2')
         casal.endereco = request.POST.get('endereco')
+
+        nivel_crise = request.POST.get('nivel_crise_atual')
+        if nivel_crise:
+            try:
+                casal.nivel_crise_atual = int(nivel_crise)
+            except ValueError:
+                pass
 
         if request.FILES.get('foto_casal'):
             casal.foto_casal = request.FILES.get('foto_casal')

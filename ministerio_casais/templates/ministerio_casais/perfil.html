@@ -525,6 +525,19 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Nível de Relacionamento (Kanban)</label>
+                            <select name="nivel_crise_atual" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="1" {% if casal.nivel_crise_atual == 1 %}selected{% endif %}>Saudável (L1)</option>
+                                <option value="2" {% if casal.nivel_crise_atual == 2 %}selected{% endif %}>Atritos Leves (L2)</option>
+                                <option value="3" {% if casal.nivel_crise_atual == 3 %}selected{% endif %}>Conflitos (L3)</option>
+                                <option value="4" {% if casal.nivel_crise_atual == 4 %}selected{% endif %}>Laranja (L4)</option>
+                                <option value="5" {% if casal.nivel_crise_atual == 5 %}selected{% endif %}>Vermelho (L5)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
                             <label class="block text-sm font-medium text-gray-400 mb-1">Aniversário de Casamento (Bodas)</label>
                             <input type="date" name="data_aniversario_casamento" value="{{ casal.data_aniversario_casamento|date:'Y-m-d' }}" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
