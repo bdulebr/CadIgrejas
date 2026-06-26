@@ -48,6 +48,9 @@ class Casal(models.Model):
     # Campo de Gamificação / Trilha de Noivos
     trilha_noivos_etapa = models.IntegerField('Etapa Trilha de Noivos', default=0, help_text="0: N/A, 1: Iniciado, 2: Curso Feito, 3: Aconselhamento, 4: Altar")
 
+    # Acompanhamento Pastoral
+    nivel_crise_atual = models.IntegerField('Nível de Crise Atual', default=1, help_text="1: Saudável, 2: Atritos Leves, 3: Conflitos Moderados, 4: Alerta Laranja, 5: Alerta Vermelho")
+
     def __str__(self):
         return f"{self.nome_conjuge_1} & {self.nome_conjuge_2}"
 

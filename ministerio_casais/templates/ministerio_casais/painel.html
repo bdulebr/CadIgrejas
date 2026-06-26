@@ -1,27 +1,18 @@
-<!--
-* PROJETO: Palavra de Vida Enseada - Intranet
-* ARQUIVO: ministerio_casais/templates/ministerio_casais/painel.html
-* DESCRIÇÃO: Painel Pastoral em formato de lista simples (substituindo o antigo Kanban)
-* DEV: Marcos Roberto Lira (marcos@pvenseada.org)
-* VERSÃO: 0.0.1
-* DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026
--->
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block title %}Painel Pastoral{% endblock %}
+{% block title %}Painel de Acompanhamento Pastoral{% endblock %}
 
 {% block header_title %}
 <div class="flex items-center gap-3">
     <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-500 to-rose-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
-        <i data-lucide="list" class="w-5 h-5 text-white"></i>
+        <i data-lucide="kanban" class="w-5 h-5 text-white"></i>
     </div>
-    <span class="text-white font-bold tracking-tight">Painel Pastoral (Acompanhamento Simples)</span>
+    <span class="text-white font-bold tracking-tight">Painel de Acompanhamento Pastoral</span>
 </div>
 {% endblock %}
 
 {% block content %}
-<!-- Botão Voltar -->
 <div class="mb-6">
     <a href="{% url 'dashboard_casais' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
@@ -29,52 +20,134 @@
     </a>
 </div>
 
-<div class="mb-8">
-    <h1 class="text-3xl font-black text-white tracking-tight">Painel de Acompanhamento</h1>
-    <p class="text-gray-400 mt-1 text-sm">Lista de todos os casais por fase de relacionamento. Para atualizar, clique no nome para ir ao perfil.</p>
+<div class="mb-6">
+    <h1 class="text-3xl font-black text-white tracking-tight">Quadro Kanban de Casais</h1>
+    <p class="text-gray-400 mt-1 text-sm">Arraste os casais entre as colunas para atualizar instantaneamente seus níveis de acompanhamento (1 a 5).</p>
 </div>
 
-<div class="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl shadow-xl overflow-hidden">
-    <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-            <i data-lucide="users" class="w-5 h-5 text-gray-400"></i>
-            Tabela de Acompanhamento Pastoral
-        </h3>
+<!-- Kanban Board -->
+<div class="flex gap-6 overflow-x-auto pb-8 snap-x" style="min-height: 70vh;">
+
+    <!-- Coluna Nível 1 -->
+    <div class="flex-shrink-0 w-80 flex flex-col bg-gray-900/40 rounded-2xl border border-gray-800/60 snap-start">
+        <div class="p-4 border-b border-gray-800/60 flex items-center justify-between bg-gray-900/60 rounded-t-2xl">
+            <h3 class="font-bold text-emerald-400 flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i> Saudável (L1)
+            </h3>
+            <span class="text-xs bg-gray-800 px-2 py-1 rounded-full text-gray-400">{{ casais_nivel_1.count }}</span>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto sortable-list min-h-[150px]" data-nivel="1">
+            {% for casal in casais_nivel_1 %}
+                {% include "ministerio_casais/partials/kanban_card.html" with casal=casal color="emerald" %}
+            {% endfor %}
+        </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-800/50 text-gray-400 text-xs uppercase tracking-wider">
-                    <th class="px-6 py-4 font-semibold">Casal</th>
-                    <th class="px-6 py-4 font-semibold">Status Atual</th>
-                    <th class="px-6 py-4 font-semibold">Telefones</th>
-                    <th class="px-6 py-4 font-semibold text-right">Ação</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-800/50">
-                {% for casal in casais_crise %}
-                    {% include "ministerio_casais/partials/linha_painel_casal.html" %}
-                {% endfor %}
-                {% for casal in casais_namorados %}
-                    {% include "ministerio_casais/partials/linha_painel_casal.html" %}
-                {% endfor %}
-                {% for casal in casais_noivos %}
-                    {% include "ministerio_casais/partials/linha_painel_casal.html" %}
-                {% endfor %}
-                {% for casal in casais_casados %}
-                    {% include "ministerio_casais/partials/linha_painel_casal.html" %}
-                {% endfor %}
-
-                {% if not casais_crise and not casais_namorados and not casais_noivos and not casais_casados %}
-                <tr>
-                    <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                        Nenhum casal encontrado no painel.
-                    </td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
+    <!-- Coluna Nível 2 -->
+    <div class="flex-shrink-0 w-80 flex flex-col bg-gray-900/40 rounded-2xl border border-gray-800/60 snap-start">
+        <div class="p-4 border-b border-gray-800/60 flex items-center justify-between bg-gray-900/60 rounded-t-2xl">
+            <h3 class="font-bold text-lime-400 flex items-center gap-2">
+                <i data-lucide="help-circle" class="w-4 h-4"></i> Atritos Leves (L2)
+            </h3>
+            <span class="text-xs bg-gray-800 px-2 py-1 rounded-full text-gray-400">{{ casais_nivel_2.count }}</span>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto sortable-list min-h-[150px]" data-nivel="2">
+            {% for casal in casais_nivel_2 %}
+                {% include "ministerio_casais/partials/kanban_card.html" with casal=casal color="lime" %}
+            {% endfor %}
+        </div>
     </div>
+
+    <!-- Coluna Nível 3 -->
+    <div class="flex-shrink-0 w-80 flex flex-col bg-gray-900/40 rounded-2xl border border-gray-800/60 snap-start">
+        <div class="p-4 border-b border-gray-800/60 flex items-center justify-between bg-gray-900/60 rounded-t-2xl">
+            <h3 class="font-bold text-yellow-400 flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Conflitos (L3)
+            </h3>
+            <span class="text-xs bg-gray-800 px-2 py-1 rounded-full text-gray-400">{{ casais_nivel_3.count }}</span>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto sortable-list min-h-[150px]" data-nivel="3">
+            {% for casal in casais_nivel_3 %}
+                {% include "ministerio_casais/partials/kanban_card.html" with casal=casal color="yellow" %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Coluna Nível 4 -->
+    <div class="flex-shrink-0 w-80 flex flex-col bg-gray-900/40 rounded-2xl border border-gray-800/60 snap-start">
+        <div class="p-4 border-b border-gray-800/60 flex items-center justify-between bg-gray-900/60 rounded-t-2xl">
+            <h3 class="font-bold text-orange-500 flex items-center gap-2">
+                <i data-lucide="bell-ring" class="w-4 h-4"></i> Laranja (L4)
+            </h3>
+            <span class="text-xs bg-gray-800 px-2 py-1 rounded-full text-gray-400">{{ casais_nivel_4.count }}</span>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto sortable-list min-h-[150px]" data-nivel="4">
+            {% for casal in casais_nivel_4 %}
+                {% include "ministerio_casais/partials/kanban_card.html" with casal=casal color="orange" %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Coluna Nível 5 -->
+    <div class="flex-shrink-0 w-80 flex flex-col bg-gray-900/40 rounded-2xl border border-gray-800/60 snap-start">
+        <div class="p-4 border-b border-gray-800/60 flex items-center justify-between bg-gray-900/60 rounded-t-2xl">
+            <h3 class="font-bold text-rose-500 flex items-center gap-2">
+                <i data-lucide="flame" class="w-4 h-4"></i> Vermelho (L5)
+            </h3>
+            <span class="text-xs bg-gray-800 px-2 py-1 rounded-full text-gray-400">{{ casais_nivel_5.count }}</span>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto sortable-list min-h-[150px]" data-nivel="5">
+            {% for casal in casais_nivel_5 %}
+                {% include "ministerio_casais/partials/kanban_card.html" with casal=casal color="rose" %}
+            {% endfor %}
+        </div>
+    </div>
+
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const lists = document.querySelectorAll('.sortable-list');
+
+        lists.forEach(list => {
+            new Sortable(list, {
+                group: 'kanban', // set both lists to same group
+                animation: 150,
+                ghostClass: 'opacity-50',
+                onEnd: function (evt) {
+                    const itemEl = evt.item;
+                    const toList = evt.to;
+                    const fromList = evt.from;
+
+                    if (toList !== fromList) {
+                        const casalId = itemEl.getAttribute('data-id');
+                        const newNivel = toList.getAttribute('data-nivel');
+
+                        // Envia requisição manual fetch para não depender dos bindings confusos do HTMX para URLs dinâmicas
+                        fetch(`/casais/painel/atualizar/${casalId}/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}'
+                            },
+                            body: `status=${newNivel}`
+                        }).then(res => {
+                            if (res.ok) {
+                                // Força atualizar os lucide icons e exibir um alert se quisesse
+                            } else {
+                                alert("Erro ao atualizar o nível do casal.");
+                                // Reverte a drag
+                                fromList.appendChild(itemEl);
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

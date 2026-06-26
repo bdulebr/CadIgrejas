@@ -270,17 +270,19 @@ def upload_certificado(request, matricula_id):
 @requer_permissao('casais', 'ver')
 def painel_pastoral_casais(request):
 
-    # Busca casais por status para o Kanban (ignorando arquivados)
-    casais_namorados = Casal.objects.filter(status_relacionamento='Namorados', arquivado=False).order_by('-data_cadastro')
-    casais_noivos = Casal.objects.filter(status_relacionamento='Noivos', arquivado=False).order_by('-data_cadastro')
-    casais_casados = Casal.objects.filter(status_relacionamento='Casados', arquivado=False).order_by('-data_cadastro')
-    casais_crise = Casal.objects.filter(status_relacionamento='Em Crise', arquivado=False).order_by('-data_cadastro')
+    # Busca casais por nivel_crise_atual para o Kanban (ignorando arquivados)
+    casais_nivel_1 = Casal.objects.filter(nivel_crise_atual=1, arquivado=False).order_by('-data_cadastro')
+    casais_nivel_2 = Casal.objects.filter(nivel_crise_atual=2, arquivado=False).order_by('-data_cadastro')
+    casais_nivel_3 = Casal.objects.filter(nivel_crise_atual=3, arquivado=False).order_by('-data_cadastro')
+    casais_nivel_4 = Casal.objects.filter(nivel_crise_atual=4, arquivado=False).order_by('-data_cadastro')
+    casais_nivel_5 = Casal.objects.filter(nivel_crise_atual=5, arquivado=False).order_by('-data_cadastro')
 
     context = {
-        'casais_namorados': casais_namorados,
-        'casais_noivos': casais_noivos,
-        'casais_casados': casais_casados,
-        'casais_crise': casais_crise,
+        'casais_nivel_1': casais_nivel_1,
+        'casais_nivel_2': casais_nivel_2,
+        'casais_nivel_3': casais_nivel_3,
+        'casais_nivel_4': casais_nivel_4,
+        'casais_nivel_5': casais_nivel_5,
     }
     return render(request, 'ministerio_casais/painel.html', context)
 
@@ -289,12 +291,17 @@ def painel_pastoral_casais(request):
 def atualizar_status_casal(request, casal_id):
 
     if request.method == 'POST':
-        novo_status = request.POST.get('status')
+        novo_nivel = request.POST.get('status')
         casal = get_object_or_404(Casal, id=casal_id)
-        if novo_status in dict(Casal.STATUS_CHOICES).keys():
-            casal.status_relacionamento = novo_status
-            casal.save()
-            return HttpResponse(status=200)
+        try:
+            novo_nivel = int(novo_nivel)
+            if 1 <= novo_nivel <= 5:
+                casal.nivel_crise_atual = novo_nivel
+                casal.save()
+                return HttpResponse(status=200)
+        except ValueError:
+            pass
+
     from django.http import HttpResponseNotAllowed
     return HttpResponseNotAllowed(['POST'])
 
