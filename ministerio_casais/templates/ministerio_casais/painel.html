@@ -21,6 +21,7 @@
 </div>
 
 <div class="mb-6">
+    <div style="display:none;">{% csrf_token %}</div>
     <h1 class="text-3xl font-black text-white tracking-tight">Quadro Kanban de Casais</h1>
     <p class="text-gray-400 mt-1 text-sm">Arraste os casais entre as colunas para atualizar instantaneamente seus níveis de acompanhamento (1 a 5).</p>
 </div>
@@ -125,8 +126,10 @@
                         const casalId = itemEl.getAttribute('data-id');
                         const newNivel = toList.getAttribute('data-nivel');
 
+                        const updateUrl = "{% url 'atualizar_status_casal' 0 %}".replace('/0/', `/${casalId}/`);
+
                         // Envia requisição manual fetch
-                        fetch(`/casais/painel/atualizar/${casalId}/`, {
+                        fetch(updateUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded',
