@@ -72,7 +72,6 @@ def adicionar_turma(request, curso_id):
             carga_horaria=carga_horaria,
             duracao_aula_horas=duracao_aula_horas,
             data_inicio=dt_inicio,
-            data_fim=dt_fim,
             dias_semana=dias_semana,
             limite_faltas=limite_faltas,
             percentual_presenca_minimo=percentual_presenca_minimo,
