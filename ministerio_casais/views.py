@@ -246,7 +246,18 @@ def upload_certificado(request, matricula_id):
                     anexos=anexos if anexos else None
                 )
 
-                messages.success(request, 'Certificado anexado e enviado por e-mail com sucesso!')
+                t1 = casal.telefone_1
+                t2 = casal.telefone_2
+                ctx_zap = {'casal': casal, 'curso': matricula.turma.curso}
+                try:
+                    if t1:
+                        enviar_whatsapp_template(t1, 'casais_certificado_disponivel.txt', ctx_zap)
+                    if t2 and t2 != t1:
+                        enviar_whatsapp_template(t2, 'casais_certificado_disponivel.txt', ctx_zap)
+                except Exception as err:
+                    print(f"Erro zap certificado: {err}")
+
+                messages.success(request, 'Certificado anexado e enviado por e-mail e WhatsApp com sucesso!')
             except Exception as e:
                 messages.warning(request, f'Certificado salvo, mas houve erro ao enviar e-mail: {e}')
         else:
@@ -644,14 +655,25 @@ def disparar_cobranca_curso(request, matricula_id):
                 assunto = f"Lembrete de Pagamento: Curso {matricula.turma.curso.nome}"
                 contexto_email = {'casal': casal, 'curso': matricula.turma.curso, 'saldo_devedor': saldo_devedor}
 
-                for email in emails_destino:
-                    thread = threading.Thread(
-                        target=enviar_email_html,
-                        args=(assunto, email, 'ministerio_casais/email_cobranca_curso.html', contexto_email)
-                    )
-                    thread.start()
+                def enviar_cobranca_background(emails, ass, ctx):
+                    for email in emails:
+                        try:
+                            enviar_email_html(email, ass, 'ministerio_casais/email_cobranca_curso.html', ctx)
+                        except Exception as err:
+                            print(f"Erro email cobranca: {err}")
+                    t1 = ctx.get('casal').telefone_1
+                    t2 = ctx.get('casal').telefone_2
+                    try:
+                        if t1:
+                            enviar_whatsapp_template(t1, 'casais_cobranca_curso.txt', ctx)
+                        if t2 and t2 != t1:
+                            enviar_whatsapp_template(t2, 'casais_cobranca_curso.txt', ctx)
+                    except Exception as err:
+                        print(f"Erro zap cobranca: {err}")
 
-                messages.success(request, f'Cobrança enviada para {", ".join(emails_destino)}')
+                threading.Thread(target=enviar_cobranca_background, args=(emails_destino, assunto, contexto_email)).start()
+
+                messages.success(request, f'Cobrança enviada para {", ".join(emails_destino)} e WhatsApps')
             else:
                 messages.warning(request, 'O casal não possui e-mails cadastrados ou a matrícula não tem turma vinculada.')
         else:

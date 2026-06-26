@@ -1,2 +1,1 @@
-Olá! O casal foi matriculado no curso: {{ curso.nome }}.
-Acesse o painel para mais informações.
+Olá {{ casal.nomes_juntos }}! Vocês foram matriculados na turma {{ matricula.turma.nome_turma }} do curso {{ matricula.turma.curso.nome }}. Fiquem atentos às próximas aulas!

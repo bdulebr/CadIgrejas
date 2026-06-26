@@ -1,2 +1,1 @@
-Olá! Há uma nova atualização sobre o Ministério de Casais.
-Acesse a intranet para ver.
+Olá {{ casal.nomes_juntos }}! Sejam muito bem-vindos ao Ministério de Casais da Palavra de Vida! O cadastro de vocês foi realizado com sucesso. Acesse {{ base_url }} para ver mais detalhes.

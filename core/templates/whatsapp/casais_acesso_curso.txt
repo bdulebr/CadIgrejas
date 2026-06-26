@@ -1,0 +1,1 @@
+Olá {{ casal.nomes_juntos }}! Aqui está o Link Mágico de acesso ao curso {{ matricula.turma.curso.nome }}. Clique no link para acessar (não repasse a ninguém): {{ link_magico }}

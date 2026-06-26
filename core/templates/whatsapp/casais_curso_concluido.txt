@@ -1,2 +1,1 @@
-Parabéns! O casal concluiu o curso: {{ curso.nome }}.
-Acesse o painel para baixar o certificado.
+Parabéns {{ casal.nomes_juntos }}! Vocês concluíram o curso: {{ curso.nome }} com sucesso. O certificado de vocês já pode ser gerado pela secretaria.

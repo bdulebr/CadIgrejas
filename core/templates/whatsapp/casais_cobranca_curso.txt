@@ -1,0 +1,1 @@
+Olá {{ casal.nomes_juntos }}. Este é um lembrete do Ministério de Casais informando que existe uma pendência financeira de R$ {{ saldo_devedor }} referente à turma do curso {{ curso.nome }}. Por favor, verifiquem no painel!

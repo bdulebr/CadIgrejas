@@ -1,0 +1,1 @@
+Olá {{ casal.nomes_juntos }}. O certificado do curso {{ curso.nome }} acabou de ser anexado ao seu painel. Acesse a intranet para baixar o PDF. Parabéns!

@@ -463,11 +463,12 @@ def enviar_email_acesso(request, matricula_id):
         t1 = casal.telefone_1
         t2 = casal.telefone_2
         if t1:
-            enviar_whatsapp_template(t1, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
+            enviar_whatsapp_template(t1, 'casais_acesso_curso.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
         if t2 and t2 != t1:
-            enviar_whatsapp_template(t2, 'email_acesso_casal.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
-        messages.success(request, f'E-mail com Link Mágico enviado para {", ".join(destinatarios)}!')
+            enviar_whatsapp_template(t2, 'casais_acesso_curso.txt', {'casal': casal, 'matricula': matricula, 'link_magico': link_magico})
+
+        messages.success(request, f'Acesso enviado com sucesso para os contatos cadastrados!')
     except Exception as e:
-        messages.error(request, f'Erro ao enviar e-mail: {str(e)}')
+        messages.warning(request, f'Erro ao enviar notificação de acesso: {e}')
 
     return redirect('mural_professor_turma', turma_id=turma_id)
