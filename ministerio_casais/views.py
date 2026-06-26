@@ -60,7 +60,7 @@ def matricular_casal(request, casal_id):
         status_pagamento = request.POST.get('status_pagamento', 'Pendente')
 
         turma = get_object_or_404(TurmaCurso, id=turma_id)
-        MatriculaCursoCasal.objects.create(
+        matricula_obj = MatriculaCursoCasal.objects.create(
             turma=turma,
             casal=casal,
             status_pagamento=status_pagamento
@@ -78,7 +78,8 @@ def matricular_casal(request, casal_id):
 
         if emails_destino:
             assunto = f"Você foi matriculado no curso: {turma.curso.nome}!"
-            contexto_email = {'casal': casal, 'curso': turma.curso}
+            contexto_email = {'casal': casal, 'matricula': matricula_obj}
+
 
             def enviar_background(emails, ass, ctx):
                 for e in emails:

@@ -34,13 +34,14 @@
         </div>
         <div class="content">
             <h1>Olá, {{ casal.nomes_juntos }}!</h1>
-            <p>O Ministério de Casais acabou de realizar a matrícula de vocês no curso: <strong>{{ curso.nome }}</strong>.</p>
+            <p>O Ministério de Casais acabou de realizar a matrícula de vocês no curso: <strong>{{ matricula.turma.curso.nome }}</strong>.</p>
 
             <div class="course-card">
-                <h2>Detalhes do Curso</h2>
-                <p style="margin-bottom:0; color:#1e40af;"><strong>Carga Horária:</strong> {{ curso.carga_horaria }} horas</p>
-                <p style="margin-top:5px; font-size:14px; color:#3b82f6;"><strong>Data de Início:</strong> {% if curso.data_inicio %}{{ curso.data_inicio|date:"d \d\e F \d\e Y" }}{% else %}A definir{% endif %}</p>
-                <p style="margin-top:5px; font-size:14px; color:#3b82f6;"><strong>Emite Certificado Final?</strong> {% if curso.emite_certificado %}Sim{% else %}Não{% endif %}</p>
+                <h2>Detalhes da Turma</h2>
+                <p style="margin-bottom:0; color:#1e40af;"><strong>Turma:</strong> {{ matricula.turma.nome_turma }}</p>
+                <p style="margin-top:5px; font-size:14px; color:#3b82f6;"><strong>Carga Horária:</strong> {{ matricula.turma.carga_horaria }} horas</p>
+                <p style="margin-top:5px; font-size:14px; color:#3b82f6;"><strong>Data de Início:</strong> {% if matricula.turma.data_inicio %}{{ matricula.turma.data_inicio|date:"d \d\e F \d\e Y" }}{% else %}A definir{% endif %}</p>
+                <p style="margin-top:5px; font-size:14px; color:#3b82f6;"><strong>Emite Certificado Final?</strong> {% if matricula.turma.emite_certificado %}Sim{% else %}Não{% endif %}</p>
             </div>
 
             <p>Se preparem para esse momento incrível de aprendizado! Cremos que este será um tempo de grande edificação para o casamento de vocês!</p>

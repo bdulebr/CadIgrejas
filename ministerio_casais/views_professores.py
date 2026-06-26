@@ -337,13 +337,18 @@ def fazer_chamada_aula(request, aula_id):
 def _enviar_alerta_falta(request, presenca):
     from django.conf import settings
     casal = presenca.matricula.casal
-    email = casal.email
-    if email:
+    emails = []
+    if casal.email_1:
+        emails.append(casal.email_1)
+    if casal.email_2:
+        emails.append(casal.email_2)
+
+    for email in emails:
         try:
             enviar_email_html(
                 destinatario=email,
                 assunto=f'Sentimos sua falta na aula "{presenca.aula.titulo}"!',
-                template='emails/ministerio_casais/email_falta_aula.html',
+                template_name='emails/ministerio_casais/email_falta_aula.html',
                 context={
                     'casal': casal.nomes_juntos,
                     'aula': presenca.aula.titulo,
