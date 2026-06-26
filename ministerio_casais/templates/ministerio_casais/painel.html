@@ -105,9 +105,7 @@
 
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
+<!-- Scripts SortableJS -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -127,7 +125,7 @@
                         const casalId = itemEl.getAttribute('data-id');
                         const newNivel = toList.getAttribute('data-nivel');
 
-                        // Envia requisição manual fetch para não depender dos bindings confusos do HTMX para URLs dinâmicas
+                        // Envia requisição manual fetch
                         fetch(`/casais/painel/atualizar/${casalId}/`, {
                             method: 'POST',
                             headers: {
@@ -136,11 +134,8 @@
                             },
                             body: `status=${newNivel}`
                         }).then(res => {
-                            if (res.ok) {
-                                // Força atualizar os lucide icons e exibir um alert se quisesse
-                            } else {
+                            if (!res.ok) {
                                 alert("Erro ao atualizar o nível do casal.");
-                                // Reverte a drag
                                 fromList.appendChild(itemEl);
                             }
                         });
