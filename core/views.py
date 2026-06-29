@@ -75,6 +75,17 @@ def login_view(request):
                     email_devices[0].generate_challenge()
                 return redirect('mfa_challenge')
             else:
+                if getattr(user, 'mfa_obrigatorio', False):
+                    request.session['mfa_pending_user_id'] = user.id
+                    from django_otp.plugins.otp_email.models import EmailDevice
+                    from django.contrib import messages
+                    messages.warning(request, "Sua conta exige Autenticação de 2 Fatores (MFA). Um código foi enviado para seu e-mail.")
+                    device, _ = EmailDevice.objects.get_or_create(user=user, name="Email MFA", email=user.email)
+                    device.confirmed = True
+                    device.save()
+                    device.generate_challenge()
+                    return redirect('mfa_challenge')
+
                 login(request, user)
                 if user.check_password('123456789') or user.check_password('senha_padrao_mudar'):
                     request.session['must_change_password'] = True
@@ -1640,3 +1651,21 @@ def mfa_challenge(request):
             messages.error(request, 'Cdigo invlido. Tente novamente.')
 
     return render(request, 'core/pages/mfa_challenge.html', {'user_email': user.email})
+
+@login_required
+def setup_mfa(request):
+    if request.method == 'POST':
+        from django_otp.plugins.otp_email.models import EmailDevice
+        device, created = EmailDevice.objects.get_or_create(user=request.user, name="Email", email=request.user.email)
+        device.confirmed = True
+        device.save()
+        messages.success(request, "Autenticação de 2 Fatores (E-mail) ativada com sucesso!")
+    return redirect('editar_perfil')
+
+@login_required
+def desativar_mfa(request):
+    if request.method == 'POST':
+        request.user.emaildevice_set.all().delete()
+        request.user.totpdevice_set.all().delete()
+        messages.success(request, "Sua Autenticação de 2 Fatores foi desativada.")
+    return redirect('editar_perfil')

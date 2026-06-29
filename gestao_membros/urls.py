@@ -43,6 +43,7 @@ urlpatterns = [
     path('membros/excluir/<int:membro_id>/', views.excluir_membro, name='excluir_membro'),
 
     path('membro/gerir-lider/<int:membro_id>/', views.gerir_membro_lider, name='gerir_membro_lider'),
+    path('membros/admin-excluir-mfa/<int:membro_id>/', views.admin_excluir_mfa, name='admin_excluir_mfa'),
 
     # Módulo de Gestão de Voluntários (RH)
     path('painel-lider/rh/', views.rh_painel, name='rh_painel'),

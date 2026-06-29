@@ -729,6 +729,8 @@ def editar_membro(request, membro_id):
         if nova_senha:
             membro.set_password(nova_senha)
 
+        if request.user.is_superuser:
+            membro.mfa_obrigatorio = request.POST.get('mfa_obrigatorio') == 'on'
         membro.save()
 
         messages.success(request, 'Membro atualizado!')
@@ -1197,3 +1199,15 @@ def excluir_evento_setor(request, evento_id):
     evento.delete()
     messages.success(request, 'Evento interno excluído.')
     return redirect('detalhes_departamento', dep_id=dep_id)
+
+@login_required
+@requer_permissao('is_superuser')
+def admin_excluir_mfa(request, membro_id):
+    if request.method == 'POST':
+        membro = get_object_or_404(Membro, id=membro_id)
+        membro.emaildevice_set.all().delete()
+        membro.totpdevice_set.all().delete()
+        from django.contrib import messages
+        messages.success(request, f'Os dispositivos de MFA do usuário {membro.get_full_name()} foram revogados.')
+        return redirect('editar_membro', membro_id=membro.id)
+    return redirect('painel_membros')

@@ -58,6 +58,9 @@ class Membro(AbstractUser):
     endereco = models.CharField(max_length=200, null=True, blank=True)
     numero = models.CharField(max_length=20, null=True, blank=True)
     complemento = models.CharField(max_length=100, null=True, blank=True)
+
+    # Segurança Avançada (MFA)
+    mfa_obrigatorio = models.BooleanField(default=False, verbose_name="MFA Obrigatório", help_text="Se marcado, o usuário será forçado a configurar o MFA no próximo login.")
     bairro = models.CharField(max_length=100, null=True, blank=True)
     cidade = models.CharField(max_length=100, null=True, blank=True)
     estado = models.CharField(max_length=2, null=True, blank=True)
