@@ -9,7 +9,10 @@
         <p class="text-gray-400">Cadastre a equipe e gere os PINs de acesso rápido (4 dígitos) para a Frente de Caixa.</p>
     </div>
     <div class="flex gap-2">
-        <a href="{% url 'pdv_dashboard' %}" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition">Voltar</a>
+        <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar</span>
+</a>
         <button onclick="document.getElementById('modalNovoOp').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
             <i data-lucide="plus" class="w-4 h-4"></i> Novo Operador
         </button>

@@ -16,7 +16,7 @@ from permissoes.decorators import requer_permissao
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.utils import timezone
-from .models import Casal, HistoricoAconselhamentoCasal, CursoCasal, MatriculaCursoCasal, EventoCasal, PresencaEventoCasal, TurmaCurso
+from .models import Casal, HistoricoAconselhamentoCasal, CursoCasal, MatriculaCursoCasal, EventoCasal, LoteEvento, InscricaoEvento, PagamentoInscricaoEvento, TurmaCurso
 import os
 from django.conf import settings
 from io import BytesIO

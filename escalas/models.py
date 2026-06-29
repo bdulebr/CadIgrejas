@@ -40,6 +40,11 @@ class CultoEvento(models.Model):
         verbose_name = 'Tipo de Culto / Evento'
         verbose_name_plural = 'Tipos de Cultos e Eventos'
 
+    def save(self, *args, **kwargs):
+        if self.chave_slug == '':
+            self.chave_slug = None
+        super().save(*args, **kwargs)
+
     def get_dia_semana_str(self):
         dias = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'}
         return dias.get(self.dia_semana, 'N/A')

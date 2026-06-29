@@ -8,6 +8,7 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from django.db.models import Q
 from permissoes.models import PermissaoMembro, PermissaoDepartamento, PermissaoPerfil
+from core.middleware import _registrar_invasao
 
 def requer_permissao(modulo_slug, acao='ver'):
     """
@@ -64,6 +65,8 @@ def requer_permissao(modulo_slug, acao='ver'):
                 return view_func(request, *args, **kwargs)
 
             # Acesso Negado
+            # Aciona o Watchdog de Segurança
+            _registrar_invasao(request)
             messages.error(request, f"Acesso Negado: Você não tem permissão para '{acao}' no módulo '{modulo_slug}'.")
 
             referer = request.META.get('HTTP_REFERER')

@@ -19,9 +19,10 @@
             <i data-lucide="list" class="w-5 h-5 -ul text-blue-400"></i> Lançamentos
         </h2>
         <div class="flex gap-3">
-            <a href="{% url 'tesouraria:dashboard' %}" class="px-5 py-2.5 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 flex items-center gap-2">
-                <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar
-            </a>
+            <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar</span>
+</a>
             <button onclick="document.getElementById('modal-importacao').classList.remove('hidden')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/30 transition-all duration-300 flex items-center gap-2">
                 <i data-lucide="upload-cloud" class="w-5 h-5"></i> Importar XLSX
             </button>

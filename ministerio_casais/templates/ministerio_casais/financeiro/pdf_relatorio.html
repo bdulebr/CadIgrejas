@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Financeiro - Casais</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm;
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+            }
+        }
+        body {
+            font-family: Helvetica, sans-serif;
+            color: #333333;
+            font-size: 11px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 18px;
+            color: #1a56db;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 12px;
+            color: #555555;
+            margin-bottom: 20px;
+        }
+        .summary-box {
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-box p {
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        .summary-box strong {
+            font-size: 13px;
+        }
+        h2 {
+            font-size: 14px;
+            color: #111827;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 3px;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th {
+            background-color: #f3f4f6;
+            color: #111827;
+            font-weight: bold;
+            text-align: left;
+            padding: 6px;
+            border: 1px solid #d1d5db;
+        }
+        td {
+            padding: 6px;
+            border: 1px solid #d1d5db;
+            vertical-align: middle;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .profit {
+            color: #047857;
+        }
+        .loss {
+            color: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Relatório Financeiro - Ministério de Casais</h1>
+    <div class="subtitle">
+        Período: {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}
+    </div>
+
+    <div class="summary-box">
+        <p><strong>Balanço do Período</strong></p>
+        <table style="border: none; margin-top: 5px;">
+            <tr>
+                <td style="border: none; padding: 2px;">Total de Receitas (Cursos + Eventos):</td>
+                <td style="border: none; padding: 2px; text-align: right;">R$ {{ total_rec|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td style="border: none; padding: 2px;">Total de Despesas:</td>
+                <td style="border: none; padding: 2px; text-align: right;">R$ {{ total_desp|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td style="border: none; padding: 2px;"><strong>Saldo / Lucro:</strong></td>
+                <td style="border: none; padding: 2px; text-align: right;">
+                    <strong class="{% if lucro >= 0 %}profit{% else %}loss{% endif %}">R$ {{ lucro|floatformat:2 }}</strong>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h2>1. Entradas Registradas</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%">Data</th>
+                <th style="width: 15%">Tipo</th>
+                <th style="width: 40%">Origem (Casal/Curso/Evento)</th>
+                <th style="width: 15%">Forma Pgto</th>
+                <th style="width: 15%" class="text-right">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Eventos -->
+            {% for pgto in pgtos_eventos %}
+            <tr>
+                <td>{{ pgto.data_pagamento|date:"d/m/Y" }}</td>
+                <td>Evento</td>
+                <td>{{ pgto.inscricao.casal.nomes_juntos }} - {{ pgto.inscricao.evento.titulo }}</td>
+                <td>{{ pgto.forma_pagamento }}</td>
+                <td class="text-right">R$ {{ pgto.valor_pago|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            <!-- Cursos -->
+            {% for pgto in pgtos_cursos %}
+            <tr>
+                <td>{{ pgto.data_pagamento|date:"d/m/Y" }}</td>
+                <td>Curso</td>
+                <td>{{ pgto.matricula.casal.nomes_juntos }} - {{ pgto.matricula.turma.curso.nome }}</td>
+                <td>{{ pgto.forma_pagamento }}</td>
+                <td class="text-right">R$ {{ pgto.valor_pago|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            {% if not pgtos_eventos and not pgtos_cursos %}
+            <tr>
+                <td colspan="5" class="text-center">Nenhuma entrada no período.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <h2>2. Despesas (Saídas)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%">Data</th>
+                <th style="width: 20%">Categoria</th>
+                <th style="width: 30%">Descrição</th>
+                <th style="width: 20%">Evento Vinc.</th>
+                <th style="width: 15%" class="text-right">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in despesas %}
+            <tr>
+                <td>{{ d.data_despesa|date:"d/m/Y" }}</td>
+                <td>{{ d.categoria }}</td>
+                <td>{{ d.descricao }}</td>
+                <td>{{ d.evento_vinculado.titulo|default:"-" }}</td>
+                <td class="text-right">R$ {{ d.valor|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Nenhuma despesa lançada no período.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <p>___________________________________________________</p>
+        <p>Assinatura Liderança de Casais / Tesouraria</p>
+    </div>
+
+    <div id="footer_content" style="text-align: right; font-size: 9px; color: #777;">
+        Gerado em {{ data_geracao|date:"d/m/Y H:i" }} | Página <pdf:pagenumber> de <pdf:pagecount>
+    </div>
+
+</body>
+</html>

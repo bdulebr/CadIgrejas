@@ -16,6 +16,7 @@ from io import BytesIO
 import base64
 from .models import CategoriaItem, SubcategoriaItem
 import os
+from core.middleware import _registrar_invasao
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
@@ -67,21 +68,31 @@ def qr_movimentar_item(request, item_id, tipo):
             messages.error(request, "A quantidade deve ser maior que zero.")
             return redirect('qr_retirar_item' if tipo == 'retirada' else 'qr_devolver_item', item_id=item_id)
 
-        if tipo == 'retirada':
-            if qtd > item.quantidade_estoque:
+        status_aprovacao = 'aprovado'
+        if item.exige_aprovacao:
+            status_aprovacao = 'pendente'
+
+        if status_aprovacao == 'aprovado':
+            if tipo == 'retirada':
+                if qtd > item.quantidade_estoque:
+                    messages.error(request, f"Estoque insuficiente. Temos apenas {item.quantidade_estoque} un.")
+                    return redirect('qr_retirar_item', item_id=item_id)
+
+                item.quantidade_estoque -= qtd
+                if item.tipo_item == 'permanente':
+                    item.status_item = 'emprestado'
+                elif item.quantidade_estoque == 0:
+                    item.status_item = 'consumido'
+
+            elif tipo == 'devolucao':
+                item.quantidade_estoque += qtd
+                if item.tipo_item == 'permanente':
+                    item.status_item = 'disponivel'
+            item.save()
+        else:
+            if tipo == 'retirada' and qtd > item.quantidade_estoque:
                 messages.error(request, f"Estoque insuficiente. Temos apenas {item.quantidade_estoque} un.")
                 return redirect('qr_retirar_item', item_id=item_id)
-
-            item.quantidade_estoque -= qtd
-            if item.tipo_item == 'permanente':
-                item.status_item = 'emprestado'
-            elif item.quantidade_estoque == 0:
-                item.status_item = 'consumido'
-
-        elif tipo == 'devolucao':
-            item.quantidade_estoque += qtd
-            if item.tipo_item == 'permanente':
-                item.status_item = 'disponivel'
 
         membro_vinculado = None
         if nome_digitado:
@@ -91,15 +102,14 @@ def qr_movimentar_item(request, item_id, tipo):
                 if best_match:
                     membro_vinculado = Membro.objects.filter(first_name=best_match[0]).first()
 
-        item.save()
-
         mov = MovimentacaoAlmoxarifado.objects.create(
             item=item,
             tipo=tipo,
             quantidade=qtd,
             nome_digitado=nome_digitado,
             membro_vinculado=membro_vinculado,
-            observacao=observacao
+            observacao=observacao,
+            status_aprovacao=status_aprovacao
         )
 
         threading.Thread(target=notificar_lideres_background, args=(item, mov)).start()
@@ -118,6 +128,7 @@ def can_edit_almoxarifado(user):
 @requer_permissao('almoxarifado', 'ver')
 def painel_inventario(request):
     if not can_edit_almoxarifado(request.user):
+        _registrar_invasao(request)
         messages.error(request, "Acesso Negado.")
         return redirect('dashboard')
 
@@ -127,7 +138,6 @@ def painel_inventario(request):
     origem_filter = request.GET.get('origem', '')
     tipo_filter = request.GET.get('tipo_item', '')
 
-    import winsound
     from django.utils import timezone
     from datetime import timedelta
     from django.db.models import Sum
@@ -147,11 +157,6 @@ def painel_inventario(request):
 
     if itens_vencendo.exists():
         alerta_vencimento = True
-        try:
-            winsound.Beep(1000, 500)
-            winsound.Beep(1500, 500)
-        except:
-            pass
 
     if q:
         itens = itens.filter(nome__icontains=q) | itens.filter(id_unico__icontains=q)
@@ -202,6 +207,7 @@ def painel_inventario(request):
 @requer_permissao('almoxarifado', 'ver')
 def livro_almoxarifado(request):
     if not can_edit_almoxarifado(request.user):
+        _registrar_invasao(request)
         messages.error(request, "Acesso Negado.")
         return redirect('dashboard')
 
@@ -262,6 +268,7 @@ def exportar_livro_pdf(request):
 @requer_permissao('almoxarifado', 'ver')
 def cadastrar_item_almoxarifado(request):
     if not can_edit_almoxarifado(request.user):
+        _registrar_invasao(request)
         messages.error(request, "Acesso Negado.")
         return redirect('dashboard')
 
@@ -318,7 +325,15 @@ def cadastrar_item_almoxarifado(request):
         if foto:
             item.foto_item = foto
 
-        item.save()  # Gera ID Unico
+        try:
+            item.save()  # Gera ID Unico
+        except Exception as e:
+            from django.db import IntegrityError
+            if isinstance(e, IntegrityError):
+                messages.error(request, "Erro: Já existe um item com esse Código de Barras / ID Único. Por favor, insira um código único ou deixe em branco.")
+                return redirect('painel_inventario')
+            else:
+                raise e
 
         # Integracao PV Drive
         depto_almo, _ = Departamento.objects.get_or_create(nome='Almoxarifado')
@@ -489,11 +504,8 @@ def imprimir_etiqueta_qr(request, item_id):
 
     item = get_object_or_404(ItemAlmoxarifado, id=item_id)
 
-    from django.conf import settings
-    # URL completa (Ex: https://pve.com.br/almoxarifado/qr/retirar/123/)
-    base_url = settings.BASE_URL
-
-    url_retirar = f"{base_url}/almoxarifado/qr/retirar/{item.id_unico}/"
+    from django.urls import reverse
+    url_retirar = request.build_absolute_uri(reverse('qr_retirar_item', kwargs={'item_id': item.id_unico}))
     qr_ret = qrcode.QRCode(version=1, box_size=10, border=4)
     qr_ret.add_data(url_retirar)
     qr_ret.make(fit=True)
@@ -502,7 +514,7 @@ def imprimir_etiqueta_qr(request, item_id):
     img_ret.save(buf_ret, format="PNG")
     qr_retirar_b64 = base64.b64encode(buf_ret.getvalue()).decode()
 
-    url_devolver = f"{base_url}/almoxarifado/qr/devolver/{item.id_unico}/"
+    url_devolver = request.build_absolute_uri(reverse('qr_devolver_item', kwargs={'item_id': item.id_unico}))
     qr_dev = qrcode.QRCode(version=1, box_size=10, border=4)
     qr_dev.add_data(url_devolver)
     qr_dev.make(fit=True)
@@ -530,11 +542,9 @@ def imprimir_todos_qrs(request):
 
     itens = ItemAlmoxarifado.objects.all()
     itens_qr = []
-    from django.conf import settings
-    base_url = settings.BASE_URL
-
+    from django.urls import reverse
     for item in itens:
-        url_retirar = f"{base_url}/almoxarifado/qr/retirar/{item.id_unico}/"
+        url_retirar = request.build_absolute_uri(reverse('qr_retirar_item', kwargs={'item_id': item.id_unico}))
         qr_ret = qrcode.QRCode(version=1, box_size=10, border=4)
         qr_ret.add_data(url_retirar)
         qr_ret.make(fit=True)
@@ -543,7 +553,7 @@ def imprimir_todos_qrs(request):
         img_ret.save(buf_ret, format="PNG")
         qr_retirar_b64 = base64.b64encode(buf_ret.getvalue()).decode()
 
-        url_devolver = f"{base_url}/almoxarifado/qr/devolver/{item.id_unico}/"
+        url_devolver = request.build_absolute_uri(reverse('qr_devolver_item', kwargs={'item_id': item.id_unico}))
         qr_dev = qrcode.QRCode(version=1, box_size=10, border=4)
         qr_dev.add_data(url_devolver)
         qr_dev.make(fit=True)
@@ -576,8 +586,7 @@ def baixar_qr_generico(request, tipo):
 
     # Gera a URL absoluta para a rota do Scanner Genérico
     url_relativa = reverse('scanner_retirada_generico' if tipo == 'retirada' else 'scanner_devolucao_generico')
-    from django.conf import settings
-    url_absoluta = f"{settings.BASE_URL}{url_relativa}"
+    url_absoluta = request.build_absolute_uri(url_relativa)
 
     qr = qrcode.QRCode(
         version=1,

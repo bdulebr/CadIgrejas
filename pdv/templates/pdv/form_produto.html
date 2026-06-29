@@ -1,6 +1,14 @@
 {% extends 'core/base.html' %}
 {% block title %}{% if produto %}Editar{% else %}Novo{% endif %} Produto{% endblock title %}
 {% block content %}
+<!-- Botão Voltar -->
+<div class="mb-6">
+    <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar</span>
+</a>
+</div>
+
 <div class="min-h-screen p-8" x-data="produtoForm()">
     <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl font-black text-white mb-6">{% if produto %}Editar Produto{% else %}Novo Produto{% endif %}</h1>
@@ -22,6 +30,13 @@
                         <label class="block text-gray-400 text-sm mb-2">Estoque Atual</label>
                         <input type="number" name="estoque_atual" value="{{ produto.estoque_atual|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">
                     </div>
+
+        <div class="mt-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="tem_preparo" class="w-5 h-5 bg-gray-900 border-gray-700 rounded text-blue-500 focus:ring-blue-500" {% if produto and produto.tem_preparo %}checked{% endif %}>
+                <span class="text-gray-300 font-medium">Requer Preparo na Cozinha (Enviar para tela TV)</span>
+            </label>
+        </div>
                     <div>
                         <label class="block text-gray-400 text-sm mb-2">Preço de Custo (R$) *</label>
                         <input type="number" step="0.01" name="preco_custo" value="{{ produto.preco_custo|default:0 }}" required class="w-full bg-gray-800 text-white rounded p-3 border border-gray-700 focus:border-blue-500 outline-none">

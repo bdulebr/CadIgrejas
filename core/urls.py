@@ -16,6 +16,7 @@ from . import webhooks
 
 urlpatterns = [
     path('', views.login_view, name='login'),
+    path('mfa-challenge/', views.mfa_challenge, name='mfa_challenge'),
     path('api/eversinho-status/<int:log_id>/', views.eversinho_status_api, name='eversinho_status_api'),
     path('api/eversinho/chat/', views.eversinho_chat_api, name='eversinho_chat_api'),
     # Recuperação de Senha Segura

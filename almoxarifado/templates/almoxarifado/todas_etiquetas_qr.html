@@ -87,7 +87,10 @@
 <body>
     <div class="no-print" style="padding: 20px; text-align: center; background: #eee; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 5px;">Imprimir Etiquetas Agora</button>
-        <a href="{% url 'painel_inventario' %}" style="margin-left: 10px; color: #4b5563; text-decoration: none;">Voltar ao Painel</a>
+        <a href="{% url 'painel_inventario' %}" class="btn btn-secondary w-full md:w-auto">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar ao Painel</span>
+</a>
     </div>
 
     {% for obj in itens_qr %}

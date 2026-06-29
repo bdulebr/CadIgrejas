@@ -8,6 +8,7 @@
 * LOG DE ALTERAÇÕES:
 * - 18/06/2026 13:20: Auditoria e padronização global (Goal)
 """
+from core.middleware import _registrar_invasao
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -257,6 +258,7 @@ def detalhes_sessao(request, sessao_id):
 
     # Validação de Privacidade Extrema
     if sessao.is_restrito and not is_owner(request, sessao):
+        _registrar_invasao(request)
         messages.error(request, 'ACESSO NEGADO. Este prontuário é estritamente confidencial ao pastor que realizou o atendimento.')
         return redirect('dashboard')
 

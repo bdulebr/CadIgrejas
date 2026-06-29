@@ -19,7 +19,10 @@
                 <h1 class="text-3xl font-bold text-white">Livro Caixa: Almoxarifado</h1>
                 <p class="text-gray-400">Auditoria imutável e registro de empréstimos.</p>
             </div>
-            <a href="{% url 'painel_inventario' %}" class="px-5 py-2.5 bg-gray-800/80 backdrop-blur-md hover:bg-gray-700 text-white border border-gray-600 rounded-xl font-bold transition-all shadow-lg">Voltar ao Almoxarifado</a>
+            <a href="{% url 'painel_inventario' %}" class="btn btn-secondary w-full md:w-auto">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar ao Almoxarifado</span>
+</a>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">

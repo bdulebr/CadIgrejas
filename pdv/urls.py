@@ -34,4 +34,9 @@ urlpatterns = [
     path('configuracoes/', views.configuracoes_pdv, name='pdv_configuracoes'),
     path('operadores/', views.gerenciar_operadores, name='pdv_gerenciar_operadores'),
     path('livro-caixa/', views.livro_caixa, name='pdv_livro_caixa'),
+    # KDS TV
+    path('tv/', views.pdv_painel_tv, name='pdv_painel_tv'),
+    path('cozinha/', views.pdv_cozinha, name='pdv_cozinha'),
+    path('api/tv/', views.api_tv_data, name='api_tv_data'),
+    path('api/cozinha/atualizar/<int:venda_id>/<str:acao>/', views.api_cozinha_atualizar, name='api_cozinha_atualizar'),
 ]

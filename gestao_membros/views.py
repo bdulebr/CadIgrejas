@@ -221,7 +221,7 @@ def aprovar_membro(request, membro_id):
             'nome': membro.first_name,
             'email': membro.email,
             'senha': senha_gerada,
-            'link_acesso': settings.BASE_URL + '/'
+            'link_acesso': request.build_absolute_uri('/')
         }
         enviar_email_html(
             destinatario=membro.email,

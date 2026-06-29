@@ -28,7 +28,10 @@
                 </div>
             {% endfor %}
             <div class="p-8 text-center">
-                <a href="https://pvenseada.org" class="text-blue-600 hover:underline">Voltar para o site da Igreja</a>
+                <a href="https://pvenseada.org" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar para o site da Igreja</span>
+</a>
             </div>
         {% else %}
             {% if registro.status != 'pendente' %}

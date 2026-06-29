@@ -164,6 +164,11 @@ class MatriculaCursoCasal(models.Model):
     # Autenticação Option B (Link Mágico)
     token_acesso = models.CharField('Token Mágico de Acesso', max_length=100, blank=True, null=True, unique=True)
 
+    def save(self, *args, **kwargs):
+        if self.token_acesso == '':
+            self.token_acesso = None
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.casal.nomes_juntos} - {self.turma.curso.nome} ({self.turma.nome_turma})"
 
@@ -225,19 +230,105 @@ class PagamentoCursoCasal(models.Model):
         return f"Pagamento de R$ {self.valor_pago} - {self.matricula.casal.nomes_juntos}"
 
 class EventoCasal(models.Model):
+    TIPO_EVENTO = (
+        ('Retiro', 'Retiro de Casais'),
+        ('Jantar', 'Jantar de Casais'),
+        ('Encontro', 'Encontro / Reunião'),
+        ('Outros', 'Outros'),
+    )
+    STATUS_EVENTO = (
+        ('Planejamento', 'Em Planejamento'),
+        ('Aberto', 'Inscrições Abertas'),
+        ('Lotado', 'Lotado'),
+        ('Encerrado', 'Encerrado'),
+    )
     titulo = models.CharField('Título do Evento', max_length=150)
-    data_evento = models.DateTimeField('Data e Hora')
-    local = models.CharField('Local', max_length=200)
+    tipo = models.CharField('Tipo de Evento', max_length=50, choices=TIPO_EVENTO, default='Retiro')
+    status = models.CharField('Status', max_length=50, choices=STATUS_EVENTO, default='Aberto')
+    data_inicio = models.DateTimeField('Data e Hora de Início')
+    data_fim = models.DateTimeField('Data e Hora de Término', blank=True, null=True)
+    local = models.CharField('Local / Hotel', max_length=200)
+    capacidade_maxima = models.IntegerField('Capacidade Máxima (Casais)', default=50)
     descricao = models.TextField('Descrição', blank=True, null=True)
 
-    def __str__(self):
-        return f"{self.titulo} - {self.data_evento.strftime('%d/%m/%Y')}"
-
-class PresencaEventoCasal(models.Model):
-    evento = models.ForeignKey(EventoCasal, on_delete=models.CASCADE, related_name='presencas')
-    casal = models.ForeignKey(Casal, on_delete=models.CASCADE, related_name='eventos_presentes')
-    confirmou_presenca = models.BooleanField('Confirmou Presença?', default=False)
-    compareceu = models.BooleanField('Compareceu?', default=False)
+    # Financial summary
+    valor_base = models.DecimalField('Valor Base (Opcional se usar lotes)', max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
-        return f"Presença {self.casal.nomes_juntos} - {self.evento.titulo}"
+        return f"[{self.get_tipo_display()}] {self.titulo} - {self.data_inicio.strftime('%d/%m/%Y')}"
+
+class LoteEvento(models.Model):
+    evento = models.ForeignKey(EventoCasal, on_delete=models.CASCADE, related_name='lotes')
+    nome = models.CharField('Nome do Lote', max_length=100)
+    valor = models.DecimalField('Valor (R$)', max_digits=10, decimal_places=2)
+    data_limite = models.DateTimeField('Válido até', blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.nome} - R$ {self.valor}"
+
+class InscricaoEvento(models.Model):
+    STATUS_PAGAMENTO = (
+        ('Pendente', 'Pendente'),
+        ('Parcial', 'Pago Parcialmente'),
+        ('Pago', 'Pago Integralmente'),
+        ('Isento', 'Isento/Cortesia'),
+    )
+    evento = models.ForeignKey(EventoCasal, on_delete=models.CASCADE, related_name='inscricoes')
+    casal = models.ForeignKey(Casal, on_delete=models.CASCADE, related_name='eventos_inscritos')
+    lote = models.ForeignKey(LoteEvento, on_delete=models.SET_NULL, null=True, blank=True)
+
+    data_inscricao = models.DateTimeField(auto_now_add=True)
+    status_pagamento = models.CharField('Status de Pagamento', max_length=50, choices=STATUS_PAGAMENTO, default='Pendente')
+    valor_total_devido = models.DecimalField('Valor Devido', max_digits=10, decimal_places=2, default=0.00)
+
+    quarto = models.CharField('Alojamento / Quarto', max_length=100, blank=True, null=True)
+    observacoes_medicas = models.TextField('Restrições Alimentares / Observações', blank=True, null=True)
+
+    presente = models.BooleanField('Check-in / Presente?', default=False)
+
+    def __str__(self):
+        return f"Inscrição: {self.casal.nomes_juntos} - {self.evento.titulo}"
+
+    def save(self, *args, **kwargs):
+        if not self.valor_total_devido and self.lote:
+            self.valor_total_devido = self.lote.valor
+        elif not self.valor_total_devido and self.evento.valor_base:
+            self.valor_total_devido = self.evento.valor_base
+        super().save(*args, **kwargs)
+
+class PagamentoInscricaoEvento(models.Model):
+    FORMAS_PAGAMENTO = (
+        ('Dinheiro', 'Dinheiro'),
+        ('PIX', 'PIX'),
+        ('Cartão de Crédito', 'Cartão de Crédito'),
+        ('Cartão de Débito', 'Cartão de Débito'),
+        ('Transferência', 'Transferência'),
+    )
+    inscricao = models.ForeignKey(InscricaoEvento, on_delete=models.CASCADE, related_name='pagamentos')
+    valor_pago = models.DecimalField('Valor do Pagamento', max_digits=10, decimal_places=2)
+    forma_pagamento = models.CharField('Forma de Pagamento', max_length=50, choices=FORMAS_PAGAMENTO)
+    data_pagamento = models.DateTimeField('Data do Pagamento', auto_now_add=True)
+    observacoes = models.TextField('Observações', blank=True, null=True)
+
+    def __str__(self):
+        return f"Pgto R$ {self.valor_pago} - {self.inscricao.casal.nomes_juntos}"
+
+class DespesaMinisterio(models.Model):
+    CATEGORIAS = (
+        ('Alimentação', 'Alimentação / Coffee Break'),
+        ('Local', 'Locação de Espaço / Hotel'),
+        ('Material', 'Materiais Gráficos e Brindes'),
+        ('Preletor', 'Preletores / Convidados / Ofertas'),
+        ('Marketing', 'Marketing / Impulsionamento'),
+        ('Outros', 'Outros Gastos'),
+    )
+    data_despesa = models.DateField('Data da Despesa')
+    descricao = models.CharField('Descrição do Gasto', max_length=255)
+    valor = models.DecimalField('Valor', max_digits=10, decimal_places=2)
+    categoria = models.CharField('Categoria', max_length=50, choices=CATEGORIAS)
+    evento_vinculado = models.ForeignKey(EventoCasal, on_delete=models.SET_NULL, null=True, blank=True, related_name='despesas', help_text="Opcional. Vincule se o gasto foi para um evento específico.")
+    comprovante = models.FileField('Comprovante / Recibo', upload_to='casais/financeiro/comprovantes/', blank=True, null=True)
+    data_registro = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.data_despesa.strftime('%d/%m/%Y')} - {self.descricao} (R$ {self.valor})"

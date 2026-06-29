@@ -11,6 +11,8 @@
 from django.views.decorators.http import require_POST
 import json
 from django.conf import settings
+from core.middleware import _registrar_invasao
+from django.urls import reverse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
@@ -180,6 +182,7 @@ def editor_escala_manual(request, comp_id):
     comp = get_object_or_404(CompetenciaEscala, id=comp_id)
     deps_permitidos = get_departamentos_permitidos(request.user)
     if comp.departamento not in deps_permitidos:
+        _registrar_invasao(request)
         messages.error(request, 'Acesso negado.')
         return redirect('painel_escalas')
 
@@ -360,13 +363,13 @@ def salvar_slot_escala(request, comp_id):
                         'nome': membro.first_name,
                         'departamento': comp.departamento.nome,
                         'departamento_logo': '',
-                        'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                        'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
                     })
                     if getattr(membro, 'telefone', None):
                         enviar_whatsapp_template(membro.telefone, "escala_atualizada.txt", {
                             'nome': membro.first_name,
                             'departamento': comp.departamento.nome,
-                            'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                            'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
                         })
             messages.success(request, 'Slot salvo com sucesso.')
         except IntegrityError:
@@ -399,7 +402,7 @@ def deletar_slot_escala(request, escala_id):
                 'data': data_escala,
                 'horario_inicio': horario_inicio,
                 'horario_fim': horario_fim,
-                'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
             })
             if getattr(membro, 'telefone', None):
                 enviar_whatsapp_template(membro.telefone, "escala_cancelada.txt", {
@@ -408,7 +411,7 @@ def deletar_slot_escala(request, escala_id):
                     'data': data_escala,
                     'horario_inicio': horario_inicio,
                     'horario_fim': horario_fim,
-                    'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                    'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
                 })
 
     messages.success(request, 'Slot removido.')
@@ -442,14 +445,14 @@ def publicar_competencia(request, comp_id):
                 'data': comp.mes_ano,
                 'horario_inicio': "Vários",
                 'horario_fim': "Vários",
-                'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
             })
             if getattr(membro, 'telefone', None):
                 enviar_whatsapp_template(membro.telefone, "nova_escala.txt", {
                     'nome': membro.first_name,
                     'departamento': comp.departamento.nome,
                     'data': comp.mes_ano,
-                    'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                    'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
                 })
 
     messages.success(request, f'A Escala de {comp.mes_ano} foi publicada e emails enviados!')
@@ -900,7 +903,7 @@ def alocar_slot_api(request):
                     'nome': membro.first_name,
                     'departamento': comp.departamento.nome,
                     'departamento_logo': '',
-                    'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                    'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
                 })
 
         return JsonResponse({
@@ -944,7 +947,7 @@ def remover_slot_api(request):
                     'data': data_escala_str,
                     'horario_inicio': hora_inicio_str,
                     'horario_fim': hora_fim_str,
-                    'link_painel': f"{settings.BASE_URL}/minhas-escalas/"
+                    'link_painel': request.build_absolute_uri(reverse('minhas_escalas'))
                 })
 
         return JsonResponse({'success': True})

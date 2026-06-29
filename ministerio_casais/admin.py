@@ -1,4 +1,4 @@
-from .models import PresencaEventoCasal, EventoCasal, PagamentoCursoCasal, EntregaAtividadeAluno, PostagemCurso, PresencaAula, MatriculaCursoCasal, AulaTurma, ProfessorTurma, TurmaCurso, CursoCasal, HistoricoAconselhamentoCasal, Casal
+from .models import EventoCasal, PagamentoCursoCasal, EntregaAtividadeAluno, PostagemCurso, PresencaAula, MatriculaCursoCasal, AulaTurma, ProfessorTurma, TurmaCurso, CursoCasal, HistoricoAconselhamentoCasal, Casal, LoteEvento, InscricaoEvento, PagamentoInscricaoEvento, DespesaMinisterio
 """
 * PROJETO: Palavra de Vida Enseada - Intranet
 * ARQUIVO: ministerio_casais/admin.py
@@ -62,6 +62,18 @@ class PagamentoCursoCasalAdmin(admin.ModelAdmin):
 class EventoCasalAdmin(admin.ModelAdmin):
     pass
 
-@admin.register(PresencaEventoCasal)
-class PresencaEventoCasalAdmin(admin.ModelAdmin):
+@admin.register(LoteEvento)
+class LoteEventoAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(InscricaoEvento)
+class InscricaoEventoAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(PagamentoInscricaoEvento)
+class PagamentoInscricaoEventoAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(DespesaMinisterio)
+class DespesaMinisterioAdmin(admin.ModelAdmin):
     pass

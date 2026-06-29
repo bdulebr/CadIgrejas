@@ -97,6 +97,8 @@ class Membro(AbstractUser):
         return nome_base
 
     def save(self, *args, **kwargs):
+        if self.cpf == '':
+            self.cpf = None
         if self.status_conta == 'ativo':
             self.is_active = True
         else:

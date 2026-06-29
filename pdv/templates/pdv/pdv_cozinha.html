@@ -1,0 +1,104 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}KDS Cozinha - PDV{% endblock %}
+
+{% block content %}
+<!-- Botão Voltar -->
+<div class="mb-6">
+    <a href="{% url 'dashboard_pdv' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span class="font-medium text-sm">Voltar ao Painel PDV</span>
+    </a>
+</div>
+
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h1 class="text-3xl font-bold text-white mb-2 flex items-center gap-2">
+            <i data-lucide="chef-hat" class="w-8 h-8 text-yellow-400"></i> Gestão de Cozinha (KDS)
+        </h1>
+        <p class="text-gray-400">Acompanhe os pedidos que entram e libere-os para a TV.</p>
+    </div>
+    <button onclick="window.open('{% url 'pdv_painel_tv' %}', '_blank')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg flex items-center gap-2">
+        <i data-lucide="tv" class="w-5 h-5"></i> Abrir Painel TV
+    </button>
+</div>
+
+<div x-data="kdsCozinha()" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    <!-- Fila de Preparo -->
+    <div class="bg-gray-800 border-2 border-yellow-500 rounded-xl overflow-hidden shadow-lg">
+        <div class="bg-gray-900 p-4 border-b border-gray-700 flex justify-between items-center">
+            <h2 class="text-xl font-black text-yellow-400 uppercase tracking-widest">Fila de Preparo</h2>
+            <span class="bg-yellow-500 text-black font-bold px-3 py-1 rounded-full text-xs" x-text="preparo.length + ' Pedidos'"></span>
+        </div>
+        <div class="p-4 space-y-4">
+            <template x-for="p in preparo" :key="p.id">
+                <div class="bg-gray-700 p-4 rounded-lg flex justify-between items-center shadow-md">
+                    <div>
+                        <span class="text-gray-400 text-xs font-bold uppercase">Pedido #<span x-text="p.id"></span></span>
+                        <h3 class="text-2xl font-bold text-white truncate max-w-[200px]" x-text="p.nome"></h3>
+                    </div>
+                    <button @click="atualizarStatus(p.id, 'pronto')" class="bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-lg shadow-md uppercase tracking-widest text-sm flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i> Pronto!
+                    </button>
+                </div>
+            </template>
+            <div x-show="preparo.length === 0" class="text-gray-500 text-center py-10 font-bold italic">Nenhum pedido aguardando preparo.</div>
+        </div>
+    </div>
+
+    <!-- Prontos / A Retirar -->
+    <div class="bg-gray-800 border-2 border-green-500 rounded-xl overflow-hidden shadow-lg">
+        <div class="bg-gray-900 p-4 border-b border-gray-700 flex justify-between items-center">
+            <h2 class="text-xl font-black text-green-400 uppercase tracking-widest">Prontos / Retirar</h2>
+            <span class="bg-green-500 text-white font-bold px-3 py-1 rounded-full text-xs" x-text="retirar.length + ' Pedidos'"></span>
+        </div>
+        <div class="p-4 space-y-4">
+            <template x-for="p in retirar" :key="p.id">
+                <div class="bg-green-900/40 border border-green-700 p-4 rounded-lg flex justify-between items-center shadow-md">
+                    <div>
+                        <span class="text-green-400 text-xs font-bold uppercase">Pedido #<span x-text="p.id"></span></span>
+                        <h3 class="text-2xl font-bold text-white truncate max-w-[200px]" x-text="p.nome"></h3>
+                    </div>
+                    <button @click="atualizarStatus(p.id, 'entregue')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold px-4 py-2 rounded-lg shadow-md uppercase text-xs flex items-center gap-1">
+                        <i data-lucide="check-check" class="w-4 h-4"></i> Entregue
+                    </button>
+                </div>
+            </template>
+            <div x-show="retirar.length === 0" class="text-gray-500 text-center py-10 font-bold italic">Nenhum pedido aguardando retirada.</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('kdsCozinha', () => ({
+            preparo: [],
+            retirar: [],
+
+            init() {
+                this.fetchData();
+                setInterval(() => this.fetchData(), 3000); // Polling a cada 3s
+            },
+
+            async fetchData() {
+                try {
+                    const res = await fetch("{% url 'api_tv_data' %}");
+                    const data = await res.json();
+                    this.preparo = data.preparo;
+                    this.retirar = data.retirar;
+                } catch(e) {}
+            },
+
+            async atualizarStatus(id, acao) {
+                try {
+                    await fetch(`/pdv/api/cozinha/atualizar/${id}/${acao}/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+                    this.fetchData();
+                } catch(e) { alert("Erro de conexão"); }
+            }
+        }));
+    });
+</script>
+{% endblock %}

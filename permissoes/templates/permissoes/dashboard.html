@@ -11,6 +11,14 @@
 {% block title %}RBAC 2.0 | {{ request.config.igreja_nome }}{% endblock %}
 
 {% block content %}
+<!-- Botão Voltar -->
+<div class="mb-6">
+    <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar</span>
+</a>
+</div>
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
     <!-- Header Section -->
     <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">

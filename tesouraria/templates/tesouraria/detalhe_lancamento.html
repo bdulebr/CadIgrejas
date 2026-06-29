@@ -19,9 +19,10 @@
             <i data-lucide="search" class="w-5 h-5 -dollar text-purple-400"></i> Detalhes do Lançamento
         </h2>
         <div class="flex gap-3">
-            <a href="{% url 'tesouraria:lista_lancamentos' %}" class="px-5 py-2.5 bg-slate-800/50 hover:bg-slate-700/80 text-gray-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-600/50 transition-all duration-300 flex items-center gap-2">
-                <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar
-            </a>
+            <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar</span>
+</a>
 
             {% if lancamento.status != 'pago' %}
                 <form method="POST" action="{% url 'tesouraria:dar_baixa_lancamento' lancamento.id %}" class="inline">

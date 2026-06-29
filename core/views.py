@@ -27,24 +27,19 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordResetView
 from core.models import Membro
-from django.shortcuts import render
-from django.http import HttpResponseForbidden
-from django.contrib.auth import update_session_auth_hash
-from django.db.models import Count, Q
-from core.models import AIEngineerLog
-from django.core.cache import cache
-import random
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseForbidden
 from django.contrib import messages
-from .models import LogAuditoria, ConfiguracaoSistema
+from django.db.models import Count
+from django.core.cache import cache
+from django.views.decorators.csrf import csrf_exempt
 import json
+import random
 import psutil
+from .models import LogAuditoria, ConfiguracaoSistema, AIEngineerLog
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
-from .models import Membro
 from axes.models import AccessAttempt
 from axes.utils import reset
 from django.conf import settings
@@ -69,20 +64,32 @@ def login_view(request):
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)
-            if user.check_password('123456789') or user.check_password('senha_padrao_mudar'):
-                request.session['must_change_password'] = True
+            from django_otp import devices_for_user
+            devices = list(devices_for_user(user))
+            if devices:
+                # User has MFA enabled!
+                request.session['mfa_pending_user_id'] = user.id
+                # Enviar e-mail se for a unica opcao
+                email_devices = [d for d in devices if d.__class__.__name__ == 'EmailDevice']
+                if email_devices:
+                    email_devices[0].generate_challenge()
+                return redirect('mfa_challenge')
+            else:
+                login(request, user)
+                if user.check_password('123456789') or user.check_password('senha_padrao_mudar'):
+                    request.session['must_change_password'] = True
 
-            if not user.cpf or not user.telefone or not user.data_nascimento:
-                messages.warning(request, 'Aviso de Primeiro Acesso: Por favor, complete o preenchimento do seu Perfil.')
-                return redirect('editar_perfil')
+                if not getattr(user, 'cpf', None) or not getattr(user, 'telefone', None) or not getattr(user, 'data_nascimento', None):
+                    from django.contrib import messages
+                    messages.warning(request, 'Aviso de Primeiro Acesso: Por favor, complete o preenchimento do seu Perfil.')
+                    return redirect('editar_perfil')
 
-            if user.nivel_hierarquico in ['lider', 'sub_lider']:
-                return redirect('painel_lider')
-            return redirect('dashboard')
+                if getattr(user, 'nivel_hierarquico', '') in ['lider', 'sub_lider']:
+                    return redirect('painel_lider')
+                return redirect('dashboard')
         else:
-            messages.error(request, 'Credenciais inválidas. Tente novamente.')
-
+            from django.contrib import messages
+            messages.error(request, 'Credenciais invlidas. Tente novamente.')
     # Busca avisos globais da última semana
     uma_semana_atras = timezone.now() - datetime.timedelta(days=7)
     from django.db.models import Q
@@ -399,7 +406,7 @@ def sysadmin_dashboard(request):
     try:
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
-    except:
+    except Exception:
         hostname = "Desconhecido"
         local_ip = "127.0.0.1"
 
@@ -1064,8 +1071,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.filter(cacheName => cacheName !== CACHE_NAME)
+      return Promise.all(cacheNames.filter(cacheName => cacheName !== CACHE_NAME)
                   .map(cacheName => caches.delete(cacheName))
       );
     }).then(() => self.clients.claim())
@@ -1405,6 +1411,7 @@ def sysadmin_restaurar_backup(request, backup_id):
 
 
 @login_required
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_rodar_spider(request):
     if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
         return HttpResponseForbidden("Acesso restrito.")
@@ -1422,6 +1429,7 @@ def sysadmin_rodar_spider(request):
     return HttpResponseRedirect(reverse('sysadmin'))
 
 @login_required
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_baixar_log_spider(request, log_id):
     if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
         return HttpResponseForbidden("Acesso restrito.")
@@ -1435,6 +1443,7 @@ def sysadmin_baixar_log_spider(request, log_id):
     return response
 
 @login_required
+@requer_permissao('sysadmin', 'editar')
 def sysadmin_rodar_ai_engineer(request):
     if not request.user.is_superuser and request.user.nivel_hierarquico != 'super_admin':
         return HttpResponseForbidden("Acesso restrito.")
@@ -1583,3 +1592,51 @@ def eversinho_chat_api(request):
 
         return HttpResponse(html_ia)
     return HttpResponse("Método não permitido.")
+
+
+# --- MFA VIEWS ---
+def mfa_challenge(request):
+    mfa_user_id = request.session.get('mfa_pending_user_id')
+    if not mfa_user_id:
+        return redirect('login')
+
+    from core.models import Membro
+    from django_otp import devices_for_user
+    try:
+        user = Membro.objects.get(id=mfa_user_id)
+    except Membro.DoesNotExist:
+        return redirect('login')
+
+    devices = list(devices_for_user(user))
+
+    if request.method == 'POST':
+        token = request.POST.get('token', '').strip()
+
+        # Verify against all devices
+        verified = False
+        for device in devices:
+            if device.verify_token(token):
+                verified = True
+                break
+
+        if verified:
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, user)
+            del request.session['mfa_pending_user_id']
+
+            if user.check_password('123456789') or user.check_password('senha_padrao_mudar'):
+                request.session['must_change_password'] = True
+
+            if not user.cpf or not user.telefone or not user.data_nascimento:
+                from django.contrib import messages
+                messages.warning(request, 'Aviso de Primeiro Acesso: Por favor, complete o preenchimento do seu Perfil.')
+                return redirect('editar_perfil')
+
+            if user.nivel_hierarquico in ['lider', 'sub_lider']:
+                return redirect('painel_lider')
+            return redirect('dashboard')
+        else:
+            from django.contrib import messages
+            messages.error(request, 'Cdigo invlido. Tente novamente.')
+
+    return render(request, 'core/pages/mfa_challenge.html', {'user_email': user.email})

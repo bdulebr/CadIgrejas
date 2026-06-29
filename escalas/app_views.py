@@ -8,6 +8,7 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from core.middleware import _registrar_invasao
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -83,6 +84,7 @@ def app_remover_disponibilidade(request, ind_id):
 @login_required
 def app_lider(request):
     if not is_lider_any_dept(request.user):
+        _registrar_invasao(request)
         messages.error(request, "Acesso Negado. Você não é líder.")
         return redirect('app_home')
 
@@ -139,6 +141,7 @@ def app_lider(request):
 def app_motor_ia(request):
     if request.method == 'POST':
         if not is_lider_any_dept(request.user):
+            _registrar_invasao(request)
             messages.error(request, "Acesso Negado.")
             return redirect('app_home')
 

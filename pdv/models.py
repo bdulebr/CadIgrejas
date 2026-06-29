@@ -53,6 +53,9 @@ class Produto(models.Model):
     estoque_atual = models.IntegerField(default=0)
     estoque_minimo = models.IntegerField(default=5)
 
+    # KDS (Kitchen Display System)
+    tem_preparo = models.BooleanField("Requer Preparo na Cozinha?", default=False)
+
     # Fiscal data for NFC-e readiness and Reforma Fiscal 2026
     ncm = models.CharField(max_length=20, default="00000000")  # Obrigatório
     cest = models.CharField(max_length=20, blank=True, null=True)
@@ -63,6 +66,11 @@ class Produto(models.Model):
     cbs = models.DecimalField('CBS (%)', max_digits=5, decimal_places=2, blank=True, null=True)
     ibs = models.DecimalField('IBS (%)', max_digits=5, decimal_places=2, blank=True, null=True)
     imposto_seletivo = models.DecimalField('Imposto Seletivo (%)', max_digits=5, decimal_places=2, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if self.codigo_barras == '':
+            self.codigo_barras = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.codigo_barras} - {self.nome}"
@@ -108,7 +116,7 @@ class Venda(models.Model):
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     desconto = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    forma_pagamento = models.CharField(max_length=50, default='Dinheiro')
+    forma_pagamento = models.CharField(max_length=255, default='Dinheiro')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='concluida')
 
     # Sistema de Reservas
@@ -121,8 +129,9 @@ class Venda(models.Model):
         ('pendente', 'Pendente')
     )
     STATUS_ENTREGA_CHOICES = (
-        ('entregue', 'Entregue'),
-        ('retirar', 'A Retirar')
+        ('preparo', 'Em Preparo'),
+        ('retirar', 'A Retirar'),
+        ('entregue', 'Entregue')
     )
     tipo_venda = models.CharField(max_length=20, choices=TIPO_VENDA_CHOICES, default='imediata')
     status_pagamento = models.CharField(max_length=20, choices=STATUS_PAGAMENTO_CHOICES, default='pago')

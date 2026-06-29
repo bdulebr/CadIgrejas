@@ -220,35 +220,55 @@
         </div>
     </div>
 
-    <!-- Modal Base Component -->
+        <!-- Modal Base Component -->
     <template x-if="modalPagamento">
         <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
             <div class="bg-[#001f3f] border-2 border-green-500 rounded p-8 max-w-2xl w-full text-center">
                 <h2 class="text-4xl font-black text-green-400 uppercase tracking-widest mb-2">Pagamento</h2>
-                <div class="text-6xl font-black text-white pos-font mb-8">R$ <span x-text="totalVenda.toFixed(2)"></span></div>
+                <div class="text-6xl font-black text-white pos-font mb-4">TOTAL: R$ <span x-text="totalVenda.toFixed(2)"></span></div>
 
-                <div class="grid grid-cols-2 gap-6 text-left mb-8">
+                <div class="bg-[#001122] p-4 rounded border border-[#004080] mb-6 max-h-32 overflow-y-auto custom-scrollbar text-left">
+                    <h3 class="text-gray-400 font-bold uppercase text-xs mb-2">Pagamentos Lançados</h3>
+                    <template x-for="(p, i) in pagamentosLancados" :key="i">
+                        <div class="flex justify-between text-lg text-white pos-font border-b border-[#002a5c] py-1">
+                            <span><span x-text="p.forma"></span></span>
+                            <div class="flex items-center gap-4">
+                                <span>R$ <span x-text="p.valor.toFixed(2)"></span></span>
+                                <button @click="removerPagamento(i)" class="text-red-500 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="pagamentosLancados.length === 0" class="text-gray-600 text-sm italic">Nenhum pagamento lançado.</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-left mb-6">
                     <div>
-                        <label class="block text-gray-400 font-bold uppercase text-sm mb-2">Forma [ Setas ↑↓ ]</label>
-                        <select x-model="formaPagamento" x-ref="pagamentoSelect" class="w-full bg-[#001122] border border-[#004080] p-4 text-2xl text-yellow-400 font-bold uppercase outline-none focus:border-green-500">
+                        <label class="block text-gray-400 font-bold uppercase text-sm mb-2">Forma</label>
+                        <select x-model="formaPagamento" x-ref="pagamentoSelect" class="w-full bg-[#001122] border border-[#004080] p-4 text-xl text-yellow-400 font-bold uppercase outline-none focus:border-green-500">
                             <option value="Dinheiro">Dinheiro</option>
                             <option value="Cartao Credito">Cartão de Crédito</option>
                             <option value="Cartao Debito">Cartão de Débito</option>
                             <option value="PIX">PIX</option>
                         </select>
                     </div>
-                    <div x-show="formaPagamento === 'Dinheiro'">
-                        <label class="block text-gray-400 font-bold uppercase text-sm mb-2">Valor Recebido</label>
-                        <input type="number" step="0.01" x-model.number="valorRecebido" @keydown.enter="finalizarVendaReal()" class="w-full bg-[#001122] border border-[#004080] p-4 text-2xl text-white font-bold uppercase outline-none focus:border-green-500 pos-font">
+                    <div>
+                        <label class="block text-gray-400 font-bold uppercase text-sm mb-2">Valor</label>
+                        <input type="number" step="0.01" x-model.number="valorRecebido" @keydown.enter="adicionarPagamento()" class="w-full bg-[#001122] border border-[#004080] p-4 text-xl text-white font-bold uppercase outline-none focus:border-green-500 pos-font">
                     </div>
                 </div>
 
-                <div x-show="formaPagamento === 'Dinheiro' && valorRecebido > totalVenda" class="bg-blue-900/30 p-6 rounded border border-blue-500/50 flex justify-between items-center mb-8">
-                    <span class="text-blue-300 font-black uppercase text-2xl">TROCO:</span>
-                    <span class="text-5xl font-black text-blue-400 pos-font">R$ <span x-text="(valorRecebido - totalVenda).toFixed(2)"></span></span>
+                <button @click="adicionarPagamento()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded mb-6 uppercase tracking-widest shadow-md">Lançar Pagamento (+)</button>
+
+                <div class="flex justify-between items-center bg-[#001122] p-4 rounded border" :class="faltaPagamento > 0 ? 'border-red-500' : 'border-green-500'">
+                    <span class="font-black uppercase text-2xl" :class="faltaPagamento > 0 ? 'text-red-400' : 'text-green-400'">
+                        <span x-text="faltaPagamento > 0 ? 'FALTA:' : 'TROCO:'"></span>
+                    </span>
+                    <span class="text-4xl font-black pos-font" :class="faltaPagamento > 0 ? 'text-red-400' : 'text-green-400'">
+                        R$ <span x-text="Math.abs(faltaPagamento).toFixed(2)"></span>
+                    </span>
                 </div>
 
-                <div class="text-gray-500 font-bold uppercase animate-pulse">Pressione [ENTER] para Confirmar | [ESC] para Cancelar</div>
+                <div class="text-gray-500 font-bold uppercase mt-6 animate-pulse">Pressione [ENTER] repetidamente ou no final para Confirmar | [ESC] para Cancelar</div>
             </div>
         </div>
     </template>
@@ -350,6 +370,7 @@
 
                 // Modais
                 modalPagamento: false,
+                pagamentosLancados: [],
                 formaPagamento: 'Dinheiro',
                 valorRecebido: 0,
 
@@ -668,18 +689,58 @@
                     }
                 },
 
+                get faltaPagamento() {
+                    const totalPago = this.pagamentosLancados.reduce((sum, p) => sum + p.valor, 0);
+                    return this.totalVenda - totalPago;
+                },
+
                 abrirPagamento() {
                     if(this.carrinho.filter(i => !i.cancelado).length === 0) {
                         playBeep('error'); return;
                     }
                     this.modalPagamento = true;
+                    this.pagamentosLancados = [];
                     this.formaPagamento = 'Dinheiro';
                     this.valorRecebido = this.totalVenda;
                     setTimeout(() => this.$refs.pagamentoSelect.focus(), 100);
                 },
 
+                adicionarPagamento() {
+                    if(this.valorRecebido > 0) {
+                        let v = parseFloat(this.valorRecebido);
+                        if (this.formaPagamento !== 'Dinheiro' && v > this.faltaPagamento) {
+                            v = this.faltaPagamento; // limita pra não dar troco no cartão/pix
+                        }
+                        this.pagamentosLancados.push({
+                            forma: this.formaPagamento,
+                            valor: v
+                        });
+                        this.valorRecebido = this.faltaPagamento > 0 ? this.faltaPagamento : 0;
+                        setTimeout(() => lucide.createIcons(), 50);
+
+                        if(this.faltaPagamento <= 0) {
+                            this.finalizarVendaReal();
+                        } else {
+                            this.$refs.pagamentoSelect.focus();
+                        }
+                    } else if (this.faltaPagamento <= 0) {
+                        this.finalizarVendaReal();
+                    }
+                },
+
+                removerPagamento(idx) {
+                    this.pagamentosLancados.splice(idx, 1);
+                    this.valorRecebido = this.faltaPagamento > 0 ? this.faltaPagamento : 0;
+                },
+
                 async finalizarVendaReal() {
                     if(!this.modalPagamento) return;
+                    if(this.faltaPagamento > 0) {
+                        playBeep('error');
+                        alert('Valor pago é insuficiente!');
+                        return;
+                    }
+
                     const itens = this.carrinho.filter(i => !i.cancelado);
                     if(itens.length === 0) return;
 
@@ -689,7 +750,7 @@
                             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                             body: JSON.stringify({
                                 itens: itens,
-                                forma_pagamento: this.formaPagamento,
+                                pagamentos: this.pagamentosLancados,
                                 desconto: this.desconto,
                                 cpf: this.clienteCpf,
                                 nome_cliente: this.clienteNome

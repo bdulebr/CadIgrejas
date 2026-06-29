@@ -13,6 +13,14 @@
 {% block title %}{{ acao }} Aviso - PVE{% endblock title %}
 
 {% block content %}
+<!-- Botão Voltar -->
+<div class="mb-6">
+    <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar</span>
+</a>
+</div>
+
 <div class="min-h-screen p-4 md:p-8">
     <div class="max-w-3xl mx-auto bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.3)] overflow-hidden">
         <div class="p-6 border-b border-gray-800 bg-gradient-to-r from-blue-900/40 to-transparent">

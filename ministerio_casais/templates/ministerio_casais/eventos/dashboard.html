@@ -1,0 +1,196 @@
+{% extends 'core/base.html' %}
+{% load static permissoes_tags %}
+
+{% block title %}Eventos e Retiros | Casais{% endblock %}
+
+{% block content %}
+<!-- Botão Voltar -->
+<div class="mb-6">
+    <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar</span>
+</a>
+</div>
+
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-white mb-2">Eventos e Retiros</h1>
+        <p class="text-gray-400">Gerencie encontros, jantares e retiros do Ministério de Casais.</p>
+    </div>
+    <div class="flex gap-3">
+        {% if request.user|has_action_perm:'casais,editar' %}
+        <button @click="$dispatch('open-modal', 'modal-novo-evento')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all">
+            <i data-lucide="calendar-plus" class="w-5 h-5"></i> Novo Evento
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Eventos Ativos -->
+<div class="mb-10">
+    <h2 class="text-xl font-bold text-gray-200 mb-4 flex items-center gap-2">
+        <i data-lucide="flame" class="w-5 h-5 text-orange-500"></i> Eventos Ativos
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for evento in eventos_abertos %}
+        <a href="{% url 'painel_evento' evento.id %}" class="block group">
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5 hover:border-blue-500 transition-all shadow-lg hover:shadow-blue-500/10">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">{{ evento.get_tipo_display }}</span>
+                    {% if evento.status == 'Aberto' %}
+                        <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Inscrições Abertas</span>
+                    {% elif evento.status == 'Lotado' %}
+                        <span class="px-3 py-1 bg-red-500/20 text-red-400 text-xs font-bold rounded-full flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> Lotado</span>
+                    {% else %}
+                        <span class="px-3 py-1 bg-gray-700 text-gray-300 text-xs font-bold rounded-full">{{ evento.get_status_display }}</span>
+                    {% endif %}
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{{ evento.titulo }}</h3>
+                <div class="space-y-2 text-sm text-gray-400 mb-4">
+                    <p class="flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> {{ evento.data_inicio|date:"d/m/Y \à\s H:i" }}</p>
+                    <p class="flex items-center gap-2 truncate"><i data-lucide="map-pin" class="w-4 h-4"></i> {{ evento.local }}</p>
+                    <p class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> {{ evento.inscricoes.count }} / {{ evento.capacidade_maxima }} Casais Inscritos</p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-900 rounded-full h-1.5 mb-2">
+                    {% widthratio evento.inscricoes.count evento.capacidade_maxima 100 as progresso %}
+                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: {{ progresso }}%"></div>
+                </div>
+                <div class="text-xs text-right text-gray-500">{{ progresso }}% Preenchido</div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full bg-gray-800/50 border border-dashed border-gray-700 rounded-2xl p-10 text-center">
+            <i data-lucide="calendar-x" class="w-12 h-12 text-gray-500 mx-auto mb-3"></i>
+            <p class="text-gray-400 font-medium">Nenhum evento ativo no momento.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Eventos Encerrados -->
+{% if eventos_encerrados %}
+<div>
+    <h2 class="text-xl font-bold text-gray-400 mb-4 flex items-center gap-2">
+        <i data-lucide="archive" class="w-5 h-5"></i> Histórico de Eventos
+    </h2>
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden shadow-lg">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-300">
+                <thead class="bg-gray-900/50 text-gray-400">
+                    <tr>
+                        <th class="px-6 py-4 font-semibold">Evento</th>
+                        <th class="px-6 py-4 font-semibold">Data</th>
+                        <th class="px-6 py-4 font-semibold">Local</th>
+                        <th class="px-6 py-4 font-semibold text-center">Inscrições</th>
+                        <th class="px-6 py-4 font-semibold text-right">Ação</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                    {% for evento in eventos_encerrados %}
+                    <tr class="hover:bg-gray-700/30 transition-colors">
+                        <td class="px-6 py-4 font-medium text-white flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center text-gray-400">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                            </span>
+                            {{ evento.titulo }}
+                        </td>
+                        <td class="px-6 py-4">{{ evento.data_inicio|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4">{{ evento.local }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-3 py-1 bg-gray-700 rounded-full text-xs font-bold">{{ evento.inscricoes.count }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'painel_evento' evento.id %}" class="text-blue-400 hover:text-blue-300 font-medium text-sm flex items-center justify-end gap-1">
+                                Ver Balanço <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Novo Evento -->
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'modal-novo-evento') open = true" @keydown.escape.window="open = false" x-show="open" style="display: none;" class="fixed inset-0 z-[99999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="open" class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" @click="open = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div x-show="open" class="inline-block align-bottom bg-gray-900 border border-gray-700 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+            <form action="{% url 'criar_evento_casais' %}" method="POST">
+                {% csrf_token %}
+                <div class="px-6 py-6 border-b border-gray-800 flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="calendar-plus" class="w-5 h-5 text-blue-500"></i> Criar Novo Evento
+                    </h3>
+                    <button type="button" @click="open = false" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="px-6 py-6 space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Título do Evento *</label>
+                            <input type="text" name="titulo" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Retiro de Casais 2026">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Tipo de Evento</label>
+                            <select name="tipo" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="Retiro">Retiro de Casais</option>
+                                <option value="Jantar">Jantar de Casais</option>
+                                <option value="Encontro">Encontro / Reunião</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                            <select name="status" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="Planejamento">Em Planejamento</option>
+                                <option value="Aberto" selected>Inscrições Abertas</option>
+                                <option value="Lotado">Lotado</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Data Início *</label>
+                            <input type="datetime-local" name="data_inicio" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Data Fim (Opcional)</label>
+                            <input type="datetime-local" name="data_fim" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Local / Hotel *</label>
+                            <input type="text" name="local" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Hotel Fazenda Primavera">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Capacidade (Qtd Casais)</label>
+                            <input type="number" name="capacidade_maxima" value="50" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Valor Base (R$)</label>
+                            <input type="number" step="0.01" name="valor_base" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Deixe 0 se usar Lotes">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Descrição Breve</label>
+                            <textarea name="descricao" rows="2" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 flex justify-end gap-3 border-t border-gray-800">
+                    <button type="button" @click="open = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancelar</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20 transition-all">Criar Evento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

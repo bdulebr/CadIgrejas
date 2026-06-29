@@ -8,6 +8,7 @@
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 """
+from core.middleware import _registrar_invasao
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissoes.decorators import requer_permissao
@@ -73,6 +74,7 @@ def visitantes_dashboard(request):
     estatísticas rápidas e permite busca.
     """
     if request.user.nivel_hierarquico == 'membro_voluntario':
+        _registrar_invasao(request)
         messages.error(request, "Acesso Negado. Apenas líderes podem gerenciar visitantes.")
         return redirect('dashboard')
 
@@ -119,6 +121,7 @@ def visitante_perfil(request, visitante_id):
     Perfil detalhado do visitante, mostrando timeline de visitas e acompanhamentos.
     """
     if request.user.nivel_hierarquico == 'membro_voluntario':
+        _registrar_invasao(request)
         messages.error(request, "Acesso Negado.")
         return redirect('dashboard')
 
@@ -187,8 +190,7 @@ def cadastrar_visitante(request):
 
         # Enviar e-mail de boas-vindas assíncrono se possuir e-mail
         if email:
-            from django.conf import settings
-            base_url = settings.BASE_URL
+            base_url = request.build_absolute_uri('/')[:-1]
             threading.Thread(target=enviar_email_boas_vindas_background, args=(nome_completo, email, base_url, visitante.telefone)).start()
 
         messages.success(request, f"{tipo} {nome_completo} cadastrado com sucesso!")
@@ -241,8 +243,7 @@ def tornar_membro(request, visitante_id):
 
         # Enviar e-mail de Novo Membro / Baixar App assincronamente se houver email
         if visitante.email:
-            from django.conf import settings
-            base_url = settings.BASE_URL
+            base_url = request.build_absolute_uri('/')[:-1]
             threading.Thread(target=enviar_email_novo_membro_background, args=(visitante.nome_completo, visitante.email, base_url, visitante.telefone)).start()
 
         messages.success(request, f"{visitante.nome_completo} agora é membro da igreja e foi movido para o Arquivo de Novos Membros!")
@@ -258,6 +259,7 @@ def visitantes_arquivo(request):
     Dashboard secundário que lista pessoas que se tornaram membros ou desistiram.
     """
     if request.user.nivel_hierarquico == 'membro_voluntario':
+        _registrar_invasao(request)
         messages.error(request, "Acesso Negado.")
         return redirect('dashboard')
 

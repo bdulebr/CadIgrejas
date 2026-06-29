@@ -46,7 +46,10 @@
         <div x-show="errorMsg" style="display: none;" class="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 rounded font-bold uppercase text-sm animate-pulse" x-text="errorMsg"></div>
 
         <div class="mt-8">
-            <a href="{% url 'pdv_dashboard' %}" class="text-blue-400 hover:text-white text-xs font-bold uppercase tracking-widest transition"><i data-lucide="arrow-left" class="w-4 h-4 inline mb-1"></i> Voltar à Gestão (Dashboard)</a>
+            <a href="{% url " class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all shadow-sm">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    <span class="font-medium text-sm">Voltar à Gestão (Dashboard)</span>
+</a>
         </div>
     </div>
 

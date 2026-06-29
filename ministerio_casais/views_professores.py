@@ -13,6 +13,7 @@ from intranet.services.whatsapp_service import enviar_whatsapp_template
 from intranet.services.gmail_service import enviar_email_html
 from core.models import EmailLog
 from .models import AulaTurma, PresencaAula
+from django.urls import reverse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -188,6 +189,7 @@ def mural_professor_turma(request, turma_id):
 @login_required
 def matricular_aluno_mural(request, turma_id):
     from django.contrib import messages  # Garante que messages está importado
+    from django.urls import reverse
     from django.shortcuts import redirect  # Garante que redirect está importado
     from django.contrib.auth.hashers import make_password  # Garante que make_password está importado, usado no bloco original
     try:
@@ -252,6 +254,7 @@ def excluir_postagem(request, postagem_id):
 @login_required
 def gerar_link_magico(request, matricula_id):
     from django.contrib import messages
+    from django.urls import reverse
     from django.shortcuts import redirect
 
     try:
@@ -353,7 +356,7 @@ def _enviar_alerta_falta(request, presenca):
                     'casal': casal.nomes_juntos,
                     'aula': presenca.aula.titulo,
                     'turma': presenca.aula.turma.nome_turma,
-                    'link_portal': f"{settings.BASE_URL}/casais/aluno/login/"
+                    'link_portal': request.build_absolute_uri(reverse('mc_aluno_login'))
                 }
             )
         except Exception as e:
@@ -395,6 +398,7 @@ def _verificar_reprovacoes_turma(turma):
 @login_required
 def remover_aluno_mural(request, matricula_id):
     from django.contrib import messages
+    from django.urls import reverse
     from django.shortcuts import redirect
 
     try:
@@ -412,6 +416,7 @@ def remover_aluno_mural(request, matricula_id):
 @login_required
 def enviar_email_acesso(request, matricula_id):
     from django.contrib import messages
+    from django.urls import reverse
     from django.shortcuts import redirect
 
     try:
@@ -436,7 +441,7 @@ def enviar_email_acesso(request, matricula_id):
         return redirect('mural_professor_turma', turma_id=turma_id)
 
     from django.conf import settings
-    link_magico = f"{settings.BASE_URL}/casais/aluno/login/?token={matricula.token_acesso}"
+    link_magico = request.build_absolute_uri(reverse('mc_aluno_login')) + f'?token={matricula.token_acesso}'
 
     from intranet.services.gmail_service import enviar_email_html
     from intranet.services.whatsapp_service import enviar_whatsapp_template

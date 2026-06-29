@@ -160,7 +160,7 @@ def api_finalizar_venda(request):
         try:
             data = json.loads(request.body)
             itens = data.get('itens', [])
-            forma_pagamento = data.get('forma_pagamento', 'Dinheiro')
+            pagamentos = data.get('pagamentos', [])
             desconto = float(data.get('desconto', 0))
 
             cpf_cliente = data.get('cpf', '')
@@ -179,10 +179,22 @@ def api_finalizar_venda(request):
             subtotal = sum(float(i['preco']) * int(i['qtd']) for i in itens)
             total = subtotal - desconto
 
+            # Validação dos pagamentos
+            total_pago = sum(float(p.get('valor', 0)) for p in pagamentos)
+            if total_pago < total:
+                return JsonResponse({'success': False, 'message': f'Valor pago (R$ {total_pago:.2f}) é menor que o total (R$ {total:.2f}).'})
+
+            forma_pagamento_str = " + ".join([f"{p['forma']} (R$ {float(p['valor']):.2f})" for p in pagamentos])
+
             tipo_venda = data.get('tipo_venda', 'imediata')
             status_pagamento = data.get('status_pagamento', 'pago')
             status_entrega = data.get('status_entrega', 'entregue')
             nome_cliente_reserva = data.get('nome_cliente_reserva', '')
+
+            # KDS: Check if any item has tem_preparo
+            tem_preparo = any(Produto.objects.get(id=i['id']).tem_preparo for i in itens)
+            if tem_preparo and tipo_venda == 'imediata':
+                status_entrega = 'preparo'
 
             venda = Venda.objects.create(
                 caixa=caixa_atual,
@@ -190,7 +202,7 @@ def api_finalizar_venda(request):
                 subtotal=subtotal,
                 desconto=desconto,
                 total=total,
-                forma_pagamento=forma_pagamento,
+                forma_pagamento=forma_pagamento_str,
                 tipo_venda=tipo_venda,
                 status_pagamento=status_pagamento,
                 status_entrega=status_entrega,
@@ -295,6 +307,8 @@ def novo_produto(request):
     if request.method == 'POST':
         nome = request.POST.get('nome')
         codigo_barras = request.POST.get('codigo_barras')
+        if not codigo_barras or codigo_barras.strip() == '':
+            codigo_barras = None
         preco_custo = request.POST.get('preco_custo', 0)
         preco_venda = request.POST.get('preco_venda', 0)
         estoque_atual = request.POST.get('estoque_atual', 0)
@@ -327,7 +341,9 @@ def editar_produto(request, produto_id):
     produto = get_object_or_404(Produto, id=produto_id)
     if request.method == 'POST':
         produto.nome = request.POST.get('nome')
-        produto.codigo_barras = request.POST.get('codigo_barras')
+        cb = request.POST.get('codigo_barras')
+        produto.codigo_barras = cb if cb and cb.strip() != '' else None
+
         produto.preco_custo = request.POST.get('preco_custo', 0)
         produto.preco_venda = request.POST.get('preco_venda', 0)
         produto.estoque_atual = request.POST.get('estoque_atual', 0)
@@ -345,77 +361,6 @@ def editar_produto(request, produto_id):
         messages.success(request, 'Produto atualizado com sucesso!')
 
 @login_required
-def lista_produtos(request):
-    produtos = Produto.objects.all().order_by('nome')
-    return render(request, 'pdv/produtos.html', {'produtos': produtos})
-
-@login_required
-def novo_produto(request):
-    if request.method == 'POST':
-        nome = request.POST.get('nome')
-        codigo_barras = request.POST.get('codigo_barras')
-        preco_custo = request.POST.get('preco_custo', 0)
-        preco_venda = request.POST.get('preco_venda', 0)
-        estoque_atual = request.POST.get('estoque_atual', 0)
-        ncm = request.POST.get('ncm', '00000000')
-        cfop = request.POST.get('cfop', '')
-        cbs = request.POST.get('cbs', '')
-        ibs = request.POST.get('ibs', '')
-        is_val = request.POST.get('imposto_seletivo', '')
-
-        Produto.objects.create(
-            nome=nome,
-            codigo_barras=codigo_barras,
-            preco_custo=preco_custo,
-            preco_venda=preco_venda,
-            estoque_atual=estoque_atual,
-            ncm=ncm,
-            cfop=cfop,
-            cbs=cbs if cbs else None,
-            ibs=ibs if ibs else None,
-            imposto_seletivo=is_val if is_val else None
-        )
-        messages.success(request, 'Produto cadastrado com sucesso!')
-        return redirect('pdv_lista_produtos')
-
-    categorias = CategoriaProduto.objects.all()
-    return render(request, 'pdv/form_produto.html', {'categorias': categorias})
-
-@login_required
-def editar_produto(request, produto_id):
-    from django.contrib import messages  # Importar messages
-    from django.shortcuts import redirect  # Importar redirect
-    try:
-        produto = Produto.objects.get(id=produto_id)
-    except Produto.DoesNotExist:
-        messages.error(request, f'O produto com ID {produto_id} não foi encontrado ou já foi removido.')
-        return redirect('pdv_lista_produtos')
-
-    if request.method == 'POST':
-        produto.nome = request.POST.get('nome')
-        produto.codigo_barras = request.POST.get('codigo_barras')
-        produto.preco_custo = request.POST.get('preco_custo', 0)
-        produto.preco_venda = request.POST.get('preco_venda', 0)
-        produto.estoque_atual = request.POST.get('estoque_atual', 0)
-        produto.ncm = request.POST.get('ncm', '00000000')
-        produto.cfop = request.POST.get('cfop', '')
-
-        cbs = request.POST.get('cbs', '')
-        ibs = request.POST.get('ibs', '')
-        is_val = request.POST.get('imposto_seletivo', '')
-        produto.cbs = cbs if cbs else None
-        produto.ibs = ibs if ibs else None
-        produto.imposto_seletivo = is_val if is_val else None
-
-        produto.save()
-        messages.success(request, 'Produto atualizado com sucesso!')
-        return redirect('pdv_lista_produtos')
-
-    categorias = CategoriaProduto.objects.all()
-    return render(request, 'pdv/form_produto.html', {'produto': produto, 'categorias': categorias})
-
-@login_required
-@requer_permissao('pdv', 'excluir')
 def configuracoes_pdv(request):
     config = ConfiguracaoPDV.objects.first()
     if not config:
@@ -673,3 +618,46 @@ def exportar_financeiro_pdf(request):
         return response
     else:
         return HttpResponse('xhtml2pdf não está instalado no servidor.', status=500)
+
+# --------------------------------------------------------------------------------------
+# KITCHEN DISPLAY SYSTEM (KDS / TV)
+# --------------------------------------------------------------------------------------
+
+@login_required
+@requer_permissao('pdv', 'ver')
+def pdv_painel_tv(request):
+    return render(request, 'pdv/pdv_painel_tv.html')
+
+@login_required
+@requer_permissao('pdv', 'ver')
+def pdv_cozinha(request):
+    return render(request, 'pdv/pdv_cozinha.html')
+
+@login_required
+def api_tv_data(request):
+    # Retorna JSON com os pedidos em preparo e a retirar
+    # Pegamos vendas recentes das ultimas 24h
+    from django.utils import timezone
+    from datetime import timedelta
+
+    ontem = timezone.now() - timedelta(days=1)
+
+    vendas_preparo = Venda.objects.filter(status_entrega='preparo', data_venda__gte=ontem).order_by('data_venda')
+    vendas_retirar = Venda.objects.filter(status_entrega='retirar', data_venda__gte=ontem).order_by('-data_venda')[:10]
+
+    data = {
+        'preparo': [{'id': v.id, 'nome': v.cliente.nome if v.cliente else (v.nome_cliente_reserva or f"Pedido #{v.id}")} for v in vendas_preparo],
+        'retirar': [{'id': v.id, 'nome': v.cliente.nome if v.cliente else (v.nome_cliente_reserva or f"Pedido #{v.id}")} for v in vendas_retirar]
+    }
+    return JsonResponse(data)
+
+@login_required
+@requer_permissao('pdv', 'editar')
+def api_cozinha_atualizar(request, venda_id, acao):
+    venda = get_object_or_404(Venda, id=venda_id)
+    if acao == 'pronto':
+        venda.status_entrega = 'retirar'
+    elif acao == 'entregue':
+        venda.status_entrega = 'entregue'
+    venda.save()
+    return JsonResponse({'success': True})

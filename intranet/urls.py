@@ -7,8 +7,7 @@
 * DATA DA ÚLTIMA ALTERAÇÃO: 16/06/2026 14:37
 * LOG DE ALTERAÇÕES:
 * - 16/06/2026 14:37: Auditoria e padronização global (Goal)
-"""
-"""
+* - 16/06/2026 14:37: Auditoria e padronização global (Goal)
 URL configuration for intranet project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -37,7 +36,7 @@ from django.urls import re_path
 
 urlpatterns = [
     path('favicon.ico', RedirectView.as_view(url='/static/img/logo.jpg', permanent=True)),
-    path('admin/', admin.site.urls),
+    path('pve-master-admin/', admin.site.urls),
     path('', include('core.urls')),
     path('', include('gestao_membros.urls')),
     path('', include('escalas.urls')),

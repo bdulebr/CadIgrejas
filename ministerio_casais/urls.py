@@ -12,6 +12,8 @@ from django.urls import path
 from . import views
 from . import views_alunos
 from . import views_professores
+from . import views_eventos
+from . import views_financeiro
 
 urlpatterns = [
     path('dashboard/', views.dashboard_casais, name='dashboard_casais'),
@@ -26,6 +28,20 @@ urlpatterns = [
     path('casal/<int:casal_id>/atualizar-status/', views.atualizar_status_casal, name='atualizar_status_casal'),
     path('casal/<int:casal_id>/arquivar/', views.arquivar_casal, name='arquivar_casal'),
     path('casal/<int:casal_id>/excluir/', views.excluir_casal, name='excluir_casal'),
+
+    # Eventos e Retiros
+    path('eventos/', views_eventos.dashboard_eventos, name='dashboard_eventos_casais'),
+    path('eventos/novo/', views_eventos.criar_evento, name='criar_evento_casais'),
+    path('eventos/<int:evento_id>/', views_eventos.painel_evento, name='painel_evento'),
+    path('eventos/<int:evento_id>/lote/novo/', views_eventos.adicionar_lote, name='adicionar_lote_evento'),
+    path('eventos/<int:evento_id>/inscrever/', views_eventos.inscrever_casal_evento, name='inscrever_casal_evento'),
+    path('inscricao/<int:inscricao_id>/pagar/', views_eventos.adicionar_pagamento_inscricao, name='adicionar_pagamento_inscricao'),
+    path('eventos/<int:evento_id>/presenca-pdf/', views_eventos.lista_presenca_pdf, name='lista_presenca_pdf_evento'),
+
+    # Financeiro e Tesouraria
+    path('painel-financeiro/', views_financeiro.painel_financeiro, name='painel_financeiro_casais'),
+    path('financeiro/despesa/nova/', views_financeiro.nova_despesa, name='nova_despesa_casais'),
+    path('financeiro/relatorio/gerar/', views_financeiro.gerar_relatorio_tesouraria, name='gerar_relatorio_tesouraria_casais'),
 
     # Cursos e Certificados
     path('cursos/', views.cursos_dashboard, name='cursos_casais'),

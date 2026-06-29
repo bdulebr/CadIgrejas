@@ -15,6 +15,7 @@ from django.http import HttpResponse
 import json
 import math
 from datetime import date
+from core.middleware import _registrar_invasao
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -196,9 +197,8 @@ def baixar_qrcode_checkin(request):
     if request.user.nivel_hierarquico not in ['super_admin', 'pastor_regente', 'pastor', 'lider']:
         return HttpResponse("Acesso Negado", status=403)
 
-    from django.conf import settings
-    # URL pública do check-in usando BASE_URL do .env
-    url_base = f"{settings.BASE_URL}/escalas/checkin/"
+    from django.urls import reverse
+    url_base = request.build_absolute_uri(reverse('checkin_page'))
 
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=4)
     qr.add_data(url_base)
@@ -227,6 +227,7 @@ def checkin_manual_lider(request, escala_id):
         # Valida se o usuário logado é líder do departamento desta escala
         from escalas.app_views import is_lider_any_dept
         if not is_lider_any_dept(request.user):
+            _registrar_invasao(request)
             messages.error(request, "Acesso Negado.")
             return redirect('checkins_hoje_desktop')
 
@@ -237,6 +238,7 @@ def checkin_manual_lider(request, escala_id):
             is_owner = True
 
         if not is_owner:
+            _registrar_invasao(request)
             messages.error(request, "Acesso Negado para este departamento.")
             return redirect('checkins_hoje_desktop')
 
